@@ -1,0 +1,12 @@
+{
+  "brokerList": [
+        {
+          "uri": "wrongurl.org",
+          "port": 1883
+        },
+        {
+          "uri": "test.mosquitto.org",
+          "port": 1883
+        }
+      ]
+}
