@@ -1,6 +1,6 @@
 # Path hack.
 import sys, os
-sys.path.insert(0, os.path.abspath('..'))
+sys.path.insert(0, os.path.abspath('../..'))
 from services.commons.device import Device
 from services.commons.sensorreader.realsensorreader import *
 import json

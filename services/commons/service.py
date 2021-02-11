@@ -9,12 +9,11 @@ import schedule
 import time
 
 class Service(CatalogAdapter, MyMQTTNotifier, threading.Thread):
-    def __init__(self, pingTime, serviceId, MQTTtopic, serviceServiceList, notifier = None, subscribeList = {}):
+    def __init__(self, pingTime, serviceId, serviceServiceList, notifier = None, subscribeList = {}):
         super().__init__(serviceId, serviceServiceList, "SERVICE", None)
         threading.Thread.__init__(self)
         self.__pingTime = pingTime
         self.__serviceId = serviceId
-        self.__MQTTtopic = MQTTtopic
         self.__notifier = notifier
         self.__subscribeList = subscribeList
 

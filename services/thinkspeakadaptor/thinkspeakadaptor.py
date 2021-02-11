@@ -1,9 +1,17 @@
 # Path hack.
 import sys, os
-sys.path.insert(0, os.path.abspath('..'))
+print(os.path.dirname(os.path.realpath(__file__)))
+sys.path.insert(0, os.path.abspath('../..'))
 from services.commons.service import Service
 import json
 import socket
+
+class ThinkSpeakAdaptor(Service):
+    def __init__(self, pingTime, serviceId, serviceServiceList, subscribeList):
+        super().__init__(pingTime, serviceId, serviceServiceList, self, subscribeList)
+
+    def onMessageReceived(self, topic, message):
+        print (topic + " -> " + json.dumps(json.loads(message)))
 
 def get_ip():
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -43,10 +51,10 @@ if __name__=="__main__":
             ]
         }
     ]
-    rpi = Service(
+    rpi = ThinkSpeakAdaptor(
             settings['pingTime'],
             settings['serviceId'],
-            settings['topic'],
-            availableServices)
+            availableServices,
+            settings['subscribeTopics'])
     rpi.start()
     rpi.join()
