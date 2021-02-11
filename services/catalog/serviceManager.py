@@ -6,14 +6,15 @@ import threading
 from datetime import datetime
 
 class ServiceManager():
-    def __init__(self):
+    def __init__(self, retentionTimeout):
         self.__lock = threading.Lock()
+        self.__retentionTimeout = retentionTimeout
         self.__list = []
 
     def cleanOldServices(self):
         self.__lock.acquire()
         for serv in self.__list[:]:
-            if time.time() - serv['lastUpdate'] > 10:
+            if time.time() - serv['lastUpdate'] > self.__retentionTimeout:
                 print("[CATALOG][INFO] Removed service: " + str(serv['serviceId']))
                 self.__list.remove(serv);
         self.__lock.release()

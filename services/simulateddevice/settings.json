@@ -1,6 +1,6 @@
 {
   "pingTime": 60,
-  "sensorSamplingTime": 10,
+  "sensorSamplingTime": 3,
   "deviceId": "RPI1",
   "topic": "/iot-programming-2343/home1/RPI1"
 }
