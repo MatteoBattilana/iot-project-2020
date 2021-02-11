@@ -40,14 +40,14 @@ class RESTManagerService(threading.Thread):
         if uri[0] == 'getBroker':
             if not self.__broker:
                 cherrypy.response.status = 503
-                return json.dumps({"error":{"status": 503, "message": "No mqtt server available"}}, indent=4)
+                return json.dumps({"error":{"status": 503, "message": "No MQTT server available"}}, indent=4)
             else:
                 return json.dumps(self.__broker, indent=4)
 
         if uri[0] == 'searchById':
             if not self.__broker:
                 cherrypy.response.status = 404
-                return json.dumps({"error":{"status": 404, "message": "service wit the specified serviceId not found"}}, indent=4)
+                return json.dumps({"error":{"status": 404, "message": "Service with specified id not found"}}, indent=4)
             else:
                 return json.dumps(self.__serv.searchById(params['serviceId']), indent=4)
 
@@ -56,7 +56,19 @@ class RESTManagerService(threading.Thread):
 
     def POST(self, *uri):
         body = json.loads(cherrypy.request.body.read())
-        return json.dumps(self.__serv.addService(body), indent=4)
+        if len(uri) == 1:
+            print ("[CATALOG][INFO] Requested POST with uri " + str(uri))
+            if uri[0] == 'ping':
+                ret = self.__serv.addService(body)
+            else:
+                cherrypy.response.status = 404
+                ret = {"error":{"status": 404, "message": "Unknown method"}}
+        else:
+            cherrypy.response.status = 404
+            ret = {"error":{"status": 404, "message": "Missing uri"}}
+
+
+        return json.dumps(ret, indent=4)
 
 if __name__=="__main__":
     settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))

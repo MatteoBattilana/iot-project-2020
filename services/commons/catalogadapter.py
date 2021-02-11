@@ -37,11 +37,12 @@ class CatalogAdapter:
             postBody["serviceId"] = self.__serviceID
 
         try:
-            r = requests.post("http://127.0.0.1:8080/catalog/", json = postBody)
-            print("[PING][INFO] Sent ping to the catalog http://127.0.0.1:8080/catalog/")
+            r = requests.post("http://127.0.0.1:8080/catalog/ping", json = postBody)
+            print("[PING][INFO] Sent ping to the catalog http://127.0.0.1:8080/catalog/ping")
             if r.status_code == 200:
                 if r.json()['serviceId'] != self.__serviceID:
-                    self.__onNewServiceId(r.json()['serviceId'])        #callback for new id
+                    pass
+                    #self.__onNewServiceId(r.json()['serviceId'])        #callback for new id
                 self.__serviceID = r.json()['serviceId']
             else:
                 print("[PING][ERROR] Unable to register " + self.__serviceName + " to the catalog\nError message + " + r.json()["error"]["message"])

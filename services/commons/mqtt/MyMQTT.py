@@ -20,7 +20,8 @@ class MyMQTT:
 		self._paho_mqtt.on_disconnect = self.__onDisconnect
 
 	def __onDisconnect(client, userdata, rc):
-		self.notifier.onDisconnect()
+		if rc != 0:
+			self.notifier.onDisconnect()
 
 	def __onConnect (self, paho_mqtt, userdata, flags, rc):
 		if rc == 0:

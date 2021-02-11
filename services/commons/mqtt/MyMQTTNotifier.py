@@ -5,5 +5,5 @@ class MyMQTTNotifier:
         pass
     def onMessageReceived(self, topic, message):
         pass
-    def onDisconnect(self):
+    def onUnexpectedDisconnect(self):
         pass

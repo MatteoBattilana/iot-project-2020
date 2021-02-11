@@ -1,7 +1,7 @@
 # Path hack.
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
-from services.commons.resource import Resource
+from services.commons.device import Device
 from services.commons.sensorreader.randomsequentialsensorreader import *
 import json
 
@@ -12,27 +12,37 @@ if __name__=="__main__":
             "serviceType": "MQTT",
             "endPoint": [
                 {
-                    "topic": "smarthome55544/RPI1/temp",
+                    "topic": settings['topic'] + "/temp",
                     "type": "temperature"
+                },
+                {
+                    "type": "humidity",
+                    "topic": settings['topic'] + "/hum"
                 }
             ]
         }
     ]
     sensorReader = RandomSequentialSensorReader([{
-        "n": "temperature",
-        "u": "Cel",
-        "min": -10,
-        "max": 35,
-        "startingValue": 22
+            "n": "temperature",
+            "u": "Cel",
+            "min": -10,
+            "max": 35,
+            "startingValue": 22
+        },
+        {
+            "n": "humidity",
+            "u": "%",
+            "min": 0,
+            "max": 100,
+            "startingValue": 32
         }])
 
-    rpi = Resource(
+    rpi = Device(
             settings['pingTime'],
             settings['sensorSamplingTime'],
             settings['deviceId'],
             settings['topic'],
             availableServices,
-            "SENSOR",
             sensorReader)
     rpi.start()
     rpi.join()
