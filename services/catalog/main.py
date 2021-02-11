@@ -5,6 +5,10 @@ import socket
 import cherrypy
 from serviceManager import *
 
+
+# Rest service that exposes POST and GET methods to handle the ping, getBroker,
+# searchById, getAll requests.
+# It is implemented using a thread
 class RESTManagerService(threading.Thread):
     exposed=True
     def __init__(self, brokerList, retantionTimeout):
@@ -19,7 +23,8 @@ class RESTManagerService(threading.Thread):
         else:
             print ("[CATALOG][INFO] " + self.__broker["uri"] + " MQTT broker selected")
 
-
+    # Given the list from the settings file, it tries all the broker and returns
+    # the first one that works
     def __checkFirstAvailable(self, brokerList):
         for server in brokerList:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -31,6 +36,8 @@ class RESTManagerService(threading.Thread):
                 continue
         return {}
 
+    # Request a clean for the devices that did not perform a ping in the constraint
+    # time
     def run(self):
         while 1:
             time.sleep(10)

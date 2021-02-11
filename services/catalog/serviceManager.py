@@ -5,12 +5,16 @@ import uuid
 import threading
 from datetime import datetime
 
+
+# Menager for services and devices, using lock
 class ServiceManager():
     def __init__(self, retentionTimeout):
         self.__lock = threading.Lock()
         self.__retentionTimeout = retentionTimeout
         self.__list = []
 
+    # Clean the records in the list that have a lastUpdate that is higher than
+    # the set retention time; this method is called by the catalog every 10 seconds
     def cleanOldServices(self):
         self.__lock.acquire()
         for serv in self.__list[:]:
@@ -25,9 +29,11 @@ class ServiceManager():
                 return serv
         return {}
 
+    # Returns all the devices available
     def getAll(self):
         return self.__list
 
+    # Internal function to insert a service
     def __insertService(self, service):
         self.__lock.acquire()
         service['serviceId'] = str(uuid.uuid4())
@@ -38,9 +44,11 @@ class ServiceManager():
         return service
 
     def addService(self, service):
+        # If the service is not in the list, it is simply added
         if "serviceId" not in service or self.searchById(service["serviceId"]) == {}:
             return self.__insertService(service)
 
+        # Otherwaise I update its information by keeping its id
         self.__lock.acquire()
         for idx, serv in enumerate(self.__list):
             if serv['serviceId'] == service["serviceId"]:

@@ -8,6 +8,7 @@ import threading
 import schedule
 import time
 
+# Module for services
 class Service(CatalogAdapter, MyMQTTNotifier, threading.Thread):
     def __init__(self, pingTime, serviceId, serviceServiceList, notifier = None, subscribeList = {}):
         super().__init__(serviceId, serviceServiceList, "SERVICE", None)

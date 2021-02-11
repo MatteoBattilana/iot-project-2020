@@ -1,3 +1,4 @@
+# Class that only lists the callbacks fot the MyMQTT module 
 class MyMQTTNotifier:
     def onMQTTConnected(self):
         pass

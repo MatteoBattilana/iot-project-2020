@@ -8,6 +8,7 @@ import threading
 import schedule
 import time
 
+# Class that manages 
 class Device(CatalogAdapter, MyMQTTNotifier, threading.Thread):
     def __init__(self, pingTime, sensorSamplingTime, deviceId, MQTTtopic, serviceServiceList, sensorReader, notifier = None, subscribeList = {}):
         super().__init__(deviceId, serviceServiceList, "DEVICE", None)

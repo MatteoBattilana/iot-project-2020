@@ -9,6 +9,7 @@ json = {
     "serviceType": ""
 }
 
+# Module used to manage the requests to the catalog (ping and getBroker)
 class CatalogAdapter:
     def __init__(self, serviceName, serviceServiceList, serviceType, onNewServiceId):
         self.__serviceName = serviceName
@@ -34,6 +35,8 @@ class CatalogAdapter:
     def sendPing(self):
         postBody = copy.copy(json)
         if self.__serviceID:
+            # If the id is available, I send it. In the case my sessions is expired
+            # a new one is given
             postBody["serviceId"] = self.__serviceID
 
         try:
