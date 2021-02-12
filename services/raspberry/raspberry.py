@@ -1,7 +1,7 @@
 # Path hack.
 import sys, os
 sys.path.insert(0, os.path.abspath('../..'))
-from services.commons.device import Device
+from services.commons.MQTTservice import *
 from services.commons.sensorreader.realsensorreader import *
 import json
 
@@ -12,18 +12,18 @@ if __name__=="__main__":
             "serviceType": "MQTT",
             "endPoint": [
                 {
-                    "topic": settings['topic'] + "/temp",
+                    "topic": settings['topic'],
                     "type": "temperature"
                 }
             ]
         }
     ]
-    rpi = Device(
+    rpi = MQTTservice(
             settings['pingTime'],
-            settings['sensorSamplingTime'],
             settings['deviceId'],
-            settings['topic'],
             availableServices,
-            RealSensorReader())
+            None,
+            PublisherInformation(RealSensorReader(), settings['topic'], settings['sensorSamplingTime'])
+            )
     rpi.start()
     rpi.join()

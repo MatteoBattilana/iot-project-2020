@@ -2,13 +2,19 @@
 import sys, os
 print(os.path.dirname(os.path.realpath(__file__)))
 sys.path.insert(0, os.path.abspath('../..'))
-from services.commons.service import Service
+from services.commons.MQTTservice import *
 import json
 import socket
 
-class ThinkSpeakAdaptor(Service):
+class ThinkSpeakAdaptor(MQTTservice):
     def __init__(self, pingTime, serviceId, serviceServiceList, subscribeList):
-        super().__init__(pingTime, serviceId, serviceServiceList, self, subscribeList)
+        super().__init__(
+            pingTime,
+            serviceId,
+            serviceServiceList,
+            SubscriberInformation(subscribeList, self),
+            None
+        )
 
     def onMessageReceived(self, topic, message):
         print (topic + " -> " + json.dumps(json.loads(message)))
