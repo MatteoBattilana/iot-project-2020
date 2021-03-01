@@ -40,7 +40,7 @@ class ServiceManager():
         service['lastUpdate'] = time.time()
         self.__list.append(service)
         self.__lock.release()
-        print("[CATALOG][INFO] Added service " + service['serviceName'] + ": " + str(service['serviceId']))
+        print("[CATALOG][INFO] Added service new service: " + str(service['serviceId']))
         return service
 
     def addService(self, service):
@@ -57,5 +57,5 @@ class ServiceManager():
                 self.__list[idx] = service
         self.__lock.release()
 
-        print("[CATALOG][INFO] Updated service " + service['serviceName'] + ": " + str(service['serviceId']))
+        print("[CATALOG][INFO] Updated service service with id: " + str(service['serviceId']))
         return service

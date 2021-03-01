@@ -1,42 +1,43 @@
 # Path hack.
 import sys, os
-print(os.path.dirname(os.path.realpath(__file__)))
-sys.path.insert(0, os.path.abspath('../..'))
-from services.commons.MQTTservice import *
+sys.path.insert(0, os.path.abspath('..'))
+from commons.MQTTRetry import *
+from commons.ping import *
 import json
 import socket
+import time
 
-class ThinkSpeakAdaptor(MQTTservice):
-    def __init__(self, pingTime, serviceId, serviceServiceList, subscribeList):
-        super().__init__(
-            pingTime,
-            serviceId,
-            serviceServiceList,
-            SubscriberInformation(subscribeList, self),
-            None
-        )
+class ThinkSpeakAdaptor(threading.Thread):
+    def __init__(self, pingTime, serviceList, serviceId, subscribeList):
+        threading.Thread.__init__(self)
+        self._ping = Ping(pingTime, serviceList)
+        self._mqtt = MQTTRetry(serviceId, self)
+        self._subscribeList = subscribeList
+        self._isMQTTconnected = False
 
-    def onMessageReceived(self, topic, message):
-        print (topic + " -> " + json.dumps(json.loads(message)))
 
-def get_ip():
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    try:
-        # doesn't even have to be reachable
-        s.connect(('10.255.255.255', 1))
-        IP = s.getsockname()[0]
-    except Exception:
-        IP = '127.0.0.1'
-    finally:
-        s.close()
-    return IP
+    def run(self):
+        print("[THINGSPEAKADAPTOR][INFO] Started")
+        self._ping.start()
+        self._mqtt.start()
+
+        while True:
+            time.sleep(10)
+
+    #MQTT callbacks
+    def onMQTTConnected(self):
+        self._isMQTTconnected = True
+    def onMQTTConnectionError(self, error):
+        self._isMQTTconnected = False
+    def onMQTTMessageReceived(self, topic, message):
+        print("Received: " + json.dumps(message, indent=4))
 
 if __name__=="__main__":
     settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
     availableServices = [
         {
             "serviceType": "REST",
-            "serviceIP": get_ip(),
+            "serviceIP": socket.gethostname(),
             "servicePort": 1234,
             "endPoint": [
                 {
@@ -59,8 +60,8 @@ if __name__=="__main__":
     ]
     rpi = ThinkSpeakAdaptor(
             settings['pingTime'],
-            settings['serviceId'],
             availableServices,
+            settings['serviceId'],
             settings['subscribeTopics'])
     rpi.start()
     rpi.join()

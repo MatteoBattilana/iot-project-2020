@@ -1,5 +1,5 @@
 {
-  "retantionTimeout": 20,
+  "retantionTimeout": 130,
   "brokerList": [
         {
           "uri": "wrongurl.org",

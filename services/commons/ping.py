@@ -7,25 +7,20 @@ import requests
 import copy
 
 json = {
-    "serviceName": "",
-    "serviceServiceList": [],
-    "serviceType": ""
+    "serviceServiceList": []
 }
 
 # Module for services
 class Ping(threading.Thread):
-    def __init__(self, pingTime, serviceType, serviceServiceList, serviceName, onNewServiceIdCallback = None):
+    def __init__(self, pingTime, serviceServiceList, onNewCatalogIdCallback = None):
         threading.Thread.__init__(self)
         self.__pingTime = pingTime
-        self.__serviceName = serviceName
         self.__serviceID = ""
-        self.__onNewServiceIdCallback = onNewServiceIdCallback
-        json["serviceName"] = serviceName
+        self.__onNewCatalogIdCallback = onNewCatalogIdCallback
         json["serviceServiceList"] = serviceServiceList
-        json["serviceType"] = serviceType
 
     def run(self):
-        print("[SERVICE][INFO] Started ping every " + str(self.__pingTime) + " s")
+        print("[PING][INFO] Started ping every " + str(self.__pingTime) + " s")
         while True:
             self.sendPing()
             time.sleep(self.__pingTime)
@@ -38,13 +33,13 @@ class Ping(threading.Thread):
             postBody["serviceId"] = self.__serviceID
 
         try:
-            r = requests.post("http://127.0.0.1:8080/catalog/ping", json = postBody)
-            print("[PING][INFO] Sent ping to the catalog http://127.0.0.1:8080/catalog/ping")
+            r = requests.post("http://catalog:8080/catalog/ping", json = postBody)        # TODO: change to relative
+            print("[PING][INFO] Sent ping to the catalog http://catalog:8080/catalog/ping")
             if r.status_code == 200:
-                if r.json()['serviceId'] != self.__serviceID and self.__onNewServiceIdCallback != None:
-                    self.__onNewServiceIdCallback(r.json()['serviceId'])        #callback for new id
+                if r.json()['serviceId'] != self.__serviceID and self.__onNewCatalogIdCallback != None:
+                    self.__onNewCatalogIdCallback(r.json()['serviceId'])        #callback for new id
                 self.__serviceID = r.json()['serviceId']
             else:
-                print("[PING][ERROR] Unable to register " + self.__serviceName + " to the catalog: " + r.json()["error"]["message"])
+                print("[PING][ERROR] Unable to register service to the catalog: " + r.json()["error"]["message"])
         except Exception as e:
-            print("[PING][ERROR] Unable to register " + self.__serviceName + " to the catalog: " + str(e))
+            print("[PING][ERROR] Unable to register service to the catalog: " + str(e))

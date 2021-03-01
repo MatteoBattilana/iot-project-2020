@@ -44,6 +44,9 @@ class RESTManagerService(threading.Thread):
             self.__serv.cleanOldServices();
 
     def GET(self, *uri, **params):
+        if len(uri) == 0:
+            return json.dumps({"message": "Catalog API endpoint"}, indent=4)
+
         if uri[0] == 'getBroker':
             if not self.__broker:
                 cherrypy.response.status = 503
@@ -60,6 +63,7 @@ class RESTManagerService(threading.Thread):
 
         if uri[0] == 'getAll':
             return json.dumps(self.__serv.getAll(), indent=4)
+
 
     def POST(self, *uri):
         body = json.loads(cherrypy.request.body.read())
@@ -83,11 +87,12 @@ if __name__=="__main__":
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
-            },
+            }
     }
     serviceCatalog = RESTManagerService(settings["brokerList"], settings["retantionTimeout"])
     serviceCatalog.start()
     cherrypy.tree.mount(serviceCatalog,'/catalog/',conf)
+    cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.start()
 
     cherrypy.engine.block()

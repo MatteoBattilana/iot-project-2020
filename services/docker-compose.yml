@@ -1,0 +1,46 @@
+version: "3.9"
+services:
+  catalog:
+    container_name: catalog
+    networks:
+      net1:
+    build:
+        context: ./
+        dockerfile: ./catalog/Dockerfile
+    healthcheck:
+        test: ["CMD", "curl", "-f", "http://localhost:8080/catalog"]
+        interval: 15s
+        timeout: 7s
+        retries: 5
+    ports:
+      - "8080:8080"             # accessible using the 80 port
+
+  raspberry:
+    container_name: raspberry
+    networks:
+      net1:
+    depends_on:
+      catalog:
+        condition: service_healthy
+    links:
+        - catalog
+    build:
+        context: ./
+        dockerfile: ./raspberry/Dockerfile
+
+  thinkspeakadaptor:
+    container_name: thinkspeakadaptor
+    networks:
+      net1:
+    depends_on:
+      catalog:
+        condition: service_healthy
+    links:
+        - catalog
+    build:
+        context: ./
+        dockerfile: ./thinkspeakadaptor/Dockerfile
+
+networks:
+  net1:
+    driver: bridge

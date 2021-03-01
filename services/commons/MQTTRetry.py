@@ -1,0 +1,105 @@
+import json
+import threading
+import requests
+import time
+import paho.mqtt.client as PahoMQTT
+
+# Class that only lists the callbacks fot the MyMQTT module
+class MyMQTTNotifier:
+    def onMQTTConnected(self):
+        pass
+    def onMQTTConnectionError(self, error):
+        pass
+    def onMQTTMessageReceived(self, topic, message):
+        pass
+
+# Module for services
+class MQTTRetry(threading.Thread):
+    def __init__(self, serviceId, notifier):
+        threading.Thread.__init__(self)
+        self._serviceId = serviceId
+        self._notifier = notifier
+        self._paho_mqtt = PahoMQTT.Client(serviceId, False)
+
+		# register the callback
+        self._paho_mqtt.on_connect = self.__onConnect
+        self._paho_mqtt.on_message = self.__onMessageReceived
+        self._paho_mqtt.on_disconnect = self.__onDisconnect
+
+        self._subscribeList = []
+
+        self._isMQTTconnected = False
+        self._isMQTTTryingConnecting = False
+        self._scheduleMQTTRetry = None
+
+
+    def run(self):
+        self._setupMQTT()
+        while True:
+            if self._isMQTTconnected == False and self._isMQTTTryingConnecting == False:
+                self._setupMQTT()
+            time.sleep(30)
+
+
+    def _getBroker(self):
+        try:
+            r = requests.get("http://catalog:8080/catalog/getBroker")             #TODO: change to relative address
+            if r.status_code == 200:
+                return r.json()
+        except Exception as e:
+            print("[MQTTRETRY][ERROR] Unable to get the broker address: " + str(e))
+        return {}
+
+
+    def publish(self, topic, msg):
+        self._paho_mqtt.publish(topic, json.dumps(msg), 2)
+        print ("[MQTTRETRY][INFO] publishing '" + json.dumps(msg) + "' with topic " + topic)
+
+
+    #return True if the MQTT is connected
+    def _setupMQTT(self):
+        self._isMQTTTryingConnecting = True
+        broker = self._getBroker()
+        if 'uri' in broker and 'port' in broker:
+           print("[MQTTRETRY][INFO] Trying to connect to the MQTT broker")
+
+           self._paho_mqtt.connect(broker['uri'], broker['port'])
+           self._paho_mqtt.loop_start()
+        else:
+           print("[MQTTRETRY][ERROR] No MQTT broker available")
+
+
+    def __subscribe(self, topic):
+        if self._isMQTTconnected == True:
+            print("[MQTTRETRY][INFO] Subscribed to " + topic)
+            self._paho_mqtt.subscribe(topic, 2)
+        self._subscribeList.append(topic)
+
+
+    #MQTT callbacks
+    def __onDisconnect(self, client, userdata, rc):
+        print("[MQTTRETRY][ERROR] Disconnected from MQTT broker: " + error)
+        self._isMQTTconnected = False
+        if self._notifier != None:
+            self._notifier.onMQTTConnectionError(connack_string(rc))
+
+    def __onConnect (self, paho_mqtt, userdata, flags, rc):
+        if rc == 0:
+            if self._notifier != None:
+                self._notifier.onMQTTConnected()
+            print("[MQTTRETRY][INFO] Connected to the MQTT broker")
+            for elem in self._subscribeList:
+                print("[MQTTRETRY][INFO] Subscribed to " + topic)
+                self._paho_mqtt.subscribe(topic, 2)
+            self._isMQTTconnected = True
+        else:
+            print("[MQTTRETRY][ERROR] Disconnected from MQTT broker")
+            if self._notifier != None:
+                self._notifier.onMQTTConnectionError(connack_string(rc))
+
+        self._isMQTTTryingConnecting = False
+
+    def __onMessageReceived (self, paho_mqtt , userdata, msg):
+		# A new message is received
+        if self._notifier != None:
+            self._notifier.onMQTTMessageReceived(msg.topic, json.loads(msg.payload))
