@@ -4,6 +4,7 @@ IoT platform for user-involved air recirculation system
 ## Quick test
 In order to test the docker-compose file and turn on the entire architecture, you can do:
 ```
+cd services
 make rebuild-and-start
 ```
 
