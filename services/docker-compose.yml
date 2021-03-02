@@ -13,10 +13,10 @@ services:
         timeout: 7s
         retries: 5
     ports:
-      - "8080:8080"             # accessible using the 80 port
+      - "8080:8080"             # accessible using the 8080 port
 
-  raspberry:
-    container_name: raspberry
+  simulateddevice:
+    container_name: simulateddevice
     networks:
       net1:
     depends_on:
@@ -26,7 +26,7 @@ services:
         - catalog
     build:
         context: ./
-        dockerfile: ./raspberry/Dockerfile
+        dockerfile: ./simulateddevice/Dockerfile
 
   thinkspeakadaptor:
     container_name: thinkspeakadaptor
@@ -40,6 +40,16 @@ services:
     build:
         context: ./
         dockerfile: ./thinkspeakadaptor/Dockerfile
+
+  webpage:
+    container_name: webpage
+    networks:
+      net1:
+    build:
+        context: ./
+        dockerfile: ./webpage/Dockerfile
+    ports:
+      - "80:8080"             # accessible using the 8080 port
 
 networks:
   net1:

@@ -15,10 +15,11 @@ class MyMQTTNotifier:
 
 # Module for services
 class MQTTRetry(threading.Thread):
-    def __init__(self, serviceId, notifier):
+    def __init__(self, serviceId, notifier, catalogAddress):
         threading.Thread.__init__(self)
         self._serviceId = serviceId
         self._notifier = notifier
+        self._catalogAddress = catalogAddress
         self._paho_mqtt = PahoMQTT.Client(serviceId, False)
 
 		# register the callback
@@ -43,7 +44,7 @@ class MQTTRetry(threading.Thread):
 
     def _getBroker(self):
         try:
-            r = requests.get("http://catalog:8080/catalog/getBroker")             #TODO: change to relative address
+            r = requests.get(self._catalogAddress + "/getBroker")             #TODO: change to relative address
             if r.status_code == 200:
                 return r.json()
         except Exception as e:
@@ -61,7 +62,7 @@ class MQTTRetry(threading.Thread):
         self._isMQTTTryingConnecting = True
         broker = self._getBroker()
         if 'uri' in broker and 'port' in broker:
-           print("[MQTTRETRY][INFO] Trying to connect to the MQTT broker")
+           print("[MQTTRETRY][INFO] Trying to connect to the MQTT broker: " + broker['uri'] + ":" + str(broker['port']))
 
            self._paho_mqtt.connect(broker['uri'], broker['port'])
            self._paho_mqtt.loop_start()
@@ -69,11 +70,12 @@ class MQTTRetry(threading.Thread):
            print("[MQTTRETRY][ERROR] No MQTT broker available")
 
 
-    def __subscribe(self, topic):
+    def subscribe(self, topic):
         if self._isMQTTconnected == True:
-            print("[MQTTRETRY][INFO] Subscribed to " + topic)
-            self._paho_mqtt.subscribe(topic, 2)
-        self._subscribeList.append(topic)
+            for topic in self._subscribeList:
+                print("[MQTTRETRY][INFO] Subscribed to " + topic)
+                self._paho_mqtt.subscribe(topic, 2)
+        self._subscribeList = topic
 
 
     #MQTT callbacks
@@ -88,7 +90,7 @@ class MQTTRetry(threading.Thread):
             if self._notifier != None:
                 self._notifier.onMQTTConnected()
             print("[MQTTRETRY][INFO] Connected to the MQTT broker")
-            for elem in self._subscribeList:
+            for topic in self._subscribeList:
                 print("[MQTTRETRY][INFO] Subscribed to " + topic)
                 self._paho_mqtt.subscribe(topic, 2)
             self._isMQTTconnected = True

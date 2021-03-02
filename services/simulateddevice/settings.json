@@ -1,0 +1,7 @@
+{
+  "pingTime": 60,
+  "sensorSamplingTime": 10,
+  "deviceId": "SIMDEV1",
+  "MQTTTopic": "/iot-programming-2343/home1/SIMDEV1",
+  "catalogAddress": "http://catalog:8080/catalog"
+}

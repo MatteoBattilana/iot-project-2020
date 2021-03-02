@@ -1,7 +1,8 @@
 {
   "pingTime": 10,
-  "serviceId": "thinkspeakadaptor",
+  "serviceId": "THNK1",
   "subscribeTopics": [
       "/iot-programming-2343/#"
-  ]
+  ],
+  "catalogAddress": "http://catalog:8080/catalog"
 }

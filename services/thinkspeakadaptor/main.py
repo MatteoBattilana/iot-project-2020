@@ -8,10 +8,11 @@ import socket
 import time
 
 class ThinkSpeakAdaptor(threading.Thread):
-    def __init__(self, pingTime, serviceList, serviceId, subscribeList):
+    def __init__(self, pingTime, serviceList, serviceId, subscribeList, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList)
-        self._mqtt = MQTTRetry(serviceId, self)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId)
+        self._mqtt = MQTTRetry(serviceId, self, catalogAddress)
+        self._mqtt.subscribe(subscribeList)
         self._subscribeList = subscribeList
         self._isMQTTconnected = False
 
@@ -62,6 +63,8 @@ if __name__=="__main__":
             settings['pingTime'],
             availableServices,
             settings['serviceId'],
-            settings['subscribeTopics'])
+            settings['subscribeTopics'],
+            settings['catalogAddress']
+        )
     rpi.start()
     rpi.join()

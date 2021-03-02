@@ -2,5 +2,6 @@
   "pingTime": 60,
   "sensorSamplingTime": 10,
   "deviceId": "RPI1",
-  "MQTTTopic": "/iot-programming-2343/home1/RPI1"
+  "MQTTTopic": "/iot-programming-2343/home1/RPI1",
+  "catalogAddress": "http://127.0.0.1:8080/catalog"
 }

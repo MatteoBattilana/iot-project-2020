@@ -8,7 +8,7 @@ import threading
 import json
 import time
 
-class Raspberry(threading.Thread):
+class Simulateddevice(threading.Thread):
     def __init__(self, pingTime, sensorSamplingTime, serviceList, deviceId, publishTopic, catalogAddress):
         threading.Thread.__init__(self)
         self._ping = Ping(pingTime, serviceList, catalogAddress, deviceId)
@@ -18,7 +18,7 @@ class Raspberry(threading.Thread):
         self._isMQTTconnected = False
 
     def run(self):
-        print("[RASPBERRY][INFO] Started")
+        print("[SIMULATEDDEVICE][INFO] Started")
         self._ping.start()
         self._mqtt.start()
 
@@ -63,7 +63,7 @@ if __name__=="__main__":
             ]
         }
     ]
-    rpi = Raspberry(
+    rpi = Simulateddevice(
             settings['pingTime'],
             settings['sensorSamplingTime'],
             availableServices,
