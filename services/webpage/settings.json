@@ -1,2 +1,5 @@
 {
+    "pingTime": 10,
+    "serviceId": "WEBPG1",
+    "catalogAddress": "http://catalog:8080/catalog"
 }

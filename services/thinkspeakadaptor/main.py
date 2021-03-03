@@ -6,6 +6,7 @@ from commons.ping import *
 import json
 import socket
 import time
+from commons.netutils import *
 
 class ThinkSpeakAdaptor(threading.Thread):
     def __init__(self, pingTime, serviceList, serviceId, subscribeList, catalogAddress):
@@ -38,9 +39,9 @@ if __name__=="__main__":
     availableServices = [
         {
             "serviceType": "REST",
-            "serviceIP": socket.gethostname(),
+            "serviceIP": NetworkUtils.getIp(),
             "servicePort": 1234,
-            "endPoint": [
+            "endPoint": [                   #TODO: change to the correct one
                 {
                     "type": "temperature",
                     "uri": "temp",
