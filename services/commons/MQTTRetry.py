@@ -13,7 +13,8 @@ class MyMQTTNotifier:
     def onMQTTMessageReceived(self, topic, message):
         pass
 
-# Module for services
+# Class for MQTT service, it automatically manages the retry to the MQTT broker
+# in case of disconnection every 30s
 class MQTTRetry(threading.Thread):
     def __init__(self, serviceId, notifier, catalogAddress):
         threading.Thread.__init__(self)
@@ -23,9 +24,9 @@ class MQTTRetry(threading.Thread):
         self._paho_mqtt = PahoMQTT.Client(serviceId, False)
 
 		# register the callback
-        self._paho_mqtt.on_connect = self.__onConnect
-        self._paho_mqtt.on_message = self.__onMessageReceived
-        self._paho_mqtt.on_disconnect = self.__onDisconnect
+        self._paho_mqtt.on_connect = self._onConnect
+        self._paho_mqtt.on_message = self._onMessageReceived
+        self._paho_mqtt.on_disconnect = self._onDisconnect
 
         self._subscribeList = []
 
@@ -33,7 +34,7 @@ class MQTTRetry(threading.Thread):
         self._isMQTTTryingConnecting = False
         self._scheduleMQTTRetry = None
 
-
+    # Thread body necessary to perform the MQTT reconnection retry
     def run(self):
         self._setupMQTT()
         while True:
@@ -41,23 +42,23 @@ class MQTTRetry(threading.Thread):
                 self._setupMQTT()
             time.sleep(30)
 
-
+    # Return the selected broker from the catalog
     def _getBroker(self):
         try:
-            r = requests.get(self._catalogAddress + "/getBroker")             #TODO: change to relative address
+            r = requests.get(self._catalogAddress + "/getBroker")
             if r.status_code == 200:
                 return r.json()
         except Exception as e:
             print("[MQTTRETRY][ERROR] Unable to get the broker address: " + str(e))
         return {}
 
-
+    # publish a json message under the passed topic
     def publish(self, topic, msg):
         self._paho_mqtt.publish(topic, json.dumps(msg), 2)
         print ("[MQTTRETRY][INFO] publishing '" + json.dumps(msg) + "' with topic " + topic)
 
 
-    #return True if the MQTT is connected
+    # connect to the MQTT brokerif a valid MQTT broker is returned from the catalog
     def _setupMQTT(self):
         self._isMQTTTryingConnecting = True
         broker = self._getBroker()
@@ -69,23 +70,23 @@ class MQTTRetry(threading.Thread):
         else:
            print("[MQTTRETRY][ERROR] No MQTT broker available")
 
-
-    def subscribe(self, topic):
+    # subscribe to a list of topic
+    def subscribe(self, topicList):
         if self._isMQTTconnected == True:
-            for topic in self._subscribeList:
+            for topic in topicList:
                 print("[MQTTRETRY][INFO] Subscribed to " + topic)
                 self._paho_mqtt.subscribe(topic, 2)
-        self._subscribeList = topic
+        self._subscribeList = topicList
 
 
     #MQTT callbacks
-    def __onDisconnect(self, client, userdata, rc):
+    def _onDisconnect(self, client, userdata, rc):
         print("[MQTTRETRY][ERROR] Disconnected from MQTT broker: " + error)
         self._isMQTTconnected = False
         if self._notifier != None:
             self._notifier.onMQTTConnectionError(connack_string(rc))
 
-    def __onConnect (self, paho_mqtt, userdata, flags, rc):
+    def _onConnect (self, paho_mqtt, userdata, flags, rc):
         if rc == 0:
             if self._notifier != None:
                 self._notifier.onMQTTConnected()
@@ -101,7 +102,7 @@ class MQTTRetry(threading.Thread):
 
         self._isMQTTTryingConnecting = False
 
-    def __onMessageReceived (self, paho_mqtt , userdata, msg):
+    def _onMessageReceived (self, paho_mqtt , userdata, msg):
 		# A new message is received
         if self._notifier != None:
             self._notifier.onMQTTMessageReceived(msg.topic, json.loads(msg.payload))

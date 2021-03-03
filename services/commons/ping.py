@@ -6,12 +6,14 @@ import time
 import requests
 import copy
 
+# base structure to send during the ping, the serviceId is added only after a
+# valid one i received
 json = {
     "serviceServiceList": [],
     "serviceName": ""
 }
 
-# Module for services
+# Module for managing the ping to the catalog
 class Ping(threading.Thread):
     def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, onNewCatalogIdCallback = None):
         threading.Thread.__init__(self)
@@ -22,6 +24,7 @@ class Ping(threading.Thread):
         json["serviceServiceList"] = serviceServiceList
         json["serviceName"] = serviceName
 
+    # sending ping every self._pingTime s
     def run(self):
         print("[PING][INFO] Started ping every " + str(self._pingTime) + " s")
         while True:
@@ -36,7 +39,7 @@ class Ping(threading.Thread):
             postBody["serviceId"] = self._serviceID
 
         try:
-            r = requests.post(self._catalogAddress + "/ping", json = postBody)        # TODO: change to relative
+            r = requests.post(self._catalogAddress + "/ping", json = postBody)
             print("[PING][INFO] Sent ping to the catalog " + self._catalogAddress + "/ping")
             if r.status_code == 200:
                 if r.json()['serviceId'] != self._serviceID and self._onNewCatalogIdCallback != None:
