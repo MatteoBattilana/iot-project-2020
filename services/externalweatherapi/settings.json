@@ -1,0 +1,5 @@
+{
+    "pingTime": 10,
+    "serviceId": "EXTWETHAPI1",
+    "catalogAddress": "http://catalog:8080/catalog"
+}

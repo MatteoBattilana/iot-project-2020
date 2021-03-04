@@ -22,4 +22,6 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 ```
 
+In order to make the external API work correctly, you need to set the `OPENWETHERMAPAPIKEY` variable with the key from openweathermap.com
+
 This mean that each Raspberry and ThinkSpeakAdaptor can be lauched only from inside its folder

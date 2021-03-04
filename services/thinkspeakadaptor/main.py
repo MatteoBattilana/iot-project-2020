@@ -32,7 +32,8 @@ class ThinkSpeakAdaptor(threading.Thread):
     def onMQTTConnectionError(self, error):
         self._isMQTTconnected = False
     def onMQTTMessageReceived(self, topic, message):
-        print("Received: " + json.dumps(message, indent=4))
+        # TODO: must send to ThinkSpeak
+        print("Received new message with topic: " + topic)
 
 if __name__=="__main__":
     settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))

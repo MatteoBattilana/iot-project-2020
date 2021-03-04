@@ -44,25 +44,27 @@ class RESTManagerService(threading.Thread):
             self._serv.cleanOldServices();
 
     def GET(self, *uri, **params):
+        print("LEN: " + str(len(uri)))
         if len(uri) == 0:
             return json.dumps({"message": "Catalog API endpoint"}, indent=4)
-
-        if uri[0] == 'getBroker':
+        elif uri[0] == 'getBroker':
             if not self._broker:
                 cherrypy.response.status = 503
                 return json.dumps({"error":{"status": 503, "message": "No MQTT server available"}}, indent=4)
             else:
                 return json.dumps(self._broker, indent=4)
-
-        if uri[0] == 'searchById':
+        elif uri[0] == 'searchById':
             if not self._broker:
                 cherrypy.response.status = 404
                 return json.dumps({"error":{"status": 404, "message": "Service with specified id not found"}}, indent=4)
             else:
                 return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
-
-        if uri[0] == 'getAll':
+        elif uri[0] == 'getAll':
             return json.dumps(self._serv.getAll(), indent=4)
+        else:
+            cherrypy.response.status = 404
+            return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
+
 
 
     def POST(self, *uri):
@@ -92,7 +94,7 @@ if __name__=="__main__":
     serviceCatalog = RESTManagerService(settings["brokerList"], settings["retantionTimeout"])
     serviceCatalog.start()
     cherrypy.tree.mount(serviceCatalog,'/catalog/',conf)
-    cherrypy.server.socket_host = '0.0.0.0'                         
+    cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.start()
 
     cherrypy.engine.block()
