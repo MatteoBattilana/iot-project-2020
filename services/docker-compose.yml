@@ -58,8 +58,8 @@ services:
         context: ./
         dockerfile: ./thinkspeakadaptor/Dockerfile
 
-  webpage:
-    container_name: webpage
+  webinterface:
+    container_name: webinterface
     networks:
       net1:
     depends_on:
@@ -69,7 +69,7 @@ services:
         - catalog
     build:
         context: ./
-        dockerfile: ./webpage/Dockerfile
+        dockerfile: ./webinterface/Dockerfile
     ports:
       - "80:8080"             # accessible using the 8080 port
 

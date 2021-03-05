@@ -1,5 +1,5 @@
 {
     "pingTime": 10,
-    "serviceId": "WEBPG1",
+    "serviceId": "WEB-INTERFACE",
     "catalogAddress": "http://catalog:8080/catalog"
 }

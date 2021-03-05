@@ -11,12 +11,13 @@ import json
 class ExternalWeatherApi():
     exposed=True
 
-    def __init__(self, pingTime, serviceList, serviceId, catalogAddress, openweatherapikey):
+    def __init__(self, pingTime, serviceList, serviceId, catalogAddress, safeWindSpeed, openweatherapikey):
         threading.Thread.__init__(self)
         self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId)
         print("[EXTERNALWEATHERAPI][INFO] Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey
+        self._safeWindSpeed = safeWindSpeed
         print("[EXTERNALWEATHERAPI][INFO] openweathermap.com api key set to: " + self._openweatherapikey)
 
     def GET(self, *uri, **parameter):
@@ -24,7 +25,7 @@ class ExternalWeatherApi():
             return json.dumps({"message": "Catalog API endpoint"}, indent=4)
         elif uri[0] == "currentWeatherStatus":
             if "lat" in parameter and "lon" in parameter:
-                return json.dumps(_getCurrentWeatherStatus(parameter['lat'], parameter['lon'], self._openweatherapikey), indent=4)
+                return json.dumps(_getCurrentWeatherStatus(parameter['lat'], parameter['lon'], self._safeWindSpeed, self._openweatherapikey), indent=4)
             else:
                 cherrypy.response.status = 503
                 return json.dumps({"error":{"status": 503, "message": "Unable to contact external weather API"}}, indent=4)
@@ -32,7 +33,7 @@ class ExternalWeatherApi():
             cherrypy.response.status = 404
             return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
 
-def _getCurrentWeatherStatus(lat, lon, openweatherapikey):
+def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
     # http://api.openweathermap.org/data/2.5/air_pollution?lat=45.672383&lon=11.5411214&units=metric&appid=9ee2ff4386066f12e552d13a4bd53e8e
     # http://api.openweathermap.org/data/2.5/weather?lat=45.672383&lon=11.5411214&appid=9ee2ff4386066f12e552d13a4bd53e8e
     retInformation = {}
@@ -43,6 +44,14 @@ def _getCurrentWeatherStatus(lat, lon, openweatherapikey):
             retInformation["humidity"] = r1.json()["main"]["humidity"]
         else:
             print("[EXTERNALWEATHERAPI][ERROR] Unable to get temperature from openweatermap: " + json.dumps(r.json()))
+
+        # Refer to https://openweathermap.org/weather-conditions
+        if "weather" in r1.json() and (int(r1.json()["weather"][0]["id"]) < 800 or float(r1.json()["wind"]["speed"]) > safeWindSpeed) :
+            retInformation["safeOpenWindow"] = False
+        else:
+            retInformation["safeOpenWindow"] = True
+
+
     else:
         print("[EXTERNALWEATHERAPI][ERROR] Unable to contact openweatermap")
 
@@ -69,7 +78,6 @@ if __name__=="__main__":
             "endPoint": [
                 {
                     "type": "web",
-                    "description": "given lat and long returns the current temperature, humidity and pollution",
                     "uri": "/currentWeatherStatus",
                     "version": 1,
                     "parameter": [{"name": "lat", "unit": "float"}, {"name": "lon", "unit": "float"}]
@@ -95,6 +103,7 @@ if __name__=="__main__":
             availableServices,
             settings['serviceId'],
             settings['catalogAddress'],
+            float(settings['windSpeedSafe']),
             openweatermapkey
         ),'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'
