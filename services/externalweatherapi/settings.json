@@ -1,6 +1,6 @@
 {
     "pingTime": 10,
     "windSpeedSafe": 10,
-    "serviceId": "EXTERNAL-API",
+    "serviceName": "EXTERNAL-API",
     "catalogAddress": "http://catalog:8080/catalog"
 }

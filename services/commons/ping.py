@@ -13,12 +13,12 @@ json = {
 
 # Module for managing the ping to the catalog
 class Ping(threading.Thread):
-    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, onNewCatalogIdCallback = None):
+    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, notifier = None):
         threading.Thread.__init__(self)
         self._pingTime = pingTime
-        self._serviceID = ""
+        self._serviceID = None
         self._catalogAddress = catalogAddress
-        self._onNewCatalogIdCallback = onNewCatalogIdCallback
+        self._notifier = notifier
         json["serviceServiceList"] = serviceServiceList
         json["serviceName"] = serviceName
 
@@ -40,10 +40,10 @@ class Ping(threading.Thread):
             r = requests.post(self._catalogAddress + "/ping", json = postBody)
             print("[PING][INFO] Sent ping to the catalog " + self._catalogAddress + "/ping")
             if r.status_code == 200:
-                if r.json()['serviceId'] != self._serviceID and self._onNewCatalogIdCallback != None:
-                    self._onNewCatalogIdCallback(r.json()['serviceId'])        #callback for new id
+                if r.json()['serviceId'] != self._serviceID and self._notifier is not None:
+                    self._notifier.onNewCatalogId(r.json()['serviceId'])        #callback for new id
                 self._serviceID = r.json()['serviceId']
             else:
                 print("[PING][ERROR] Unable to register service to the catalog: " + r.json()["error"]["message"])
         except Exception as e:
-            print("[PING][ERROR] Unable to register service to the catalog: " + str(e))
+            print("[PING][ERROR] Unable to register service to the catalog 1: " + str(e))

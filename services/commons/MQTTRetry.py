@@ -33,11 +33,15 @@ class MQTTRetry(threading.Thread):
         self._isMQTTconnected = False
         self._isMQTTTryingConnecting = False
         self._scheduleMQTTRetry = None
+        self._run = True
+
+    def stop(self):
+        self._run = False
 
     # Thread body necessary to perform the MQTT reconnection retry
     def run(self):
         self._setupMQTT()
-        while True:
+        while self._run:
             if self._isMQTTconnected == False and self._isMQTTTryingConnecting == False:
                 self._setupMQTT()
             time.sleep(30)

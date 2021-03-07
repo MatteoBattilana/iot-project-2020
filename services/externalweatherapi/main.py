@@ -22,7 +22,7 @@ class ExternalWeatherApi():
 
     def GET(self, *uri, **parameter):
         if len(uri) == 0:
-            return json.dumps({"message": "Catalog API endpoint"}, indent=4)
+            return json.dumps({"message": "External weather API endpoint"}, indent=4)
         elif uri[0] == "currentWeatherStatus":
             if "lat" in parameter and "lon" in parameter:
                 return json.dumps(_getCurrentWeatherStatus(parameter['lat'], parameter['lon'], self._safeWindSpeed, self._openweatherapikey), indent=4)
@@ -101,7 +101,7 @@ if __name__=="__main__":
         ExternalWeatherApi(
             settings['pingTime'],
             availableServices,
-            settings['serviceId'],
+            settings['serviceName'],
             settings['catalogAddress'],
             float(settings['windSpeedSafe']),
             openweatermapkey

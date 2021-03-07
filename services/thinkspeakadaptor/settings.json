@@ -1,6 +1,6 @@
 {
   "pingTime": 10,
-  "serviceId": "THINGSPEAK-ADAPTOR",
+  "serviceName": "THINGSPEAK-ADAPTOR",
   "subscribeTopics": [
       "/iot-programming-2343/#"
   ],

@@ -9,62 +9,46 @@ import time
 from commons.netutils import *
 
 class ThinkSpeakAdaptor(threading.Thread):
-    def __init__(self, pingTime, serviceList, serviceId, subscribeList, catalogAddress):
+    def __init__(self, pingTime, serviceList, serviceName, subscribeList, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId)
-        self._mqtt = MQTTRetry(serviceId, self, catalogAddress)
-        self._mqtt.subscribe(subscribeList)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, self)
         self._subscribeList = subscribeList
         self._isMQTTconnected = False
-
+        self._catalogAddress = catalogAddress
+        self._mqtt = None
 
     def run(self):
         print("[THINGSPEAKADAPTOR][INFO] Started")
         self._ping.start()
-        self._mqtt.start()
 
         while True:
             time.sleep(10)
 
+    # Catalog new id callback
+    def onNewCatalogId(self, newId):
+        print("[THINGSPEAKADAPTOR][INFO] New id from catalog: " + newId)
+        if self._mqtt is not None:
+            self._mqtt.stop()
+
+        self._mqtt = MQTTRetry(newId, self, self._catalogAddress)
+        self._mqtt.start()
+
     #MQTT callbacks
     def onMQTTConnected(self):
-        self._isMQTTconnected = True
+        pass
     def onMQTTConnectionError(self, error):
-        self._isMQTTconnected = False
+        pass
     def onMQTTMessageReceived(self, topic, message):
         # TODO: must send to ThinkSpeak
         print("Received new message with topic: " + topic)
 
 if __name__=="__main__":
     settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
-    availableServices = [
-        {
-            "serviceType": "REST",
-            "serviceIP": NetworkUtils.getIp(),
-            "servicePort": 1234,
-            "endPoint": [                   #TODO: change to the correct one
-                {
-                    "type": "temperature",
-                    "uri": "temp",
-                    "parameter": []
-                },
-                {
-                    "type": "humidity",
-                    "uri": "hum",
-                    "parameter": []
-                },
-                {
-                    "type": "configuration",
-                    "uri": "conf",
-                    "parameter": [{"value": "integer", "name": "sampleTime"}]
-                }
-            ]
-        }
-    ]
+    availableServices = []
     rpi = ThinkSpeakAdaptor(
             settings['pingTime'],
             availableServices,
-            settings['serviceId'],
+            settings['serviceName'],
             settings['subscribeTopics'],
             settings['catalogAddress']
         )

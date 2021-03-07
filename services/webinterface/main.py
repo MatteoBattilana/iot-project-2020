@@ -11,9 +11,9 @@ import json
 class WebSite():
     exposed=True
 
-    def __init__(self, pingTime, serviceList, serviceId, catalogAddress):
+    def __init__(self, pingTime, serviceList, serviceName, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName)
         print("[WEBSITE][INFO] Started")
         self._ping.start()
 
@@ -54,7 +54,7 @@ if __name__=="__main__":
         WebSite(
             settings['pingTime'],
             availableServices,
-            settings['serviceId'],
+            settings['serviceName'],
             settings['catalogAddress']
         ),'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'

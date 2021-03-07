@@ -1,5 +1,5 @@
 {
     "pingTime": 10,
-    "serviceId": "WEB-INTERFACE",
+    "serviceName": "WEB-INTERFACE",
     "catalogAddress": "http://catalog:8080/catalog"
 }

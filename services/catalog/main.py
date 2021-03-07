@@ -44,7 +44,6 @@ class RESTManagerService(threading.Thread):
             self._serv.cleanOldServices();
 
     def GET(self, *uri, **params):
-        print("LEN: " + str(len(uri)))
         if len(uri) == 0:
             return json.dumps({"message": "Catalog API endpoint"}, indent=4)
         elif uri[0] == 'getBroker':

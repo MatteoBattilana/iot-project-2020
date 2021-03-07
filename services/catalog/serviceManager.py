@@ -34,9 +34,9 @@ class ServiceManager():
         return self._list
 
     # Internal function to insert a service
-    def _insertService(self, service):
+    def _insertService(self, service, serviceName):
         self._lock.acquire()
-        service['serviceId'] = str(uuid.uuid4())
+        service['serviceId'] = serviceName + "-" + str(len(self._list))
         service['lastUpdate'] = time.time()
         self._list.append(service)
         self._lock.release()
@@ -46,7 +46,7 @@ class ServiceManager():
     def addService(self, service):
         # If the service is not in the list, it is simply added
         if "serviceId" not in service or self.searchById(service["serviceId"]) == {}:
-            return self._insertService(service)
+            return self._insertService(service, service["serviceName"])
 
         # Otherwaise I update its information by keeping its id
         self._lock.acquire()
