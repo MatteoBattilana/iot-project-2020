@@ -11,7 +11,7 @@ import time
 class Simulateddevice(threading.Thread):
     def __init__(self, pingTime, sensorSamplingTime, serviceList, deviceName, publishTopic, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, deviceName, self)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, deviceName, "DEVICE", self)
         self._sensorSamplingTime = sensorSamplingTime
         self._publishTopic = publishTopic
         self._isMQTTconnected = False
