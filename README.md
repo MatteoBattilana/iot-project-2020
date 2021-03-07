@@ -32,14 +32,25 @@ This mean that each Raspberry and ThinkSpeakAdaptor can be lauched only from ins
 
 ## GIT commands
 
-### Update the repo to the last update
+### Update the repo to the last update without modification to the same file
 ```
 git fetch
 git pull
 ```
 
+### Update the repo to the last update with modification only
+```
+git stash
+git fetch
+git pull
+git stash pop
+```
+MUST SOLVE CONFLICTS
+
 
 ### Push your changes to GitHub
 ```
 git add .
+git commit -m "Added servicetest"
+git push origin main
 ```
