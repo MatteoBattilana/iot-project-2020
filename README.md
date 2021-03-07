@@ -41,5 +41,5 @@ git pull
 
 ### Push your changes to GitHub
 ```
-
+git add .
 ```
