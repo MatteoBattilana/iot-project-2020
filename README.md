@@ -34,5 +34,12 @@ This mean that each Raspberry and ThinkSpeakAdaptor can be lauched only from ins
 
 ### Update the repo to the last update
 ```
+git fetch
+git pull
+```
+
+
+### Push your changes to GitHub
+```
 
 ```
