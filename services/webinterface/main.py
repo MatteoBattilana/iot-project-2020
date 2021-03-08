@@ -13,7 +13,7 @@ class WebSite():
 
     def __init__(self, pingTime, serviceList, serviceName, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE")
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", homeId = None, notifier = None)
         print("[WEBSITE][INFO] Started")
         self._ping.start()
 

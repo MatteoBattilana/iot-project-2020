@@ -11,7 +11,7 @@ from commons.netutils import *
 class ThinkSpeakAdaptor(threading.Thread):
     def __init__(self, pingTime, serviceList, serviceName, subscribeList, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", self)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", homeId = None, notifier = self)
         self._subscribeList = subscribeList
         self._isMQTTconnected = False
         self._catalogAddress = catalogAddress

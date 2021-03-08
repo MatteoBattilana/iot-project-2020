@@ -13,7 +13,7 @@ class ExternalWeatherApi():
 
     def __init__(self, pingTime, serviceList, serviceId, catalogAddress, safeWindSpeed, openweatherapikey):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE")
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", homeId = None, notifier = None)
         print("[EXTERNALWEATHERAPI][INFO] Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey

@@ -25,9 +25,16 @@ class ServiceManager():
 
     def searchById(self, id):
         for serv in self._list:
-            if serv['serviceId'] == id:
+            if 'serviceId' in serv and serv['serviceId'] == id:
                 return serv
         return {}
+
+    def searchByHomeId(self, id):
+        ret = []
+        for serv in self._list:
+            if 'homeId' in serv and serv['homeId'] == id:
+                ret.append(serv)
+        return ret
 
     # Returns all the devices available
     def getAll(self):

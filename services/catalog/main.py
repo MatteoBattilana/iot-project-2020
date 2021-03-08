@@ -53,11 +53,9 @@ class RESTManagerService(threading.Thread):
             else:
                 return json.dumps(self._broker, indent=4)
         elif uri[0] == 'searchById':
-            if not self._broker:
-                cherrypy.response.status = 404
-                return json.dumps({"error":{"status": 404, "message": "Service with specified id not found"}}, indent=4)
-            else:
-                return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
+            return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
+        elif uri[0] == 'searchByHomeId':
+            return json.dumps(self._serv.searchByHomeId(params['homeId']), indent=4)
         elif uri[0] == 'getAll':
             return json.dumps(self._serv.getAll(), indent=4)
         else:

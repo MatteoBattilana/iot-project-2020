@@ -9,9 +9,9 @@ import json
 import time
 
 class Simulateddevice(threading.Thread):
-    def __init__(self, pingTime, sensorSamplingTime, serviceList, deviceName, publishTopic, catalogAddress):
+    def __init__(self, pingTime, sensorSamplingTime, serviceList, deviceName, homeId, publishTopic, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, deviceName, "DEVICE", self)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, deviceName, "DEVICE", homeId, self)
         self._sensorSamplingTime = sensorSamplingTime
         self._publishTopic = publishTopic
         self._isMQTTconnected = False
@@ -80,6 +80,7 @@ if __name__=="__main__":
             settings['sensorSamplingTime'],
             availableServices,
             settings['deviceName'],
+            settings['homeId'],
             settings['MQTTTopic'],
             settings['catalogAddress']
             )
