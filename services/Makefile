@@ -1,7 +1,5 @@
-rebuild-and-start: rebuild start-architecture
-
-rebuild:
-	docker-compose rm -f
-	docker-compose build
-start-architecture:
+restart: stop start
+start:
 	docker-compose up
+stop:
+	docker-compose stop

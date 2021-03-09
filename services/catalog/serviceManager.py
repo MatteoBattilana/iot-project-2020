@@ -12,6 +12,7 @@ class ServiceManager():
         self._lock = threading.Lock()
         self._retentionTimeout = retentionTimeout
         self._list = []
+        self._currentIndex = 0
 
     # Clean the records in the list that have a lastUpdate that is higher than
     # the set retention time; this method is called by the catalog every 10 seconds
@@ -43,8 +44,9 @@ class ServiceManager():
     # Internal function to insert a service
     def _insertService(self, service, serviceName):
         self._lock.acquire()
-        service['serviceId'] = serviceName + "-" + str(len(self._list))
+        service['serviceId'] = serviceName + "-" + str(self._currentIndex)
         service['lastUpdate'] = time.time()
+        self._currentIndex = self._currentIndex + 1
         self._list.append(service)
         self._lock.release()
         print("[CATALOG][INFO] Added service new service: " + str(service['serviceId']))

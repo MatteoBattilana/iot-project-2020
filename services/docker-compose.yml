@@ -12,8 +12,11 @@ services:
         interval: 15s
         timeout: 7s
         retries: 5
+    volumes:
+      - .:/code
     ports:
       - "8080:8080"             # accessible using the 8080 port
+
 
   simulateddevice:
     container_name: simulateddevice
@@ -24,6 +27,8 @@ services:
         condition: service_healthy
     links:
         - catalog
+    volumes:
+      - .:/code
     build:
         context: ./
         dockerfile: ./simulateddevice/Dockerfile
@@ -39,6 +44,8 @@ services:
         condition: service_healthy
     links:
         - catalog
+    volumes:
+      - .:/code
     environment:
         - OPENWETHERMAPAPIKEY=${OPENWETHERMAPAPIKEY}
     build:
@@ -54,6 +61,8 @@ services:
         condition: service_healthy
     links:
         - catalog
+    volumes:
+      - .:/code
     build:
         context: ./
         dockerfile: ./thinkspeakadaptor/Dockerfile
@@ -67,6 +76,8 @@ services:
         condition: service_healthy
     links:
         - catalog
+    volumes:
+      - .:/code
     build:
         context: ./
         dockerfile: ./webinterface/Dockerfile
@@ -87,6 +98,10 @@ services:
 
 volumes:
   node-red:
+  simulateddevice:
+  catalog:
+  webinterface:
+  thinkspeakadaptor:
 
 networks:
   net1:
