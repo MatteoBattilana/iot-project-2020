@@ -2,7 +2,7 @@
   "pingTime": 60,
   "sensorSamplingTime": 10,
   "deviceName": "SIMULATED-DEVICE",
-  "homeId": "home1",
+  "groupId": "home1",
   "MQTTTopic": "/iot-programming-2343/",
   "catalogAddress": "http://catalog:8080/catalog"
 }

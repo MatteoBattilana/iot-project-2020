@@ -20,7 +20,7 @@ class ServiceManager():
         self._lock.acquire()
         for serv in self._list[:]:
             if time.time() - serv['lastUpdate'] > self._retentionTimeout:
-                print("[CATALOG][INFO] Removed service: " + str(serv['serviceId']))
+                print("[INFO] Removed service: " + str(serv['serviceId']))
                 self._list.remove(serv);
         self._lock.release()
 
@@ -30,10 +30,10 @@ class ServiceManager():
                 return serv
         return {}
 
-    def searchByHomeId(self, id):
+    def searchByGroupId(self, id):
         ret = []
         for serv in self._list:
-            if 'homeId' in serv and serv['homeId'] == id:
+            if 'groupId' in serv and serv['groupId'] == id:
                 ret.append(serv)
         return ret
 
@@ -49,7 +49,7 @@ class ServiceManager():
         self._currentIndex = self._currentIndex + 1
         self._list.append(service)
         self._lock.release()
-        print("[CATALOG][INFO] Added service new service: " + str(service['serviceId']))
+        print("[INFO] Added service new service: " + str(service['serviceId']))
         return service
 
     def addService(self, service):
@@ -66,5 +66,5 @@ class ServiceManager():
                 self._list[idx] = service
         self._lock.release()
 
-        print("[CATALOG][INFO] Updated service service with id: " + str(service['serviceId']))
+        print("[INFO] Updated service service with id: " + str(service['serviceId']))
         return service

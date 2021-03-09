@@ -2,7 +2,7 @@
   "pingTime": 60,
   "sensorSamplingTime": 10,
   "deviceName": "RASPBERRY",
-  "homeId": "home1",
+  "groupId": "home1",
   "MQTTTopic": "/iot-programming-2343/",
   "catalogAddress": "http://127.0.0.1:8080/catalog"
 }

@@ -13,7 +13,7 @@ json = {
 
 # Module for managing the ping to the catalog
 class Ping(threading.Thread):
-    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, homeId = None, notifier = None):
+    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, groupId = None, notifier = None):
         threading.Thread.__init__(self)
         self._pingTime = pingTime
         self._serviceID = None
@@ -22,13 +22,13 @@ class Ping(threading.Thread):
         json["serviceServiceList"] = serviceServiceList
         json["serviceType"] = serviceType
         json["serviceName"] = serviceName
-        if homeId is not None:
-            json["homeId"] = homeId
+        if groupId is not None:
+            json["groupId"] = groupId
 
 
     # sending ping every self._pingTime s
     def run(self):
-        print("[PING][INFO] Started ping every " + str(self._pingTime) + " s")
+        print("[INFO] Started ping every " + str(self._pingTime) + " s")
         while True:
             self.sendPing()
             time.sleep(self._pingTime)
@@ -42,12 +42,12 @@ class Ping(threading.Thread):
 
         try:
             r = requests.post(self._catalogAddress + "/ping", json = postBody)
-            print("[PING][INFO] Sent ping to the catalog " + self._catalogAddress + "/ping")
+            print("[INFO] Sent ping to the catalog " + self._catalogAddress + "/ping")
             if r.status_code == 200:
                 if r.json()['serviceId'] != self._serviceID and self._notifier is not None:
                     self._notifier.onNewCatalogId(r.json()['serviceId'])        #callback for new id
                 self._serviceID = r.json()['serviceId']
             else:
-                print("[PING][ERROR] Unable to register service to the catalog: " + r.json()["error"]["message"])
+                print("[ERROR] Unable to register service to the catalog: " + r.json()["error"]["message"])
         except Exception as e:
-            print("[PING][ERROR] Unable to register service to the catalog 1: " + str(e))
+            print("[ERROR] Unable to register service to the catalog 1: " + str(e))

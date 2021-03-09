@@ -19,9 +19,9 @@ class RESTManagerService(threading.Thread):
         self.daemon = True
 
         if not self._broker:
-            print ("[CATALOG][ERROR] No MQTT broker available")
+            print ("[ERROR] No MQTT broker available")
         else:
-            print ("[CATALOG][INFO] " + self._broker["uri"] + " MQTT broker selected")
+            print ("[INFO] " + self._broker["uri"] + " MQTT broker selected")
 
     # Given the list from the settings file, it tries all the broker and returns
     # the first one that works
@@ -54,8 +54,8 @@ class RESTManagerService(threading.Thread):
                 return json.dumps(self._broker, indent=4)
         elif uri[0] == 'searchById':
             return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
-        elif uri[0] == 'searchByHomeId':
-            return json.dumps(self._serv.searchByHomeId(params['homeId']), indent=4)
+        elif uri[0] == 'searchByGroupId':
+            return json.dumps(self._serv.searchByGroupId(params['groupId']), indent=4)
         elif uri[0] == 'getAll':
             return json.dumps(self._serv.getAll(), indent=4)
         else:
@@ -67,7 +67,7 @@ class RESTManagerService(threading.Thread):
     def POST(self, *uri):
         body = json.loads(cherrypy.request.body.read())
         if len(uri) == 1:
-            print ("[CATALOG][INFO] Requested POST with uri " + str(uri))
+            print ("[INFO] Requested POST with uri " + str(uri))
             if uri[0] == 'ping':
                 ret = self._serv.addService(body)
             else:

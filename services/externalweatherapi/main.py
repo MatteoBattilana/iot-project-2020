@@ -13,12 +13,12 @@ class ExternalWeatherApi():
 
     def __init__(self, pingTime, serviceList, serviceId, catalogAddress, safeWindSpeed, openweatherapikey):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", homeId = None, notifier = None)
-        print("[EXTERNALWEATHERAPI][INFO] Started")
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", groupId = None, notifier = None)
+        print("[INFO] Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey
         self._safeWindSpeed = safeWindSpeed
-        print("[EXTERNALWEATHERAPI][INFO] openweathermap.com api key set to: " + self._openweatherapikey)
+        print("[INFO] openweathermap.com api key set to: " + self._openweatherapikey)
 
     def GET(self, *uri, **parameter):
         if len(uri) == 0:
@@ -43,7 +43,7 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
             retInformation["temperature"] = r1.json()["main"]["temp"]
             retInformation["humidity"] = r1.json()["main"]["humidity"]
         else:
-            print("[EXTERNALWEATHERAPI][ERROR] Unable to get temperature from openweatermap: " + json.dumps(r.json()))
+            print("[ERROR] Unable to get temperature from openweatermap: " + json.dumps(r.json()))
 
         # Refer to https://openweathermap.org/weather-conditions
         if "weather" in r1.json() and (int(r1.json()["weather"][0]["id"]) < 800 or float(r1.json()["wind"]["speed"]) > safeWindSpeed) :
@@ -53,7 +53,7 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
 
 
     else:
-        print("[EXTERNALWEATHERAPI][ERROR] Unable to contact openweatermap")
+        print("[ERROR] Unable to contact openweatermap")
 
     r2 = requests.get("http://api.openweathermap.org/data/2.5/air_pollution?lat=" + lat + "&lon=" + lon + "&units=metric&appid=" + openweatherapikey)
     print(json.dumps(r2.json(), indent=4))
@@ -62,9 +62,9 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
         if "list" in r2.json() and "components" in r2.json()["list"][0]:
             retInformation = {**retInformation, **r2.json()["list"][0]["components"]}
         else:
-            print("[EXTERNALWEATHERAPI][ERROR] Unable to get temperature from openweatermap: " + json.dumps(r.json()))
+            print("[ERROR] Unable to get temperature from openweatermap: " + json.dumps(r.json()))
     else:
-        print("[EXTERNALWEATHERAPI][ERROR] Unable to contact openweatermap")
+        print("[ERROR] Unable to contact openweatermap")
 
     return retInformation
 
@@ -94,7 +94,7 @@ if __name__=="__main__":
     try:
         openweatermapkey = os.environ['OPENWETHERMAPAPIKEY']
     except:
-        print("[EXTERNALWEATHERAPI][ERROR] OPENWETHERMAPAPIKEY variabile not set")
+        print("[ERROR] OPENWETHERMAPAPIKEY variabile not set")
         openweatermapkey = ""
 
     cherrypy.tree.mount(
