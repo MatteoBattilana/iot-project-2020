@@ -37,14 +37,18 @@ class MQTTRetry(threading.Thread):
 
     def stop(self):
         self._run = False
+        self.join()
 
     # Thread body necessary to perform the MQTT reconnection retry
     def run(self):
         self._setupMQTT()
+
+        lastTime = 0
         while self._run:
-            if self._isMQTTconnected == False and self._isMQTTTryingConnecting == False:
+            if self._isMQTTconnected == False and self._isMQTTTryingConnecting == False and time.time() - lastTime > 30:
                 self._setupMQTT()
-            time.sleep(30)
+                lastTime = time.time()
+            time.sleep(1)
 
     # Return the selected broker from the catalog
     def _getBroker(self):

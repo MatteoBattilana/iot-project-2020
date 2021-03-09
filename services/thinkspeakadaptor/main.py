@@ -31,6 +31,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             self._mqtt.stop()
 
         self._mqtt = MQTTRetry(newId, self, self._catalogAddress)
+        self._mqtt.subscribe(self._subscribeList)
         self._mqtt.start()
 
     #MQTT callbacks
@@ -40,7 +41,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         pass
     def onMQTTMessageReceived(self, topic, message):
         # TODO: must send to ThinkSpeak
-        print("Received new message with topic: " + topic)
+        print("[ASDASD]Received new message with topic: " + topic)
 
 if __name__=="__main__":
     settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))

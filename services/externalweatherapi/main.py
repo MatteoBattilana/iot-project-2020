@@ -12,13 +12,15 @@ class ExternalWeatherApi():
     exposed=True
 
     def __init__(self, pingTime, serviceList, serviceId, catalogAddress, safeWindSpeed, openweatherapikey):
-        threading.Thread.__init__(self)
         self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", groupId = None, notifier = None)
         print("[INFO] Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey
         self._safeWindSpeed = safeWindSpeed
         print("[INFO] openweathermap.com api key set to: " + self._openweatherapikey)
+
+    def stop(self):
+        self._ping.stop()
 
     def GET(self, *uri, **parameter):
         if len(uri) == 0:
@@ -82,6 +84,12 @@ if __name__=="__main__":
                     "version": 1,
                     "parameter": [{"name": "lat", "unit": "float"}, {"name": "lon", "unit": "float"}]
                 }
+                ,{
+                        "type": "web",
+                        "uri": "/",
+                        "version": 1,
+                        "parameter": []
+                    }
             ]
         }
     ]
@@ -97,15 +105,16 @@ if __name__=="__main__":
         print("[ERROR] OPENWETHERMAPAPIKEY variabile not set")
         openweatermapkey = ""
 
-    cherrypy.tree.mount(
-        ExternalWeatherApi(
-            settings['pingTime'],
-            availableServices,
-            settings['serviceName'],
-            settings['catalogAddress'],
-            float(settings['windSpeedSafe']),
-            openweatermapkey
-        ),'/',conf)
+    restManager = ExternalWeatherApi(
+        settings['pingTime'],
+        availableServices,
+        settings['serviceName'],
+        settings['catalogAddress'],
+        float(settings['windSpeedSafe']),
+        openweatermapkey
+    )
+    cherrypy.tree.mount(restManager ,'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'
+    cherrypy.engine.subscribe('stop', restManager.stop)
     cherrypy.engine.start()
     cherrypy.engine.block()

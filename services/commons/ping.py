@@ -19,6 +19,7 @@ class Ping(threading.Thread):
         self._serviceID = None
         self._catalogAddress = catalogAddress
         self._notifier = notifier
+        self._run = True
         json["serviceServiceList"] = serviceServiceList
         json["serviceType"] = serviceType
         json["serviceName"] = serviceName
@@ -28,10 +29,18 @@ class Ping(threading.Thread):
 
     # sending ping every self._pingTime s
     def run(self):
-        print("[INFO] Started ping every " + str(self._pingTime) + " s")
-        while True:
-            self.sendPing()
-            time.sleep(self._pingTime)
+        print("[INFO]a Started ping every " + str(self._pingTime) + " s")
+        lastTime = 0
+        while self._run:
+            if time.time() - lastTime > self._pingTime:
+                self.sendPing()
+                lastTime = time.time()
+            time.sleep(1)
+        print ("[INFO] Stopped ping")
+
+    def stop(self):
+        self._run = False
+        self.join()
 
     def sendPing(self):
         postBody = copy.copy(json)

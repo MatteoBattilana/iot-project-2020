@@ -3,33 +3,16 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 from commons.MQTTRetry import *
 from commons.ping import *
+from commons.device import *
+import cherrypy
 from random import random
+from commons.netutils import *
 import threading
 import json
 import time
 
-class Raspberry(threading.Thread):
-    def __init__(self, pingTime, sensorSamplingTime, serviceList, deviceName, groupId, publishTopic, catalogAddress):
-        threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, deviceName, "DEVICE", groupId, self)
-        self._sensorSamplingTime = sensorSamplingTime
-        self._publishTopic = publishTopic
-        self._isMQTTconnected = False
-        self._catalogAddress = catalogAddress
-        self._deviceId = ""
-        self._mqtt = None
-
-    def run(self):
-        print("[INFO] Started")
-        self._ping.start()
-
-        while True:
-            if self._isMQTTconnected:
-                #read sensors
-                self._mqtt.publish(self._publishTopic + self._deviceId, self._getRandomValues())
-            time.sleep(self._sensorSamplingTime)
-
-    def _getRandomValues(self):
+class SensorReader():
+    def readSensors(self):
         simulatedValues = []
         simulatedValues.append({
             'n': 'temperature',
@@ -37,30 +20,7 @@ class Raspberry(threading.Thread):
             't': time.time(),
             'v': random()
         })
-        return {
-            'bn': self._deviceId,
-            'e': simulatedValues
-            }
-
-    # Catalog new id callback
-    def onNewCatalogId(self, newId):
-        print("[INFO] New id from catalog: " + newId)
-        self._deviceId = newId
-        self._isMQTTconnected = False
-        if self._mqtt is not None:
-            self._mqtt.stop()
-
-        self._mqtt = MQTTRetry(self._deviceId, self, self._catalogAddress)
-        self._mqtt.start()
-
-    #MQTT callbacks
-    def onMQTTConnected(self):
-        self._isMQTTconnected = True
-    def onMQTTConnectionError(self, error):
-        self._isMQTTconnected = False
-    def onMQTTMessageReceived(self, topic, message):
-        pass
-
+        return simulatedValues
 
 if __name__=="__main__":
     settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
@@ -75,14 +35,25 @@ if __name__=="__main__":
             ]
         }
     ]
-    rpi = Raspberry(
+    conf={
+            '/':{
+                'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
+                'tools.staticdir.root': os.path.abspath(os.getcwd()),
+            },
+    }
+    rpi = Device(
             settings['pingTime'],
             settings['sensorSamplingTime'],
             availableServices,
             settings['deviceName'],
             settings['groupId'],
             settings['MQTTTopic'],
-            settings['catalogAddress']
-            )
+            settings['catalogAddress'],
+            SensorReader()
+        )
     rpi.start()
-    rpi.join()
+    cherrypy.tree.mount(rpi ,'/',conf)
+    cherrypy.server.socket_host = '0.0.0.0'
+    cherrypy.engine.subscribe('stop', rpi.stop)
+    cherrypy.engine.start()
+    cherrypy.engine.block()

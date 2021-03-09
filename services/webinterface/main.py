@@ -20,6 +20,9 @@ class WebSite():
     def GET(self):
         return open("html/index.html")
 
+    def stop(self):
+        self._ping.stop()
+
 if __name__=="__main__":
     settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
     availableServices = [
@@ -50,13 +53,14 @@ if __name__=="__main__":
                 'tools.staticdir.dir':'html/js'
             },
     }
-    cherrypy.tree.mount(
-        WebSite(
-            settings['pingTime'],
-            availableServices,
-            settings['serviceName'],
-            settings['catalogAddress']
-        ),'/',conf)
+    website = WebSite(
+        settings['pingTime'],
+        availableServices,
+        settings['serviceName'],
+        settings['catalogAddress']
+    )
+    cherrypy.tree.mount(website ,'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'
+    cherrypy.engine.subscribe('stop', website.stop)
     cherrypy.engine.start()
     cherrypy.engine.block()
