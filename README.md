@@ -48,9 +48,10 @@ git stash pop
 MUST SOLVE CONFLICTS
 
 ### Create a branch and enter
+```
 git branch newbranch
-git checkout newbranhc
-
+git checkout newbranch
+```
 
 ### Push your changes to GitHub, to your branch
 ```
