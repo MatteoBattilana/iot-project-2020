@@ -4,6 +4,7 @@ sys.path.insert(0, os.path.abspath('..'))
 from commons.MQTTRetry import *
 from commons.ping import *
 from commons.device import *
+from commons.settingsmanager import *
 import cherrypy
 from random import random
 from commons.netutils import *
@@ -23,34 +24,13 @@ class SensorReader():
         return simulatedValues
 
 if __name__=="__main__":
-    settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
-    availableServices = [
-        {
-            "serviceType": "MQTT",
-            "endPoint": [
-                {
-                    "topic": settings['MQTTTopic'],
-                    "type": "temperature"
-                }
-            ]
-        }
-    ]
     conf={
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             },
     }
-    rpi = Device(
-            settings['pingTime'],
-            settings['sensorSamplingTime'],
-            availableServices,
-            settings['deviceName'],
-            settings['groupId'],
-            settings['MQTTTopic'],
-            settings['catalogAddress'],
-            SensorReader()
-        )
+    rpi = Device(SensorReader(), SettingsManager("settings.json"))
     rpi.start()
     cherrypy.tree.mount(rpi ,'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'

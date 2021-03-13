@@ -29,7 +29,7 @@ class Ping(threading.Thread):
 
     # sending ping every self._pingTime s
     def run(self):
-        print("[INFO]a Started ping every " + str(self._pingTime) + " s")
+        print("[INFO] Started ping every " + str(self._pingTime) + " s")
         lastTime = 0
         while self._run:
             if time.time() - lastTime > self._pingTime:
@@ -41,6 +41,16 @@ class Ping(threading.Thread):
     def stop(self):
         self._run = False
         self.join()
+
+    def setPingTime(self, pingTime):
+        print ("[INFO] Ping time set to " + str(pingTime) + " s")
+        self._pingTime = pingTime
+
+    def setGroupId(self, groupId):
+        print ("[INFO] GroupId set to " + groupId + " s")
+        json["groupId"] = groupId
+        # TODO: must save new configuration
+
 
     def sendPing(self):
         postBody = copy.copy(json)

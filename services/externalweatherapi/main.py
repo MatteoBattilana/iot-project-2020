@@ -3,6 +3,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 from commons.ping import *
 from commons.netutils import *
+from commons.settingsmanager import *
 import cherrypy
 import os
 import json
@@ -71,7 +72,7 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
     return retInformation
 
 if __name__=="__main__":
-    settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
+    settings = SettingsManager("settings.json")
     availableServices = [
         {
             "serviceType": "REST",
@@ -106,11 +107,11 @@ if __name__=="__main__":
         openweatermapkey = ""
 
     restManager = ExternalWeatherApi(
-        settings['pingTime'],
+        int(settings.getField('pingTime')),
         availableServices,
-        settings['serviceName'],
-        settings['catalogAddress'],
-        float(settings['windSpeedSafe']),
+        settings.getField('serviceName'),
+        settings.getField('catalogAddress'),
+        float(settings.getField('windSpeedSafe')),
         openweatermapkey
     )
     cherrypy.tree.mount(restManager ,'/',conf)

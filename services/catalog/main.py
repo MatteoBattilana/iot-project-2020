@@ -1,9 +1,13 @@
+# Path hack.
+import sys, os
+sys.path.insert(0, os.path.abspath('..'))
 import requests
 import json
 import threading
 import socket
 import cherrypy
 from serviceManager import *
+from commons.settingsmanager import *
 
 # Test comment
 # Rest service that exposes POST and GET methods to handle the ping, getBroker,
@@ -81,14 +85,14 @@ class RESTManagerService(threading.Thread):
         return json.dumps(ret, indent=4)
 
 if __name__=="__main__":
-    settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
+    settings = SettingsManager("settings.json")
     conf={
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             }
     }
-    serviceCatalog = RESTManagerService(settings["brokerList"], settings["retantionTimeout"])
+    serviceCatalog = RESTManagerService(settings.getField("brokerList"), int(settings.getField("retantionTimeout")))
     serviceCatalog.start()
     cherrypy.tree.mount(serviceCatalog,'/catalog/',conf)
     cherrypy.server.socket_host = '0.0.0.0'

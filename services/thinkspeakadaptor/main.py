@@ -7,6 +7,7 @@ import json
 import socket
 import time
 from commons.netutils import *
+from commons.settingsmanager import *
 
 class ThinkSpeakAdaptor(threading.Thread):
     def __init__(self, pingTime, serviceList, serviceName, subscribeList, catalogAddress):
@@ -44,14 +45,14 @@ class ThinkSpeakAdaptor(threading.Thread):
         print("[ASDASD]Received new message with topic: " + topic)
 
 if __name__=="__main__":
-    settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
+    settings = SettingsManager("settings.json")
     availableServices = []
     rpi = ThinkSpeakAdaptor(
-            settings['pingTime'],
+            int(settings.getField('pingTime')),
             availableServices,
-            settings['serviceName'],
-            settings['subscribeTopics'],
-            settings['catalogAddress']
+            settings.getField('serviceName'),
+            settings.getField('subscribeTopics'),
+            settings.getField('catalogAddress')
         )
     rpi.start()
     rpi.join()
