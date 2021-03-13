@@ -21,7 +21,7 @@ class MQTTRetry(threading.Thread):
         self._serviceId = serviceId
         self._notifier = notifier
         self._catalogAddress = catalogAddress
-        self._paho_mqtt = PahoMQTT.Client(serviceId, False)
+        self._paho_mqtt = PahoMQTT.Client(serviceId, True)
 
 		# register the callback
         self._paho_mqtt.on_connect = self._onConnect

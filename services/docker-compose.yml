@@ -87,6 +87,8 @@ services:
   node-red:
     container_name: node-red
     image: nodered/node-red:latest
+    user: root:root             # necessary, otherwise we get 'access denied'
+    entrypoint: /data/entrypoint.sh
     environment:
       - TZ=Europe/Amsterdam
     ports:
