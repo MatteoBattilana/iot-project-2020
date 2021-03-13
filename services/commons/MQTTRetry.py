@@ -69,14 +69,19 @@ class MQTTRetry(threading.Thread):
     # connect to the MQTT brokerif a valid MQTT broker is returned from the catalog
     def _setupMQTT(self):
         self._isMQTTTryingConnecting = True
-        broker = self._getBroker()
-        if 'uri' in broker and 'port' in broker:
-           print("[INFO] Trying to connect to the MQTT broker: " + broker['uri'] + ":" + str(broker['port']))
+        try:
+            broker = self._getBroker()
+            if 'uri' in broker and 'port' in broker:
+               print("[INFO] Trying to connect to the MQTT broker: " + broker['uri'] + ":" + str(broker['port']))
 
-           self._paho_mqtt.connect(broker['uri'], broker['port'])
-           self._paho_mqtt.loop_start()
-        else:
-           print("[ERROR] No MQTT broker available")
+               self._paho_mqtt.connect(broker['uri'], broker['port'])
+               self._paho_mqtt.loop_start()
+            else:
+               print("[ERROR] No MQTT broker available")
+        except Exception as e:
+            self._isMQTTTryingConnecting = False
+            print("[ERROR] General error while connecting to the MQTT broker " + str(e))
+        return {}
 
     # subscribe to a list of topic
     def subscribe(self, topicList):
@@ -89,10 +94,10 @@ class MQTTRetry(threading.Thread):
 
     #MQTT callbacks
     def _onDisconnect(self, client, userdata, rc):
-        print("[ERROR] Disconnected from MQTT broker: " + error)
+        print("[ERROR] Disconnected from MQTT broker")
         self._isMQTTconnected = False
         if self._notifier != None:
-            self._notifier.onMQTTConnectionError(connack_string(rc))
+            self._notifier.onMQTTConnectionError(PahoMQTT.connack_string(rc))
 
     def _onConnect (self, paho_mqtt, userdata, flags, rc):
         if rc == 0:
@@ -104,9 +109,9 @@ class MQTTRetry(threading.Thread):
                 self._paho_mqtt.subscribe(topic, 2)
             self._isMQTTconnected = True
         else:
-            print("[ERROR] Disconnected from MQTT broker")
+            print("[ERROR] Unable to connect to the MQTT broker")
             if self._notifier != None:
-                self._notifier.onMQTTConnectionError(connack_string(rc))
+                self._notifier.onMQTTConnectionError(PahoMQTT.connack_string(rc))
 
         self._isMQTTTryingConnecting = False
 
