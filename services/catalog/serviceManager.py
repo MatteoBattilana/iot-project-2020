@@ -30,6 +30,14 @@ class ServiceManager():
                 return serv
         return {}
 
+    def searchAllGroupId(self):
+        ret = []
+        for serv in self._list:
+            if 'groupId' in serv:
+                ret.append(serv['groupId'])
+        return ret
+
+
     def searchByGroupId(self, id):
         ret = []
         for serv in self._list:

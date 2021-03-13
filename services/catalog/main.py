@@ -5,6 +5,7 @@ import requests
 import json
 import threading
 import socket
+import psutil
 import cherrypy
 from serviceManager import *
 from commons.settingsmanager import *
@@ -60,8 +61,15 @@ class RESTManagerService(threading.Thread):
             return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
         elif uri[0] == 'searchByGroupId':
             return json.dumps(self._serv.searchByGroupId(params['groupId']), indent=4)
+        elif uri[0] == 'getAllGroupId':
+            return json.dumps(self._serv.searchAllGroupId(), indent=4)
         elif uri[0] == 'getAll':
             return json.dumps(self._serv.getAll(), indent=4)
+        elif uri[0] == 'getSystemStatus':
+            return json.dumps({
+                "cpu": psutil.cpu_percent(),
+                "memory": psutil.virtual_memory().percent
+                }, indent=4)
         else:
             cherrypy.response.status = 404
             return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)

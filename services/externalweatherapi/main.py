@@ -27,11 +27,15 @@ class ExternalWeatherApi():
         if len(uri) == 0:
             return json.dumps({"message": "External weather API endpoint"}, indent=4)
         elif uri[0] == "currentWeatherStatus":
-            if "lat" in parameter and "lon" in parameter:
-                return json.dumps(_getCurrentWeatherStatus(parameter['lat'], parameter['lon'], self._safeWindSpeed, self._openweatherapikey), indent=4)
+            if self._openweatherapikey:
+                if "lat" in parameter and "lon" in parameter:
+                    return json.dumps(_getCurrentWeatherStatus(parameter['lat'], parameter['lon'], self._safeWindSpeed, self._openweatherapikey), indent=4)
+                else:
+                    cherrypy.response.status = 503
+                    return json.dumps({"error":{"status": 503, "message": "Unable to contact external weather API"}}, indent=4)
             else:
                 cherrypy.response.status = 503
-                return json.dumps({"error":{"status": 503, "message": "Unable to contact external weather API"}}, indent=4)
+                return json.dumps({"error":{"status": 503, "message": "OPENWETHERMAPAPIKEY not set"}}, indent=4)
         else:
             cherrypy.response.status = 404
             return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
