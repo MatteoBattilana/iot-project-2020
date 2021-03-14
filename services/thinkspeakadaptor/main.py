@@ -288,6 +288,5 @@ if __name__=="__main__":
             thingspeak_api_key,
             settings.getField('catalogAddress')
         )
-    #rpi.start()
-    #rpi.join()
-    rpi.onMQTTMessageReceived("/iot-programming-2343/home1/SIMULATED-DEVICE-2", {"bn": "SIMULATED-DEVICE-2", "e": [{"n": "temperature", "u": "celsius", "t": 1615734211.7038016, "v": 0.6133926166910718}]})
+    rpi.start()
+    rpi.join()
