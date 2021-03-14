@@ -6,52 +6,50 @@ from commons.ping import *
 import json
 import socket
 import time
-from commons.netutils import *
 import requests
-
-#baseUri="https://api.thingspeak.com/"
+from commons.netutils import *
+from commons.settingsmanager import *
 
 json={
             "api_key":"",
             "name":""
     }
 
+#baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
-    def __init__(self, pingTime, serviceList, serviceName, subscribeList, baseUri, thingspeak_api_key, catalogAddress):
+    def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName)
-        self._mqtt = MQTTRetry(serviceId, self, catalogAddress)
-        self._mqtt.subscribe(subscribeList)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = self)
+        self._ping.start()
         self._subscribeList = subscribeList
         self._isMQTTconnected = False
-        self._catalogAddress=catalogAddress
-        self._mqtt=None
-        self._baseUri=baseUri
+        self._catalogAddress = catalogAddress
+        self._mqtt = None
+        self._baseUri="https://api.thingspeak.com/"
         self._thingspeak_api_key=thingspeak_api_key
         self._channels=[]
 
 
     def run(self):
-        print("[THINGSPEAKADAPTOR][INFO] Started")
-        self._ping.start()
-        
-
+        print("[INFO] Started")
         while True:
             time.sleep(10)
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
-        print("[THINGSPEAKADAPTOR][INFO] New id from catalog: " + newId)
+        print("[INFO] New id from catalog: " + newId)
         if self._mqtt is not None:
             self._mqtt.stop()
 
         self._mqtt = MQTTRetry(newId, self, self._catalogAddress)
+        self._mqtt.subscribe(self._subscribeList)
         self._mqtt.start()
+
     #MQTT callbacks
     def onMQTTConnected(self):
-        self._isMQTTconnected = True
+        pass
     def onMQTTConnectionError(self, error):
-        self._isMQTTconnected = False
+        pass
     def onMQTTMessageReceived(self, topic, message):
         payload=json.loads(message)
         #{
@@ -60,21 +58,21 @@ class ThinkSpeakAdaptor(threading.Thread):
         #       { "n":
         #         "u":
         #         "t":
-        #         "v":    
+        #         "v":
         #       }
         # ]
         # }
-        
+
         _channel_name=payload["bn"]
         fields=[]
         new_datas=[]
-        
+
         for field in payload["e"]:
             fields.append(field["n"])
             new_datas.append(field["v"])
-        if _channel_name is not in channel_list:
+        if _channel_name not in channel_list:
             self.createNewChannel(_channel_name, fields)
-        
+
         self.writeSingleEntry(_channel_name, new_datas)
 
 
@@ -90,21 +88,21 @@ class ThinkSpeakAdaptor(threading.Thread):
             r = requests.get(self._baseUri+"channels.json?api_key="+self._thingspeak_api_key)
             return json.dumps(r.json(), indent=4)
         except Exception as e:
-            print "[THINGSPEAKADAPTOR][ERROR] GET request went wrong"
+            print ("[THINGSPEAKADAPTOR][ERROR] GET request went wrong")
 
     def clearChannelFeed(self, channelName):
         #DELETE request
         #https://api.thingspeak.com/channels/CHANNEL_ID/feeds.json
         channelID=self.getChannelID(channelName)
         jsonBody={
-            "api_key"=self._thingspeak_api_key
+            "api_key": self._thingspeak_api_key
         }
         try:
             requests.delete(self._baseUri+"channels/"+channelID+"/feeds.json", json=jsonBody)
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] Channel {channelName} feed DELETE went wrong")
-    
-    def removeChannel(self), channelName):
+
+    def removeChannel(self, channelName):
         #DELETE request
         #https://api.thingspeak.com/channels/CHANNEL_ID
         channelID=self.getChannelID(channelName)
@@ -114,7 +112,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             #exception
             print(f"[THINGSPEAKADAPTOR][ERROR] Channel {channelName} deletion was not possible")
     def getChannelID(self, channelName):
-        for channel in self.:_channels:
+        for channel in self._channels:
             if channel["name"]==channelName:
                 return channel["id"]
     def modifyChannelData(self, newChannelName):
@@ -171,16 +169,16 @@ class ThinkSpeakAdaptor(threading.Thread):
             print("[THINGSPEAKADAPTOR][INFO] Thingspeak Channel " + channelName + "opened with success")
             #verify if it works like this
             self._channels.append(r.json())
-            
+
         except Exception as e:
             print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel" )
 
     def writeSingleEntry(self,channelName, new_datas):
         #the single entry can be updated through GET and POST request
         # GET request
-        #https://api.thingspeak.com/update.json?api_key=self._thingspeak_api_key&field1=100 
+        #https://api.thingspeak.com/update.json?api_key=self._thingspeak_api_key&field1=100
         #in our case i decided to use POST request
-        #POST request 
+        #POST request
         #https://api.thingspeak.com/update.json
         jsonBody={
             "api_key":self.getChannelApiKey(channelName),
@@ -196,7 +194,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             "long":"",
             "created_at":""
         }
-        #this has to be modified 
+        #this has to be modified
         for i,new_data in new_datas:
             jsonBody["field"+str(i)]=new_data
 
@@ -232,10 +230,10 @@ class ThinkSpeakAdaptor(threading.Thread):
             #new_update={
             #   "delta_t":,
             #   "field1":,
-            #   "fieldX":        
+            #   "fieldX":
             # }
 
-            #TODO 
+            #TODO
             #decide how to fill multiple data entries varying with time
 
             uri=self._baseUri+"channels/"+channelID+"/bulk_update.json"
@@ -260,13 +258,13 @@ class ThinkSpeakAdaptor(threading.Thread):
             #GET request
             #request parameters
             #results= numbers of entries to retrieve
-            #days= numbers of days before now to include data 
+            #days= numbers of days before now to include data
             #minutes=numbers of minute before now to include data
             #start= start_date
             #end= end_date
             #https://api.thingspeak.com/channels/channel_id/fields/field_id.json?api_key=self._thingspeak_api_key&results=1&
             channelID=self.getChannelID(channelName)
-            #TODO the uri must be modified in order to satisfy our needs 
+            #TODO the uri must be modified in order to satisfy our needs
             uri=self._baseUri+"channels/"+channelID+"/fields/"+str(field_id)+".json?api_key="+self._thingspeak_api_key
             try:
                 requests.get(uri)
@@ -276,22 +274,21 @@ class ThinkSpeakAdaptor(threading.Thread):
             pass
 
 if __name__=="__main__":
-    try: 
+    settings = SettingsManager("settings.json")
+    availableServices = []
+    try:
         thingspeak_api_key = os.environ['THINGSPEAKAPIKEY']
     except:
         print("[THINGSPEAKADAPTOR][ERROR] THINGSPEAKAPIKEY variabile not set")
         thingspeak_api_key = ""
-    settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
-    availableServices = []
 
     rpi = ThinkSpeakAdaptor(
-            settings['pingTime'],
+            int(settings.getField('pingTime')),
             availableServices,
-            settings['serviceName'],
-            settings['subscribeTopics'],
-            settings['baseUri'],
+            settings.getField('serviceName'),
+            settings.getField('subscribeTopics'),
             thingspeak_api_key,
-            settings['catalogAddress']
+            settings.getField('catalogAddress')
         )
     rpi.start()
     rpi.join()

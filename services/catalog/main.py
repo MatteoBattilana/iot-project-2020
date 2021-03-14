@@ -1,9 +1,14 @@
+# Path hack.
+import sys, os
+sys.path.insert(0, os.path.abspath('..'))
 import requests
 import json
 import threading
 import socket
+import psutil
 import cherrypy
 from serviceManager import *
+from commons.settingsmanager import *
 
 # Test comment
 # Rest service that exposes POST and GET methods to handle the ping, getBroker,
@@ -19,9 +24,9 @@ class RESTManagerService(threading.Thread):
         self.daemon = True
 
         if not self._broker:
-            print ("[CATALOG][ERROR] No MQTT broker available")
+            print ("[ERROR] No MQTT broker available")
         else:
-            print ("[CATALOG][INFO] " + self._broker["uri"] + " MQTT broker selected")
+            print ("[INFO] " + self._broker["uri"] + " MQTT broker selected")
 
     # Given the list from the settings file, it tries all the broker and returns
     # the first one that works
@@ -44,7 +49,6 @@ class RESTManagerService(threading.Thread):
             self._serv.cleanOldServices();
 
     def GET(self, *uri, **params):
-        print("LEN: " + str(len(uri)))
         if len(uri) == 0:
             return json.dumps({"message": "Catalog API endpoint"}, indent=4)
         elif uri[0] == 'getBroker':
@@ -54,13 +58,18 @@ class RESTManagerService(threading.Thread):
             else:
                 return json.dumps(self._broker, indent=4)
         elif uri[0] == 'searchById':
-            if not self._broker:
-                cherrypy.response.status = 404
-                return json.dumps({"error":{"status": 404, "message": "Service with specified id not found"}}, indent=4)
-            else:
-                return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
+            return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
+        elif uri[0] == 'searchByGroupId':
+            return json.dumps(self._serv.searchByGroupId(params['groupId']), indent=4)
+        elif uri[0] == 'getAllGroupId':
+            return json.dumps(self._serv.searchAllGroupId(), indent=4)
         elif uri[0] == 'getAll':
             return json.dumps(self._serv.getAll(), indent=4)
+        elif uri[0] == 'getSystemStatus':
+            return json.dumps({
+                "cpu": psutil.cpu_percent(),
+                "memory": psutil.virtual_memory().percent
+                }, indent=4)
         else:
             cherrypy.response.status = 404
             return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
@@ -70,7 +79,7 @@ class RESTManagerService(threading.Thread):
     def POST(self, *uri):
         body = json.loads(cherrypy.request.body.read())
         if len(uri) == 1:
-            print ("[CATALOG][INFO] Requested POST with uri " + str(uri))
+            print ("[INFO] Requested POST with uri " + str(uri))
             if uri[0] == 'ping':
                 ret = self._serv.addService(body)
             else:
@@ -84,14 +93,14 @@ class RESTManagerService(threading.Thread):
         return json.dumps(ret, indent=4)
 
 if __name__=="__main__":
-    settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
+    settings = SettingsManager("settings.json")
     conf={
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             }
     }
-    serviceCatalog = RESTManagerService(settings["brokerList"], settings["retantionTimeout"])
+    serviceCatalog = RESTManagerService(settings.getField("brokerList"), int(settings.getField("retantionTimeout")))
     serviceCatalog.start()
     cherrypy.tree.mount(serviceCatalog,'/catalog/',conf)
     cherrypy.server.socket_host = '0.0.0.0'

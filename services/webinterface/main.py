@@ -3,6 +3,7 @@ import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 from commons.ping import *
 from commons.netutils import *
+from commons.settingsmanager import *
 import cherrypy
 import os
 import json
@@ -11,17 +12,20 @@ import json
 class WebSite():
     exposed=True
 
-    def __init__(self, pingTime, serviceList, serviceId, catalogAddress):
+    def __init__(self, pingTime, serviceList, serviceName, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId)
-        print("[WEBSITE][INFO] Started")
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = None)
+        print("[INFO] Started")
         self._ping.start()
 
     def GET(self):
         return open("html/index.html")
 
+    def stop(self):
+        self._ping.stop()
+
 if __name__=="__main__":
-    settings = json.load(open(os.path.join(os.path.dirname(__file__), "settings.json")))
+    settings = SettingsManager("settings.json")
     availableServices = [
         {
             "serviceType": "REST",
@@ -50,13 +54,14 @@ if __name__=="__main__":
                 'tools.staticdir.dir':'html/js'
             },
     }
-    cherrypy.tree.mount(
-        WebSite(
-            settings['pingTime'],
-            availableServices,
-            settings['serviceId'],
-            settings['catalogAddress']
-        ),'/',conf)
+    website = WebSite(
+        int(settings.getField('pingTime')),
+        availableServices,
+        settings.getField('serviceName'),
+        settings.getField('catalogAddress')
+    )
+    cherrypy.tree.mount(website ,'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'
+    cherrypy.engine.subscribe('stop', website.stop)
     cherrypy.engine.start()
     cherrypy.engine.block()

@@ -1,7 +1,8 @@
 {
-  "pingTime": 60,
-  "sensorSamplingTime": 10,
-  "deviceId": "RASPBERRY",
-  "MQTTTopic": "/iot-programming-2343/home1",
-  "catalogAddress": "http://127.0.0.1:8080/catalog"
+    "pingTime": 60,
+    "sensorSamplingTime": 10,
+    "deviceName": "RASPBERRY",
+    "groupId": "home1",
+    "MQTTTopic": "/iot-programming-2343/",
+    "catalogAddress": "http://catalog:8080/catalog"
 }
