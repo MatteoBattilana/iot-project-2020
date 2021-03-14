@@ -63,6 +63,8 @@ services:
         - catalog
     volumes:
       - .:/code
+    environment:
+        - THINGSPEAKAPIKEY=${THINGSPEAKAPIKEY}
     build:
         context: ./
         dockerfile: ./thinkspeakadaptor/Dockerfile

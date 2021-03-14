@@ -10,11 +10,6 @@ import requests
 from commons.netutils import *
 from commons.settingsmanager import *
 
-json={
-            "api_key":"",
-            "name":""
-    }
-
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
     def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, catalogAddress):
@@ -27,7 +22,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._mqtt = None
         self._baseUri="https://api.thingspeak.com/"
         self._thingspeak_api_key=thingspeak_api_key
-        self._channels=[]
+        self._channels=self.getChannelList()
 
 
     def run(self):
@@ -51,7 +46,7 @@ class ThinkSpeakAdaptor(threading.Thread):
     def onMQTTConnectionError(self, error):
         pass
     def onMQTTMessageReceived(self, topic, message):
-        payload=json.loads(message)
+        payload=message
         #{
         # "bn":
         # "e":[
@@ -63,14 +58,14 @@ class ThinkSpeakAdaptor(threading.Thread):
         # ]
         # }
 
-        _channel_name=payload["bn"]
+        _channel_name=topic.split("/")[2]       #home1
         fields=[]
         new_datas=[]
 
         for field in payload["e"]:
             fields.append(field["n"])
             new_datas.append(field["v"])
-        if _channel_name not in channel_list:
+        if _channel_name not in self._channels:
             self.createNewChannel(_channel_name, fields)
 
         self.writeSingleEntry(_channel_name, new_datas)
@@ -86,9 +81,11 @@ class ThinkSpeakAdaptor(threading.Thread):
         #https://api.thingspeak.com/channels.json?api_key=self._thingspeak_api_key
         try:
             r = requests.get(self._baseUri+"channels.json?api_key="+self._thingspeak_api_key)
-            return json.dumps(r.json(), indent=4)
+            if r.status_code == 200:
+                return r.json()
         except Exception as e:
             print ("[THINGSPEAKADAPTOR][ERROR] GET request went wrong")
+        return []
 
     def clearChannelFeed(self, channelName):
         #DELETE request
@@ -129,9 +126,10 @@ class ThinkSpeakAdaptor(threading.Thread):
 
     def createNewChannel(self, channelName, fields_name):
         #POST request
-        jsonBody=copy.copy(json)
-        jsonBody["api_key"]=self._thingspeak_api_key
-        jsonBody["name"]=channelName
+        jsonBody={
+            "api_key": self._thingspeak_api_key,
+            "name": channelName
+        }
         #TODO modify the jsonBody in order to set the channel parameters at first
         #public_flag=True if we want a public channel
         #specify also the fields used with their names Ex: jsonBody["field1"]=Temperature
@@ -165,13 +163,16 @@ class ThinkSpeakAdaptor(threading.Thread):
         }
 
         try:
-            r = requests.post(self._baseUri, json = postBody)
-            print("[THINGSPEAKADAPTOR][INFO] Thingspeak Channel " + channelName + "opened with success")
+            r = requests.post(self._baseUri + "channels.json", json = jsonBody)
             #verify if it works like this
-            self._channels.append(r.json())
-
+            print(self._baseUri + "channels.json",)
+            if r.status_code == 200:
+                self._channels.append(r.json())
+                print("[THINGSPEAKADAPTOR][INFO] Thingspeak Channel " + channelName + " opened with success")
+            else:
+                print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel " + channelName)
         except Exception as e:
-            print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel" )
+            print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel" + str(e))
 
     def writeSingleEntry(self,channelName, new_datas):
         #the single entry can be updated through GET and POST request
@@ -195,7 +196,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             "created_at":""
         }
         #this has to be modified
-        for i,new_data in new_datas:
+        for i,new_data in enumerate(new_datas):
             jsonBody["field"+str(i)]=new_data
 
 
@@ -204,80 +205,77 @@ class ThinkSpeakAdaptor(threading.Thread):
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
 
-        def writeMultipleEntries(self, channelName):
-            #with this function it is possible to update multiple instances of update.
-            #POST request
-            #https://api.thingspeak.com/channels/<channel_id>/bulk_update.json
-            channelID=self.getChannelID(channelName)
-            jsonBody={
-                "write_api_key":self.getChannelApiKey(channelName),
-                "updates":[]
-            }
-            new_update={
-                "field1":None,
-                "field2":None,
-                "field3":None,
-                "field4":None,
-                "field5":None,
-                "field6":None,
-                "field7":None,
-                "field8":None,
-                "lat":"",
-                "long":"",
-                "created_at":""
-            }
-            #DIFFERENT FORMAT FOR JSON BODY
-            #new_update={
-            #   "delta_t":,
-            #   "field1":,
-            #   "fieldX":
-            # }
-
+    def writeMultipleEntries(self, channelName):
+        #with this function it is possible to update multiple instances of update.
+        #POST request
+        #https://api.thingspeak.com/channels/<channel_id>/bulk_update.json
+        channelID=self.getChannelID(channelName)
+        jsonBody={
+            "write_api_key":self.getChannelApiKey(channelName),
+            "updates":[]
+        }
+        new_update={
+            "field1":None,
+            "field2":None,
+            "field3":None,
+            "field4":None,
+            "field5":None,
+            "field6":None,
+            "field7":None,
+            "field8":None,
+            "lat":"",
+            "long":"",
+            "created_at":""
+        }
+        #DIFFERENT FORMAT FOR JSON BODY
+        #new_update={
+        #   "delta_t":,
+        #   "field1":,
+        #   "fieldX":
+        # }
             #TODO
-            #decide how to fill multiple data entries varying with time
+        #decide how to fill multiple data entries varying with time
+        uri=self._baseUri+"channels/"+channelID+"/bulk_update.json"
+        try:
+            requests.post(uri, json=jsonBody)
+        except Exception:
+            print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
 
-            uri=self._baseUri+"channels/"+channelID+"/bulk_update.json"
+    def getChannelApiKey(self, channelName, write=True):
+        #function to return write/read channel API keys
+        for channel in self._channels:
+            if channel["name"]==channelName:
+                for api_key in channel["api_keys"]:
+                    if api_key["write_flag"]==write:
+                        return api_key["api_key"]
+            else:
+                return f"Wrong channel name"
 
-            try:
-                requests.post(uri, json=jsonBody)
-            except Exception:
-                print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
-
-
-        def getChannelApiKey(self, channelName, write=True):
-            #function to return write/read channel API keys
-            for channel in self._channels:
-                if channel["name"]==channelName:
-                    for api_key in channel["api_keys"]:
-                        if api_key["write_flag"]==write:
-                            return api_key["api_key"]
-                else:
-                    return f"Wrong channel name"
-
-        def readDataSingleField(self, channelName, field_id):
-            #GET request
-            #request parameters
-            #results= numbers of entries to retrieve
-            #days= numbers of days before now to include data
-            #minutes=numbers of minute before now to include data
-            #start= start_date
-            #end= end_date
-            #https://api.thingspeak.com/channels/channel_id/fields/field_id.json?api_key=self._thingspeak_api_key&results=1&
-            channelID=self.getChannelID(channelName)
-            #TODO the uri must be modified in order to satisfy our needs
-            uri=self._baseUri+"channels/"+channelID+"/fields/"+str(field_id)+".json?api_key="+self._thingspeak_api_key
-            try:
-                requests.get(uri)
-            except Exception:
-                print(f"[THINGSPEAKADAPTOR][ERROR] GET request went wrong")
-        def readDataMultipleFields(self, channelName):
-            pass
+    def readDataSingleField(self, channelName, field_id):
+        #GET request
+        #request parameters
+        #results= numbers of entries to retrieve
+        #days= numbers of days before now to include data
+        #minutes=numbers of minute before now to include data
+        #start= start_date
+        #end= end_date
+        #https://api.thingspeak.com/channels/channel_id/fields/field_id.json?api_key=self._thingspeak_api_key&results=1&
+        channelID=self.getChannelID(channelName)
+        #TODO the uri must be modified in order to satisfy our needs
+        uri=self._baseUri+"channels/"+channelID+"/fields/"+str(field_id)+".json?api_key="+self._thingspeak_api_key
+        try:
+            requests.get(uri)
+        except Exception:
+            print(f"[THINGSPEAKADAPTOR][ERROR] GET request went wrong")
+    def readDataMultipleFields(self, channelName):
+        pass
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
     availableServices = []
     try:
         thingspeak_api_key = os.environ['THINGSPEAKAPIKEY']
+        print("[THINGSPEAKADAPTOR][ERROR] THINGSPEAKAPIKEY variabile set to: " + thingspeak_api_key)
     except:
         print("[THINGSPEAKADAPTOR][ERROR] THINGSPEAKAPIKEY variabile not set")
         thingspeak_api_key = ""
@@ -290,5 +288,6 @@ if __name__=="__main__":
             thingspeak_api_key,
             settings.getField('catalogAddress')
         )
-    rpi.start()
-    rpi.join()
+    #rpi.start()
+    #rpi.join()
+    rpi.onMQTTMessageReceived("/iot-programming-2343/home1/SIMULATED-DEVICE-2", {"bn": "SIMULATED-DEVICE-2", "e": [{"n": "temperature", "u": "celsius", "t": 1615734211.7038016, "v": 0.6133926166910718}]})
