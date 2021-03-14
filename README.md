@@ -47,10 +47,18 @@ git stash pop
 ```
 MUST SOLVE CONFLICTS
 
+### Create a branch and enter
+```
+git branch newbranch
+git checkout newbranch
+```
 
-### Push your changes to GitHub
+### Push your changes to GitHub, to your branch
 ```
 git add .
 git commit -m "Added servicetest"
-git push origin main
+git push origin newbranch
 ```
+Once you have done your work, open a pull request using the GitHub interface
+
+#example mofidications
