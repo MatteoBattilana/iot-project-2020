@@ -144,3 +144,4 @@ node_modules
 .config.nodes.json.backup
 .config.runtime.json
 .config.users.json
+.config.users.json.backup
