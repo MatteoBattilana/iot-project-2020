@@ -8,11 +8,10 @@ cd services
 make start
 ```
 
-### Normal docker
-If no docker-compose is used, the image must be built like this:
+### If you want to rebuild everything (long process)
 ```
 cd services
-docker build -t sim1 -f simulateddevice/Dockerfile .
+make clean-start
 ```
 
 ### Modules
@@ -23,7 +22,6 @@ sys.path.insert(0, os.path.abspath('..'))
 ```
 
 In order to make the external API work correctly, you need to set the `OPENWETHERMAPAPIKEY` variable with the key from openweathermap.com
-
 This mean that each Raspberry and ThinkSpeakAdaptor can be lauched only from inside its folder
 
 
@@ -38,14 +36,6 @@ git fetch
 git pull
 ```
 
-### Update the repo to the last update with modification only
-```
-git stash
-git fetch
-git pull
-git stash pop
-```
-MUST SOLVE CONFLICTS
 
 ### Create a branch and enter
 ```
@@ -60,5 +50,3 @@ git commit -m "Added servicetest"
 git push origin newbranch
 ```
 Once you have done your work, open a pull request using the GitHub interface
-
-#example mofidications
