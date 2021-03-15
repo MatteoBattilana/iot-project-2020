@@ -9,6 +9,7 @@ import time
 import requests
 from commons.netutils import *
 from commons.settingsmanager import *
+#from datetime import *
 
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
@@ -20,9 +21,9 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._isMQTTconnected = False
         self._catalogAddress = catalogAddress
         self._mqtt = None
-        self._baseUri="https://api.thingspeak.com/"
-        self._thingspeak_api_key=thingspeak_api_key
-        self._channels=self.getChannelList()
+        self._baseUri = "https://api.thingspeak.com/"
+        self._thingspeak_api_key = thingspeak_api_key
+        self._channels = self.getChannelList()
 
 
     def run(self):
@@ -59,23 +60,44 @@ class ThinkSpeakAdaptor(threading.Thread):
         # }
 
         _channel_name=topic.split("/")[2]       #home1
-        fields=[]
-        new_datas=[]
+        #if the _channel_name is not present inside the channelList (the channel has to be created) -1 is returned
+        _channel_id=self.getChannelID(_channel_name)
 
-        for field in payload["e"]:
+        #fields will contain the fields name
+        fields=[]
+        #new_datas will contain the values relative to those fields
+        new_datas=[]
+        #to_join will contain a list of string in the format accepted by MQTT Ex. "field1=100","field2=29"
+        to_join=[]
+        _timestamp=""
+        
+
+        for i,field in enumerate(payload["e"]):
             fields.append(field["n"])
             new_datas.append(field["v"])
-        if _channel_name not in self._channels:
+            to_join.append("field"+str(i+1)+"="+str(field["v"]))
+            _timestamp=field["t"]
+
+        #created_datetime = datetime.fromtimestamp(_timestamp)
+        #to_join.append("created_at="+created_datetime)
+        if _channel_id == -1:
             self.createNewChannel(_channel_name, fields)
 
-        self.writeSingleEntry(_channel_name, new_datas)
+        #update THINGSPEAK with MQTT
+        #multiple field TOPIC -> channels/<channelID>/publish/<apikey>
+        #single field TOPIC -> channels/<channelID>/publish/fields/field<fieldnumber>/<apikey>
+        #Set the PUBLISH messages to a QoS value of 0.
+        #Set the connection RETAIN flag to 0.
+        #Set the connection CleanSession flag to 1.
+        #The payload parameters must be send in this way: field1=100&field2=9&ecc.. as a string
+        
+        thingspeak_topic="channels/"+str(_channel_id)+"/publish/"+str(self.getChannelApiKey(_channel_name))
+        payload="&".join(to_join)
+        self._mqtt.publish(thingspeak_topic, payload)
 
-
-
-
-        # TODO: must send to ThingSpeak
-        print("Received new message with topic: " + topic)
-
+        #update THINGSPEAK with REST
+        #self.writeSingleEntry(_channel_name, new_datas)
+        
     def getChannelList(self):
         #GET request
         #https://api.thingspeak.com/channels.json?api_key=self._thingspeak_api_key
@@ -112,6 +134,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         for channel in self._channels:
             if channel["name"]==channelName:
                 return channel["id"]
+        return -1
     def modifyChannelData(self, newChannelName):
         #PUT request to modify the name of the channel
         #https://api.thingspeak.com/channels.json
@@ -124,16 +147,29 @@ class ThinkSpeakAdaptor(threading.Thread):
             print(f"[THINGSPEAKADAPTOR][ERROR] PUT request went wrong")
 
 
-    def createNewChannel(self, channelName, fields_name):
+    def createNewChannel(self, channelName, fields_name, public=False, latitude=0.0, longitude=0.0):
         #POST request
+        #https://api.thingspeak.com/channels.json
         jsonBody={
             "api_key": self._thingspeak_api_key,
-            "name": channelName
+            "name": channelName,
+            "public_flag":public,
+            "field1":"",
+            "field2":"",
+            "field3":"",
+            "field4":"",
+            "field5":"",
+            "field6":"",
+            "field7":"",
+            "field8":"",
+            "latitude":latitude,
+            "longitude":longitude
         }
-        #TODO modify the jsonBody in order to set the channel parameters at first
-        #public_flag=True if we want a public channel
-        #specify also the fields used with their names Ex: jsonBody["field1"]=Temperature
 
+        for i,field_name in enumerate(fields_name):
+            jsonBody["field"+str(i)]=field_name
+        
+        #these are the returned infos
         info_channel={
             "id": None,
             "name": "",
@@ -248,8 +284,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                 for api_key in channel["api_keys"]:
                     if api_key["write_flag"]==write:
                         return api_key["api_key"]
-            else:
-                return f"Wrong channel name"
+        return "channelName not found"
 
     def readDataSingleField(self, channelName, field_id):
         #GET request
@@ -275,7 +310,7 @@ if __name__=="__main__":
     availableServices = []
     try:
         thingspeak_api_key = os.environ['THINGSPEAKAPIKEY']
-        print("[THINGSPEAKADAPTOR][ERROR] THINGSPEAKAPIKEY variabile set to: " + thingspeak_api_key)
+        print("[THINGSPEAKADAPTOR][INFO] THINGSPEAKAPIKEY variabile set to: " + thingspeak_api_key)
     except:
         print("[THINGSPEAKADAPTOR][ERROR] THINGSPEAKAPIKEY variabile not set")
         thingspeak_api_key = ""
