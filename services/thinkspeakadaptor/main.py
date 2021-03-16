@@ -9,6 +9,7 @@ import time
 import requests
 from commons.netutils import *
 from commons.settingsmanager import *
+from thingspeakpublisher import *
 #from datetime import *
 
 #baseUri="https://api.thingspeak.com/"
@@ -70,7 +71,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         #to_join will contain a list of string in the format accepted by MQTT Ex. "field1=100","field2=29"
         to_join=[]
         _timestamp=""
-        
+
 
         for i,field in enumerate(payload["e"]):
             fields.append(field["n"])
@@ -90,14 +91,13 @@ class ThinkSpeakAdaptor(threading.Thread):
         #Set the connection RETAIN flag to 0.
         #Set the connection CleanSession flag to 1.
         #The payload parameters must be send in this way: field1=100&field2=9&ecc.. as a string
-        
-        thingspeak_topic="channels/"+str(_channel_id)+"/publish/"+str(self.getChannelApiKey(_channel_name))
-        payload="&".join(to_join)
-        self._mqtt.publish(thingspeak_topic, payload)
 
+        payload="&".join(to_join)
+        ThingSpeakPublisher.publish(str(_channel_id), str(self.getChannelApiKey(_channel_name)), payload)
+        print("Sent: " + payload)
         #update THINGSPEAK with REST
         #self.writeSingleEntry(_channel_name, new_datas)
-        
+
     def getChannelList(self):
         #GET request
         #https://api.thingspeak.com/channels.json?api_key=self._thingspeak_api_key
@@ -168,7 +168,7 @@ class ThinkSpeakAdaptor(threading.Thread):
 
         for i,field_name in enumerate(fields_name):
             jsonBody["field"+str(i)]=field_name
-        
+
         #these are the returned infos
         info_channel={
             "id": None,
