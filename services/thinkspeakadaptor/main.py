@@ -9,12 +9,12 @@ import time
 import requests
 from commons.netutils import *
 from commons.settingsmanager import *
-from thingspeakpublisher import *
-#from datetime import *
+from thingspeak_bulk import *
+import datetime
 
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
-    def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, catalogAddress):
+    def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, catalogAddress):
         threading.Thread.__init__(self)
         self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = self)
         self._ping.start()
@@ -25,12 +25,15 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
         self._channels = self.getChannelList()
+        self.cache=ThingSpeakBulkUpdater()
+        self.updateBulkTime=bulkRate
 
 
     def run(self):
         print("[INFO] Started")
         while True:
-            time.sleep(10)
+            self.sendToThingSpeak()
+            time.sleep(self.updateBulkTime)
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
@@ -56,7 +59,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         #         "u":
         #         "t":
         #         "v":
-        #       }
+        #       }, ..., {... }
         # ]
         # }
 
@@ -79,10 +82,14 @@ class ThinkSpeakAdaptor(threading.Thread):
             to_join.append("field"+str(i+1)+"="+str(field["v"]))
             _timestamp=field["t"]
 
-        #created_datetime = datetime.fromtimestamp(_timestamp)
-        #to_join.append("created_at="+created_datetime)
+        #if the channel is not set up on thingspeak yet
         if _channel_id == -1:
             self.createNewChannel(_channel_name, fields)
+
+        #if the channel is on thingspeak but not in the cache 
+        if self.cache.findChannel(_channel_name) == False:
+            self.cache.createChannelCache(_channel_name)
+            #print(f"[THINGSPEAKBULKUPDATER][INFO] Created new channel in the cacheList")
 
         #update THINGSPEAK with MQTT
         #multiple field TOPIC -> channels/<channelID>/publish/<apikey>
@@ -92,11 +99,22 @@ class ThinkSpeakAdaptor(threading.Thread):
         #Set the connection CleanSession flag to 1.
         #The payload parameters must be send in this way: field1=100&field2=9&ecc.. as a string
 
-        payload="&".join(to_join)
-        ThingSpeakPublisher.publish(str(_channel_id), str(self.getChannelApiKey(_channel_name)), payload)
-        print("Sent: " + payload)
+        #payload="&".join(to_join)
+        #ThingSpeakPublisher.publish(str(_channel_id), str(self.getChannelApiKey(_channel_name)), payload)
+        #print("Sent: " + payload)
         #update THINGSPEAK with REST
         #self.writeSingleEntry(_channel_name, new_datas)
+
+        #update THINGSPEAK CACHE
+        date=datetime.datetime.fromtimestamp(_timestamp)
+        self.cache.updateChannelCache(_channel_name, new_datas, str(date))
+        print(f"[THINGSPEAKADAPTOR][INFO] Data sent to the cache")
+    
+    def sendToThingSpeak(self):
+        #send all the POST request for every channel opened
+        for channelCache in self.cache.cacheList:
+            self.writeMultipleEntries(channelCache["channel"], channelCache["data"])
+        self.cache.clearCache()
 
     def getChannelList(self):
         #GET request
@@ -241,7 +259,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
 
-    def writeMultipleEntries(self, channelName):
+    def writeMultipleEntries(self, channelName, updates):
         #with this function it is possible to update multiple instances of update.
         #POST request
         #https://api.thingspeak.com/channels/<channel_id>/bulk_update.json
@@ -250,19 +268,21 @@ class ThinkSpeakAdaptor(threading.Thread):
             "write_api_key":self.getChannelApiKey(channelName),
             "updates":[]
         }
-        new_update={
-            "field1":None,
-            "field2":None,
-            "field3":None,
-            "field4":None,
-            "field5":None,
-            "field6":None,
-            "field7":None,
-            "field8":None,
-            "lat":"",
-            "long":"",
-            "created_at":""
-        }
+        for update in updates:
+            jsonBody["updates"].append(update)
+        #new_update={
+        #    "field1":None,
+        #    "field2":None,
+        #    "field3":None,
+        #    "field4":None,
+        #    "field5":None,
+        #    "field6":None,
+        #    "field7":None,
+        #    "field8":None,
+        #    "lat":"",
+        #    "long":"",
+        #    "created_at":""
+        #}
         #DIFFERENT FORMAT FOR JSON BODY
         #new_update={
         #   "delta_t":,
@@ -271,9 +291,10 @@ class ThinkSpeakAdaptor(threading.Thread):
         # }
             #TODO
         #decide how to fill multiple data entries varying with time
-        uri=self._baseUri+"channels/"+channelID+"/bulk_update.json"
+        uri=self._baseUri+"channels/"+str(channelID)+"/bulk_update.json"
         try:
             requests.post(uri, json=jsonBody)
+            print(f"[THINGSPEAKADAPTOR][INFO] Sent data {jsonBody} in bulk to channel {channelName} in a POST request")
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
 
@@ -321,6 +342,7 @@ if __name__=="__main__":
             settings.getField('serviceName'),
             settings.getField('subscribeTopics'),
             thingspeak_api_key,
+            settings.getField('bulkRate'),
             settings.getField('catalogAddress')
         )
     rpi.start()
