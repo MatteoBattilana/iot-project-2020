@@ -33,7 +33,7 @@ class ServiceManager():
     def searchAllGroupId(self):
         ret = []
         for serv in self._list:
-            if 'groupId' in serv:
+            if 'groupId' in serv and serv['groupId'] not in ret:
                 ret.append(serv['groupId'])
         return ret
 
