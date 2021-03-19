@@ -19,7 +19,11 @@ class ThreadHttpRequest(threading.Thread):
         self.jsonBody = jsonBody
 
     def run(self):
-        r = requests.post(self.url, json=self.jsonBody)
+        try:
+            requests.post(self.url, json=self.jsonBody)
+            print(f"[THINGSPEAKADAPTOR][INFO] Sent data {self.jsonBody} in bulk to {self.url} in a POST request")
+        except Exception:
+            print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
 
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
@@ -280,45 +284,6 @@ class ThinkSpeakAdaptor(threading.Thread):
 
         try:
             requests.post(self._baseUri+"update.json", json=jsonBody)
-        except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
-
-    def writeMultipleEntries(self, channelName, updates):
-        #with this function it is possible to update multiple instances of update.
-        #POST request
-        #https://api.thingspeak.com/channels/<channel_id>/bulk_update.json
-        channelID=self.getChannelID(channelName)
-        jsonBody={
-            "write_api_key":self.getChannelApiKey(channelName),
-            "updates":[]
-        }
-        for update in updates:
-            jsonBody["updates"].append(update)
-        #new_update={
-        #    "field1":None,
-        #    "field2":None,
-        #    "field3":None,
-        #    "field4":None,
-        #    "field5":None,
-        #    "field6":None,
-        #    "field7":None,
-        #    "field8":None,
-        #    "lat":"",
-        #    "long":"",
-        #    "created_at":""
-        #}
-        #DIFFERENT FORMAT FOR JSON BODY
-        #new_update={
-        #   "delta_t":,
-        #   "field1":,
-        #   "fieldX":
-        # }
-            #TODO
-        #decide how to fill multiple data entries varying with time
-        uri=self._baseUri+"channels/"+str(channelID)+"/bulk_update.json"
-        try:
-            requests.post(uri, json=jsonBody)
-            print(f"[THINGSPEAKADAPTOR][INFO] Sent data {jsonBody} in bulk to channel {channelName} in a POST request")
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
 
