@@ -12,9 +12,18 @@ from commons.settingsmanager import *
 from thingspeak_bulk import *
 import datetime
 
+class ThreadHttpRequest(threading.Thread):
+    def __init__(self, url, jsonBody):
+        threading.Thread.__init__(self)
+        self.url = url
+        self.jsonBody = jsonBody
+
+    def run(self):
+        r = requests.post(self.url, json=self.jsonBody)
+
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
-    def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, catalogAddress):
+    def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, bulkLimit, catalogAddress):
         threading.Thread.__init__(self)
         self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = self)
         self._ping.start()
@@ -25,7 +34,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
         self._channels = self.getChannelList()
-        self.cache=ThingSpeakBulkUpdater()
+        self.cache=ThingSpeakBulkUpdater(bulkLimit)
         self.updateBulkTime=bulkRate
 
 
@@ -86,7 +95,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         if _channel_id == -1:
             self.createNewChannel(_channel_name, fields)
 
-        #if the channel is on thingspeak but not in the cache 
+        #if the channel is on thingspeak but not in the cache
         if self.cache.findChannel(_channel_name) == False:
             self.cache.createChannelCache(_channel_name)
             #print(f"[THINGSPEAKBULKUPDATER][INFO] Created new channel in the cacheList")
@@ -109,11 +118,26 @@ class ThinkSpeakAdaptor(threading.Thread):
         date=datetime.datetime.fromtimestamp(_timestamp)
         self.cache.updateChannelCache(_channel_name, new_datas, str(date))
         print(f"[THINGSPEAKADAPTOR][INFO] Data sent to the cache")
-    
+
     def sendToThingSpeak(self):
         #send all the POST request for every channel opened
+        tlist = []
         for channelCache in self.cache.cacheList:
-            self.writeMultipleEntries(channelCache["channel"], channelCache["data"])
+            channelName = channelCache["channel"]
+            jsonBody={
+                "write_api_key": self.getChannelApiKey(channelName),
+                "updates":[]
+            }
+            for update in channelCache["data"]:
+                jsonBody["updates"].append(update)
+
+            thread = ThreadHttpRequest(self._baseUri+"channels/"+str(self.getChannelID(channelName))+"/bulk_update.json", jsonBody)
+            thread.start()
+            tlist.append(thread)
+
+        for i in tlist:
+            i.join()
+
         self.cache.clearCache()
 
     def getChannelList(self):
@@ -342,7 +366,8 @@ if __name__=="__main__":
             settings.getField('serviceName'),
             settings.getField('subscribeTopics'),
             thingspeak_api_key,
-            settings.getField('bulkRate'),
+            int(settings.getField('bulkRate')),
+            int(settings.getField('bulkLimit')),
             settings.getField('catalogAddress')
         )
     rpi.start()

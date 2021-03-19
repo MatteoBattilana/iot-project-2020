@@ -2,8 +2,9 @@ import time
 import json
 
 class ThingSpeakBulkUpdater():
-    def __init__(self):
+    def __init__(self, bulkLimit):
         self.cacheList = []
+        self.bulkLimit = bulkLimit
     def createChannelCache(self, channelName):
         new_channel_cache={
             "channel": channelName,
@@ -24,7 +25,11 @@ class ThingSpeakBulkUpdater():
             new_channel_update["field"+str(i+1)]=new_data
         for channelCache in self.cacheList:
             if channelCache["channel"] == channelName:
-                channelCache["data"].append(new_channel_update)
+                if len(channelCache["data"]) < self.bulkLimit:
+                    channelCache["data"].append(new_channel_update)
+                    print("SIZE: " + str(len(channelCache["data"])))
+                else:
+                    print(f"[THINGSPEAKBULKUPDATER][ERROR] Exceed maximum messages per bulk {self.bulkLimit}")
         print(f"[THINGSPEAKBULKUPDATER][INFO] {self.cacheList}")
     def clearCache(self):
         for channelCache in self.cacheList:
@@ -35,4 +40,3 @@ class ThingSpeakBulkUpdater():
             if channelCache["channel"] == channelName:
                 flag = True
         return flag
-   

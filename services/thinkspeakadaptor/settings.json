@@ -1,6 +1,7 @@
 {
   "pingTime": 60,
-  "bulkRate":15,
+  "bulkRate": 20,
+  "bulkLimit": 900,
   "serviceName": "THINGSPEAK-ADAPTOR",
   "subscribeTopics": [
       "/iot-programming-2343/#"
