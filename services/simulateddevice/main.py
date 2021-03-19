@@ -5,7 +5,7 @@ from commons.MQTTRetry import *
 from commons.ping import *
 from commons.device import *
 import cherrypy
-from random import random
+from random import randrange
 from commons.netutils import *
 from commons.settingsmanager import *
 import threading
@@ -19,7 +19,7 @@ class SensorReader():
             'n': 'temperature',
             'u': 'celsius',
             't': time.time(),
-            'v': random()
+            'v': randrange(-20, 40)
         })
         return simulatedValues
 
