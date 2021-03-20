@@ -11,6 +11,7 @@ from commons.netutils import *
 from commons.settingsmanager import *
 from thingspeak_bulk import *
 import datetime
+from datetime import timedelta
 
 class ThreadHttpRequest(threading.Thread):
     def __init__(self, url, jsonBody):
@@ -296,24 +297,45 @@ class ThinkSpeakAdaptor(threading.Thread):
                         return api_key["api_key"]
         return "channelName not found"
 
-    def readDataSingleField(self, channelName, field_id):
+    def readDataSingleField(self, channelName, field_id, results = 8000, days = 1, minutes = 1440, start = (datetime.now() - timedelta(days=1)), end = datetime.now(), sum = 0, average = 0, median = 0):
         #GET request
         #request parameters
         #results= numbers of entries to retrieve
         #days= numbers of days before now to include data
         #minutes=numbers of minute before now to include data
         #start= start_date
-        #end= end_date
+        #end= end_date (the end day measures are not included)
+        #sum = X -> get the sum every X minutes
+        #average = X -> get the avg every X minutes
+        #median = X -> get the median every X minutes ("daily")
         #https://api.thingspeak.com/channels/channel_id/fields/field_id.json?api_key=self._thingspeak_api_key&results=1&
         channelID=self.getChannelID(channelName)
-        #TODO the uri must be modified in order to satisfy our needs
-        uri=self._baseUri+"channels/"+channelID+"/fields/"+str(field_id)+".json?api_key="+self._thingspeak_api_key
+        read_api_key=self.getChannelApiKey(channelName, False)
+        parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&start="+start+"&end="+end+"&sum="+str(sum)+"&average="average+"&median="+median
+        uri=self._baseUri+"channels/"+channelID+"/fields/"+str(field_id)+".json?"+parameters
         try:
-            requests.get(uri)
+            r = requests.get(uri)
+            #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
+             
         except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] GET request went wrong")
-    def readDataMultipleFields(self, channelName):
-        pass
+            print(f"[THINGSPEAKADAPTOR][ERROR] GET request to read data from ThingSpeak went wrong")
+    def readDataMultipleFields(self, channelName, results = 8000, days = 1, minutes = 1440, start = (datetime.now() - timedelta(days=1)), end = datetime.now(), sum = 0, average = 0, median = 0):
+        #https://api.thingspeak.com/channels/<channel_id>/feeds.json
+        channelID=self.getChannelID(channelName)
+        read_api_key=self.getChannelApiKey(channelName, False)
+        parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&start="+start+"&end="+end+"&sum="+str(sum)+"&average="average+"&median="+median
+        uri=self._baseUri+"channels/"+channelID+"/feeds.json"+parameters
+        try:
+            r =requests.get(uri)
+            #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
+        except Exception:
+            print(f"[THINGSPEAKADAPTOR][ERROR] GET request from ThingSpeak went wrong")
+
+
+
+
+
+
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
