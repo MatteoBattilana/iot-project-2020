@@ -37,6 +37,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._mqtt = None
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
+        self._channels = []                                 # it don't have to wait to fetch 
         self._channels = self.getChannelList()
         self.cache=ThingSpeakBulkUpdater(bulkLimit)
         self.updateBulkTime=bulkRate
@@ -83,21 +84,23 @@ class ThinkSpeakAdaptor(threading.Thread):
         #fields will contain the fields name
         fields=[]
         #new_datas will contain the values relative to those fields
-        new_datas=[]
         #to_join will contain a list of string in the format accepted by MQTT Ex. "field1=100","field2=29"
-        to_join=[]
         _timestamp=""
 
 
         for i,field in enumerate(payload["e"]):
             fields.append(field["n"])
-            new_datas.append(field["v"])
-            to_join.append("field"+str(i+1)+"="+str(field["v"]))
             _timestamp=field["t"]
 
         #if the channel is not set up on thingspeak yet
         if _channel_id == -1:
+            print ("Create channel with name: "+ _channel_name + " and fields: " + str(fields))
             self.createNewChannel(_channel_name, fields)
+
+        # check if all fields are present
+        missingFields = self.getMissingFields(_channel_name, fields)
+        if missingFields:
+            self.addFieldsToChannel(_channel_name, missingFields)
 
         #if the channel is on thingspeak but not in the cache
         if self.cache.findChannel(_channel_name) == False:
@@ -120,8 +123,58 @@ class ThinkSpeakAdaptor(threading.Thread):
 
         #update THINGSPEAK CACHE
         date=datetime.datetime.fromtimestamp(_timestamp)
-        self.cache.updateChannelCache(_channel_name, new_datas, str(date))
+        self.cache.updateChannelCache(_channel_name, payload["e"], str(date), self.getFieldMapping(_channel_name))
         print(f"[THINGSPEAKADAPTOR][INFO] Data sent to the cache")
+
+    # Return the mapping of value type to its field: temperature - fieldX
+    def getFieldMapping(self, channelName):
+        mapped = {}
+        for channel in self._channels:
+            if channel["name"]==channelName:
+                for i in range(1, 8):
+                    if "field" + str(i) in channel:
+                        mapped[channel["field" + str(i)]] = "field" + str(i)
+        return mapped
+
+    # add the fileds in missingFields to the channel on thingspeak
+    def addFieldsToChannel(self, channelName, missingFields):
+        channelID=self.getChannelID(channelName)
+        url = self._baseUri+"channels/"+str(channelID)+".json?api_key=" + self._thingspeak_api_key + "&" + "&".join(missingFields)
+
+
+        try:
+            r = requests.put(url)
+            if r.status_code == 200:
+                # add new field to the local list of channels
+                for channel in self._channels:
+                    if channel["name"]==channelName:
+                        for field in missingFields:
+                            splitted = field.split("=")
+                            channel[splitted[0]] = splitted[1]
+
+                print("[THINGSPEAKADAPTOR][INFO] Added " + str(missingFields) + " to channel " + str(channelID))
+        except Exception as e:
+            print ("[THINGSPEAKADAPTOR][ERROR] Unable to add " + str(missingFields) + " to channel " + str(channelID))
+
+    # return the missing fields of a channel in form fieldX=type: field1=temperature
+    def getMissingFields(self, channelName, fields):
+        missingFields = []
+        for channel in self._channels:
+            if channel["name"]==channelName:
+                for value in fields:
+                    found = False
+                    last = 1
+                    for i in range(1, 8):
+                        if "field" + str(i) in channel:
+                            last = i
+                            if channel["field" + str(i)] == value:
+                                found = True
+                    if found == False:
+                        # missing field in channel
+                        print(value)
+                        missingFields.append("field" + str(last+len(missingFields)+1) + "=" + value)
+
+        return missingFields
 
     def sendToThingSpeak(self):
         #send all the POST request for every channel opened
@@ -145,12 +198,20 @@ class ThinkSpeakAdaptor(threading.Thread):
         self.cache.clearCache()
 
     def getChannelList(self):
+        #https://thingspeak.com/channels/1333290/field/2.json
         #GET request
         #https://api.thingspeak.com/channels.json?api_key=self._thingspeak_api_key
         try:
             r = requests.get(self._baseUri+"channels.json?api_key="+self._thingspeak_api_key)
             if r.status_code == 200:
-                return r.json()
+                channels = r.json()
+                # fetch all field list
+                for i,channel in enumerate(channels):
+                    r2 = requests.get(self._baseUri+"channels/"+str(channel["id"])+"/field/1.json?results=1&api_key="+channel["api_keys"][0]["api_key"])
+                    for fieldId in range(0, 10):
+                        if "field"+str(fieldId) in r2.json()["channel"]:
+                            channels[i]["field"+str(fieldId)] = r2.json()["channel"]["field"+str(fieldId)]
+                return channels
         except Exception as e:
             print ("[THINGSPEAKADAPTOR][ERROR] GET request went wrong")
         return []
@@ -176,11 +237,13 @@ class ThinkSpeakAdaptor(threading.Thread):
         except Exception:
             #exception
             print(f"[THINGSPEAKADAPTOR][ERROR] Channel {channelName} deletion was not possible")
+
     def getChannelID(self, channelName):
         for channel in self._channels:
             if channel["name"]==channelName:
                 return channel["id"]
         return -1
+
     def modifyChannelData(self, newChannelName):
         #PUT request to modify the name of the channel
         #https://api.thingspeak.com/channels.json
@@ -213,7 +276,8 @@ class ThinkSpeakAdaptor(threading.Thread):
         }
 
         for i,field_name in enumerate(fields_name):
-            jsonBody["field"+str(i)]=field_name
+            print("i: " + str(i) + " name: " + field_name)
+            jsonBody["field"+str(i+1)]=field_name
 
         #these are the returned infos
         info_channel={
@@ -249,43 +313,18 @@ class ThinkSpeakAdaptor(threading.Thread):
             #verify if it works like this
             print(self._baseUri + "channels.json",)
             if r.status_code == 200:
-                self._channels.append(r.json())
+                newChannel = r.json()
+                for i,field_name in enumerate(fields_name):
+                    print("i: " + str(i) + " name: " + field_name)
+                    newChannel["field"+str(i+1)]=field_name
+
+                self._channels.append(newChannel)
+                print(json.dumps(r.json(), indent=4))
                 print("[THINGSPEAKADAPTOR][INFO] Thingspeak Channel " + channelName + " opened with success")
             else:
                 print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel " + channelName)
         except Exception as e:
             print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel" + str(e))
-
-    def writeSingleEntry(self,channelName, new_datas):
-        #the single entry can be updated through GET and POST request
-        # GET request
-        #https://api.thingspeak.com/update.json?api_key=self._thingspeak_api_key&field1=100
-        #in our case i decided to use POST request
-        #POST request
-        #https://api.thingspeak.com/update.json
-        jsonBody={
-            "api_key":self.getChannelApiKey(channelName),
-            "field1":None,
-            "field2":None,
-            "field3":None,
-            "field4":None,
-            "field5":None,
-            "field6":None,
-            "field7":None,
-            "field8":None,
-            "lat":"",
-            "long":"",
-            "created_at":""
-        }
-        #this has to be modified
-        for i,new_data in enumerate(new_datas):
-            jsonBody["field"+str(i)]=new_data
-
-
-        try:
-            requests.post(self._baseUri+"update.json", json=jsonBody)
-        except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
 
     def getChannelApiKey(self, channelName, write=True):
         #function to return write/read channel API keys

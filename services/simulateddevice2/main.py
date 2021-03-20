@@ -16,16 +16,16 @@ class SensorReader():
     def readSensors(self):
         simulatedValues = []
         simulatedValues.append({
-            'n': 'temperature',
-            'u': 'celsius',
-            't': time.time(),
-            'v': randrange(-20, 40)
-        })
-        simulatedValues.append({
             'n': 'humidity',
             'u': 'celsius',
             't': time.time(),
             'v': randrange(0, 100)
+        })
+        simulatedValues.append({
+            'n': 'temperature',
+            'u': 'celsius',
+            't': time.time(),
+            'v': randrange(-20, 40)
         })
         return simulatedValues
 
