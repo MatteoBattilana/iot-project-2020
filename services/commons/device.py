@@ -13,7 +13,7 @@ import time
 class Device(threading.Thread):
     exposed=True
 
-    def __init__(self, sensorReader, settingsManager, isBehindNat = False):
+    def __init__(self, sensorReader, settingsManager, isExternal = False):
         threading.Thread.__init__(self)
         self._sensorReader = sensorReader
         self._settingsManager = settingsManager
@@ -29,7 +29,7 @@ class Device(threading.Thread):
             },
             {
                 "serviceType": "REST",
-                "serviceIP": NetworkUtils.getIp(isBehindNat),
+                "serviceIP": NetworkUtils.getIp(isExternal),
                 "servicePort": 8080,
                 "endPoint": [
                     {

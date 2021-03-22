@@ -2,8 +2,8 @@ import socket
 from requests import get
 
 class NetworkUtils:
-    def getIp(isBehindNat = False):
-        if isBehindNat:
+    def getIp(isExternal = False):
+        if isExternal:
             return get("http://wtfismyip.com/text").text.strip()
         else:
             s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)

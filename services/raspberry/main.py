@@ -30,7 +30,7 @@ if __name__=="__main__":
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             },
     }
-    rpi = Device(SensorReader(), SettingsManager("settings.json"), isBehindNat=True)
+    rpi = Device(SensorReader(), SettingsManager("settings.json"), isExternal=True)
     rpi.start()
     cherrypy.tree.mount(rpi ,'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'
