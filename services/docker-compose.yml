@@ -33,6 +33,21 @@ services:
         context: ./
         dockerfile: ./simulateddevice/Dockerfile
 
+  simulateddevice2:
+    container_name: simulateddevice2
+    networks:
+      net1:
+    depends_on:
+      catalog:
+        condition: service_healthy
+    links:
+        - catalog
+    volumes:
+      - .:/code
+    build:
+        context: ./
+        dockerfile: ./simulateddevice2/Dockerfile
+
   externalweatherapi:
     container_name: externalweatherapi
     ports:
