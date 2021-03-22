@@ -11,16 +11,35 @@ from commons.netutils import *
 import threading
 import json
 import time
+import Adafruit_DHT
 
 class SensorReader():
+    def __init__(self):
+        self.sensor=Adafruit_DHT.DHT11
+        self.gpio=17
+
     def readSensors(self):
+        # Use read_retry method. This will retry up to 15 times to
+        # get a sensor reading (waiting 2 seconds between each retry).
+        humidity, temperature = Adafruit_DHT.read_retry(sensor, gpio)
+
+        # Reading the DHT11 is very sensitive to timings and occasionally
+        # the Pi might fail to get a valid reading. So check if readings are valid.
         simulatedValues = []
-        simulatedValues.append({
-            'n': 'temperature',
-            'u': 'celsius',
-            't': time.time(),
-            'v': random()
-        })
+        if humidity is not None and temperature is not None:
+            print('Temp={0:0.1f}*C  Humidity={1:0.1f}%'.format(temperature, humidity))
+            simulatedValues.append({
+                'n': 'temperature',
+                'u': 'celsius',
+                't': time.time(),
+                'v': temperature
+            })
+            simulatedValues.append({
+                'n': 'humidity',
+                'u': 'celsius',
+                't': time.time(),
+                'v': humidity
+            })
         return simulatedValues
 
 if __name__=="__main__":
