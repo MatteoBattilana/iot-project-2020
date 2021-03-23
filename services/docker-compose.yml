@@ -68,6 +68,8 @@ services:
     build:
         context: ./
         dockerfile: ./thinkspeakadaptor/Dockerfile
+    ports:
+      - "8090:8080"
 
   webinterface:
     container_name: webinterface
