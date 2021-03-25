@@ -11,5 +11,5 @@
         }
       ],
   "logVerbosity": "DEBUG",
-  "logFile": "execution.log"
+  "logFile": "catalog.log"
 }

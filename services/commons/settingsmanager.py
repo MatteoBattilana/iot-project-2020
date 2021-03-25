@@ -22,3 +22,12 @@ class SettingsManager:
         fielVal = jsonContent[field]
         settings.close()
         return fielVal
+
+    def getFieldOrDefault(self, field, defaultValue):
+        settings = open(self._settingsFileName, "r")
+        jsonContent = json.load(settings)
+        fielVal = defaultValue
+        if field in jsonContent:
+            fielVal = jsonContent[field]
+        settings.close()
+        return fielVal

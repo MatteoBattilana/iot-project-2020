@@ -490,7 +490,7 @@ class ThinkSpeakAdaptor(threading.Thread):
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
-    Logger.setup(settings.getField('logVerbosity'), settings.getField('logFile'))
+    Logger.setup(settings.getField('logVerbosity'), settings.getFieldOrDefault('logFile', ''))
     conf={
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),

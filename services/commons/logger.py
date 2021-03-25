@@ -31,7 +31,8 @@ class Logger:
                 level=logging.ERROR
             if mode == "CRITICAL":
                 level=logging.CRITICAL
-
-        format = '%(asctime)s - %(levelname)-8s - %(name)s - %(message)s'
+        headers = [logging.StreamHandler()]
+        if filename:
+            headers.append(logging.FileHandler(filename))
         format2 = '[%(asctime)s] %(levelname)-11s - %(message)s'
-        logging.basicConfig(level=mode, format=format2, handlers=[logging.FileHandler(filename), logging.StreamHandler()])
+        logging.basicConfig(level=mode, format=format2, handlers=headers)
