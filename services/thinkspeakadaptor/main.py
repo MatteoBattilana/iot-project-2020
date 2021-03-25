@@ -13,6 +13,8 @@ from thingspeak_bulk import *
 import datetime
 from datetime import timedelta
 import cherrypy
+import logging
+from commons.logger import *
 
 def changeDatetimeFormat(_datetime):
     year=str(_datetime.year)
@@ -33,9 +35,9 @@ class ThreadHttpRequest(threading.Thread):
     def run(self):
         try:
             requests.post(self.url, json=self.jsonBody)
-            print(f"[THINGSPEAKADAPTOR][INFO] Sent data {self.jsonBody} in bulk to {self.url} in a POST request")
+            logging.debug(f"Sent data {self.jsonBody} in bulk to {self.url} in a POST request")
         except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] POST request went wrong")
+            logging.error(f"POST request went wrong")
 
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
@@ -50,7 +52,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._mqtt = None
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
-        self._channels = []                                 # it don't have to wait to fetch 
+        self._channels = []                                 # it don't have to wait to fetch
         self._channels = self.getChannelList()
         self.cache=ThingSpeakBulkUpdater(bulkLimit)
         self.updateBulkTime=bulkRate
@@ -58,14 +60,14 @@ class ThinkSpeakAdaptor(threading.Thread):
 
 
     def run(self):
-        print("[INFO] Started")
+        logging.debug("Started")
         lastTime = 0
         while self._run:
             if time.time() - lastTime > self.updateBulkTime:
                 self.sendToThingSpeak()
                 lastTime = time.time()
             time.sleep(1)
-        print ("[INFO] Stopped ThingSpeak")
+        logging.debug("Stopped ThingSpeak")
     def stop(self):
         self._ping.stop()
         if self._isMQTTconnected and self._mqtt is not None:
@@ -75,7 +77,7 @@ class ThinkSpeakAdaptor(threading.Thread):
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
-        print("[INFO] New id from catalog: " + newId)
+        logging.debug("New id from catalog: " + newId)
         if self._mqtt is not None:
             self._mqtt.stop()
 
@@ -119,7 +121,7 @@ class ThinkSpeakAdaptor(threading.Thread):
 
         #if the channel is not set up on thingspeak yet
         if _channel_id == -1:
-            print ("Create channel with name: "+ _channel_name + " and fields: " + str(fields))
+            logging.debug("Create channel with name: "+ _channel_name + " and fields: " + str(fields))
             self.createNewChannel(_channel_name, fields)
 
         # check if all fields are present
@@ -130,7 +132,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         #if the channel is on thingspeak but not in the cache
         if self.cache.findChannel(_channel_name) == False:
             self.cache.createChannelCache(_channel_name)
-            #print(f"[THINGSPEAKBULKUPDATER][INFO] Created new channel in the cacheList")
+            #logging.debug(f"Created new channel in the cacheList")
 
         #update THINGSPEAK with MQTT
         #multiple field TOPIC -> channels/<channelID>/publish/<apikey>
@@ -142,14 +144,14 @@ class ThinkSpeakAdaptor(threading.Thread):
 
         #payload="&".join(to_join)
         #ThingSpeakPublisher.publish(str(_channel_id), str(self.getChannelApiKey(_channel_name)), payload)
-        #print("Sent: " + payload)
+        #logging.debug("Sent: " + payload)
         #update THINGSPEAK with REST
         #self.writeSingleEntry(_channel_name, new_datas)
 
         #update THINGSPEAK CACHE
         date=datetime.datetime.fromtimestamp(_timestamp)
         self.cache.updateChannelCache(_channel_name, payload["e"], str(date), self.getFieldMapping(_channel_name))
-        print(f"[THINGSPEAKADAPTOR][INFO] Data sent to the cache")
+        logging.debug(f"Data sent to the cache")
 
     # Return the mapping of value type to its field: temperature - fieldX
     def getFieldMapping(self, channelName):
@@ -177,9 +179,9 @@ class ThinkSpeakAdaptor(threading.Thread):
                             splitted = field.split("=")
                             channel[splitted[0]] = splitted[1]
 
-                print("[THINGSPEAKADAPTOR][INFO] Added " + str(missingFields) + " to channel " + str(channelID))
+                logging.debug("Added " + str(missingFields) + " to channel " + str(channelID))
         except Exception as e:
-            print ("[THINGSPEAKADAPTOR][ERROR] Unable to add " + str(missingFields) + " to channel " + str(channelID))
+            logging.debug("Unable to add " + str(missingFields) + " to channel " + str(channelID))
 
     # return the missing fields of a channel in form fieldX=type: field1=temperature
     def getMissingFields(self, channelName, fields):
@@ -196,7 +198,6 @@ class ThinkSpeakAdaptor(threading.Thread):
                                 found = True
                     if found == False:
                         # missing field in channel
-                        print(value)
                         missingFields.append("field" + str(last+len(missingFields)+1) + "=" + value)
 
         return missingFields
@@ -238,7 +239,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                             channels[i]["field"+str(fieldId)] = r2.json()["channel"]["field"+str(fieldId)]
                 return channels
         except Exception as e:
-            print ("[THINGSPEAKADAPTOR][ERROR] GET request went wrong")
+            logging.debug("GET request went wrong")
         return []
 
     def clearChannelFeed(self, channelName):
@@ -251,7 +252,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         try:
             requests.delete(self._baseUri+"channels/"+channelID+"/feeds.json", json=jsonBody)
         except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] Channel {channelName} feed DELETE went wrong")
+            logging.error(f"Channel {channelName} feed DELETE went wrong")
 
     def removeChannel(self, channelName):
         #DELETE request
@@ -261,7 +262,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             requests.delete(self._baseUri+"channels/"+channelID)
         except Exception:
             #exception
-            print(f"[THINGSPEAKADAPTOR][ERROR] Channel {channelName} deletion was not possible")
+            logging.error(f"Channel {channelName} deletion was not possible")
 
     def getChannelID(self, channelName):
         for channel in self._channels:
@@ -278,7 +279,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         try:
             requests.put(self._baseUri+"channels.json", json=jsonBody)
         except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] PUT request went wrong")
+            logging.error(f"PUT request went wrong")
 
 
     def createNewChannel(self, channelName, fields_name, public=False, latitude=0.0, longitude=0.0):
@@ -301,7 +302,6 @@ class ThinkSpeakAdaptor(threading.Thread):
         }
 
         for i,field_name in enumerate(fields_name):
-            print("i: " + str(i) + " name: " + field_name)
             jsonBody["field"+str(i+1)]=field_name
 
         #these are the returned infos
@@ -336,20 +336,19 @@ class ThinkSpeakAdaptor(threading.Thread):
         try:
             r = requests.post(self._baseUri + "channels.json", json = jsonBody)
             #verify if it works like this
-            print(self._baseUri + "channels.json",)
+            logging.debug(self._baseUri + "channels.json",)
             if r.status_code == 200:
                 newChannel = r.json()
                 for i,field_name in enumerate(fields_name):
-                    print("i: " + str(i) + " name: " + field_name)
                     newChannel["field"+str(i+1)]=field_name
 
                 self._channels.append(newChannel)
-                print(json.dumps(r.json(), indent=4))
-                print("[THINGSPEAKADAPTOR][INFO] Thingspeak Channel " + channelName + " opened with success")
+                logging.debug(json.dumps(r.json(), indent=4))
+                logging.debug("Thingspeak Channel " + channelName + " opened with success")
             else:
-                print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel " + channelName)
+                logging.error("Unable to create a new channel " + channelName)
         except Exception as e:
-            print("[THINGSPEAKADAPTOR][ERROR] Unable to create a new channel" + str(e))
+            logging.error("Unable to create a new channel" + str(e))
 
     def getChannelApiKey(self, channelName, write=True):
         #function to return write/read channel API keys
@@ -387,17 +386,17 @@ class ThinkSpeakAdaptor(threading.Thread):
             parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&start="+start+"&end="+end+final_params
         else:
             parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+final_params
-        
+
         uri=self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
         try:
             r = requests.get(uri)
-            print(f"[THINGSPEAKADAPTOR][INFO] GET request with the following uri: {uri}")
+            logging.debug(f"GET request with the following uri: {uri}")
             response = r.json()
             return json.dumps(response, indent=4)
-            #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
-             
+            #logging.debug(f"Response = {r.json()}")
+
         except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] GET request to read data from ThingSpeak went wrong")
+            logging.error(f"GET request to read data from ThingSpeak went wrong")
     def readDataMultipleFields(self, channelName, results = 8000, days = 1, minutes = 1440, start = datetime.datetime.now() - timedelta(days=1), end = datetime.datetime.now(), sum = 0, average = 0, median = 0, start_end = False):
         #https://api.thingspeak.com/channels/<channel_id>/feeds.json
         final_params=""
@@ -413,19 +412,19 @@ class ThinkSpeakAdaptor(threading.Thread):
             parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&start="+start+"&end="+end+"&sum="+str(sum)+"&average="+str(average)+"&median="+str(median)
         else:
             parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&sum="+str(sum)+"&average="+str(average)+"&median="+str(median)
-        
+
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
         uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
         try:
             r =requests.get(uri)
-            print(f"[THINGSPEAKADAPTOR][INFO] GET request with the following uri: {uri}")
+            logging.debug(f"GET request with the following uri: {uri}")
             return r.json()
-            #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
+            #logging.debug(f"Response = {r.json()}")
         except Exception:
-            print(f"[THINGSPEAKADAPTOR][ERROR] GET request from ThingSpeak went wrong")
+            logging.error(f"GET request from ThingSpeak went wrong")
     def GET(self, *uri, **params):
-        #uri format 
+        #uri format
         #https:localhost:port/channel/channelName/feeds?...
         #https:localhost:port/channel/channelName/field/fieldNumber/functionality?
         if len(uri) != 0:
@@ -490,13 +489,14 @@ class ThinkSpeakAdaptor(threading.Thread):
 
 
 if __name__=="__main__":
+    settings = SettingsManager("settings.json")
+    Logger.setup(settings.getField('logVerbosity'), settings.getField('logFile'))
     conf={
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             }
     }
-    settings = SettingsManager("settings.json")
     availableServices = [
         {
             "serviceType": "REST",
@@ -513,9 +513,9 @@ if __name__=="__main__":
     ]
     try:
         thingspeak_api_key = os.environ['THINGSPEAKAPIKEY']
-        print("[THINGSPEAKADAPTOR][INFO] THINGSPEAKAPIKEY variabile set to: " + thingspeak_api_key)
+        logging.debug("THINGSPEAKAPIKEY variabile set to: " + thingspeak_api_key)
     except:
-        print("[THINGSPEAKADAPTOR][ERROR] THINGSPEAKAPIKEY variabile not set")
+        logging.error("THINGSPEAKAPIKEY variabile not set")
         thingspeak_api_key = ""
 
     rpi = ThinkSpeakAdaptor(
@@ -528,12 +528,18 @@ if __name__=="__main__":
             int(settings.getField('bulkLimit')),
             settings.getField('catalogAddress')
         )
-    
     rpi.start()
-    cherrypy.tree.mount(rpi ,'/',conf)
+
+    # Remove reduntant date cherrypy log
+    cherrypy._cplogging.LogManager.time = lambda uno: ""
+    handler = MyLogHandler()
+    handler.setFormatter(BlankFormatter())
+    cherrypy.log.error_log.handlers = [handler]
+
+    app = cherrypy.tree.mount(rpi ,'/',conf)
+    #used to remove from log the incoming requests
+    app.log.access_log.addFilter( IgnoreRequests() )
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.subscribe('stop', rpi.stop)
     cherrypy.engine.start()
     cherrypy.engine.block()
-
-

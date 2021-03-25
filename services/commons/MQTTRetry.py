@@ -3,6 +3,7 @@ import threading
 import requests
 import time
 import paho.mqtt.client as PahoMQTT
+import logging
 
 # Class that only lists the callbacks fot the MyMQTT module
 class MyMQTTNotifier:
@@ -57,13 +58,13 @@ class MQTTRetry(threading.Thread):
             if r.status_code == 200:
                 return r.json()
         except Exception as e:
-            print("[ERROR] Unable to get the broker address: " + str(e))
+            logging.error("Unable to get the broker address: " + str(e))
         return {}
 
     # publish a json message under the passed topic
     def publish(self, topic, msg):
         self._paho_mqtt.publish(topic, json.dumps(msg), 2)
-        print ("[INFO] publishing '" + json.dumps(msg) + "' with topic " + topic)
+        logging.debug("publishing '" + json.dumps(msg) + "' with topic " + topic)
 
 
     # connect to the MQTT brokerif a valid MQTT broker is returned from the catalog
@@ -72,29 +73,29 @@ class MQTTRetry(threading.Thread):
         try:
             broker = self._getBroker()
             if 'uri' in broker and 'port' in broker:
-               print("[INFO] Trying to connect to the MQTT broker: " + broker['uri'] + ":" + str(broker['port']))
+               logging.info("Trying to connect to the MQTT broker: " + broker['uri'] + ":" + str(broker['port']))
 
                self._paho_mqtt.connect(broker['uri'], broker['port'])
                self._paho_mqtt.loop_start()
             else:
-               print("[ERROR] No MQTT broker available")
+               logging.error("No MQTT broker available")
         except Exception as e:
             self._isMQTTTryingConnecting = False
-            print("[ERROR] General error while connecting to the MQTT broker " + str(e))
+            logging.error("General error while connecting to the MQTT broker " + str(e))
         return {}
 
     # subscribe to a list of topic
     def subscribe(self, topicList):
         if self._isMQTTconnected == True:
             for topic in topicList:
-                print("[INFO] Subscribed to " + topic)
+                logging.debug("Subscribed to " + topic)
                 self._paho_mqtt.subscribe(topic, 2)
         self._subscribeList = topicList
 
 
     #MQTT callbacks
     def _onDisconnect(self, client, userdata, rc):
-        print("[ERROR] Disconnected from MQTT broker")
+        logging.error("Disconnected from MQTT broker")
         self._isMQTTconnected = False
         if self._notifier != None:
             self._notifier.onMQTTConnectionError(PahoMQTT.connack_string(rc))
@@ -103,13 +104,13 @@ class MQTTRetry(threading.Thread):
         if rc == 0:
             if self._notifier != None:
                 self._notifier.onMQTTConnected()
-            print("[INFO] Connected to the MQTT broker")
+            logging.info("Connected to the MQTT broker")
             for topic in self._subscribeList:
-                print("[INFO] Subscribed to " + topic)
+                logging.debug("Subscribed to " + topic)
                 self._paho_mqtt.subscribe(topic, 2)
             self._isMQTTconnected = True
         else:
-            print("[ERROR] Unable to connect to the MQTT broker")
+            logging.error("Unable to connect to the MQTT broker")
             if self._notifier != None:
                 self._notifier.onMQTTConnectionError(PahoMQTT.connack_string(rc))
 

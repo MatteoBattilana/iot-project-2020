@@ -6,5 +6,7 @@
   "subscribeTopics": [
       "/iot-programming-2343/#"
   ],
-  "catalogAddress": "http://catalog:8080/catalog"
+  "catalogAddress": "http://catalog:8080/catalog",
+  "logVerbosity": "DEBUG",
+  "logFile": "execution.log"
 }

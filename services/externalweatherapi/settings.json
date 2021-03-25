@@ -2,5 +2,7 @@
     "pingTime": 60,
     "windSpeedSafe": 10,
     "serviceName": "EXTERNAL-API",
-    "catalogAddress": "http://catalog:8080/catalog"
+    "catalogAddress": "http://catalog:8080/catalog",
+    "logVerbosity": "DEBUG",
+    "logFile": "execution.log"
 }

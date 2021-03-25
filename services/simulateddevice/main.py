@@ -11,6 +11,8 @@ from commons.settingsmanager import *
 import threading
 import json
 import time
+import logging
+from commons.logger import *
 
 class SensorReader():
     def readSensors(self):
@@ -30,15 +32,26 @@ class SensorReader():
         return simulatedValues
 
 if __name__=="__main__":
+    settings = SettingsManager("settings.json")
+    Logger.setup(settings.getField('logVerbosity'), settings.getField('logFile'))
     conf={
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             },
     }
-    rpi = Device(SensorReader(), SettingsManager("settings.json"))
+    rpi = Device(SensorReader(), settings)
     rpi.start()
-    cherrypy.tree.mount(rpi ,'/',conf)
+
+    # Remove reduntant date cherrypy log
+    cherrypy._cplogging.LogManager.time = lambda uno: ""
+    handler = MyLogHandler()
+    handler.setFormatter(BlankFormatter())
+    cherrypy.log.error_log.handlers = [handler]
+
+    app = cherrypy.tree.mount(rpi ,'/',conf)
+    #used to remove from log the incoming requests
+    app.log.access_log.addFilter( IgnoreRequests() )
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.subscribe('stop', rpi.stop)
     cherrypy.engine.start()

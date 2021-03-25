@@ -7,6 +7,8 @@ from commons.settingsmanager import *
 import cherrypy
 import os
 import json
+import logging
+from commons.logger import *
 
 
 class WebSite():
@@ -15,7 +17,7 @@ class WebSite():
     def __init__(self, pingTime, serviceList, serviceName, catalogAddress):
         threading.Thread.__init__(self)
         self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = None)
-        print("[INFO] Started")
+        logging.debug("Started")
         self._ping.start()
 
     def GET(self):
@@ -26,6 +28,7 @@ class WebSite():
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
+    Logger.setup(settings.getField('logVerbosity'), settings.getField('logFile'))
     availableServices = [
         {
             "serviceType": "REST",
@@ -60,7 +63,16 @@ if __name__=="__main__":
         settings.getField('serviceName'),
         settings.getField('catalogAddress')
     )
-    cherrypy.tree.mount(website ,'/',conf)
+
+    # Remove reduntant date cherrypy log
+    cherrypy._cplogging.LogManager.time = lambda uno: ""
+    handler = MyLogHandler()
+    handler.setFormatter(BlankFormatter())
+    cherrypy.log.error_log.handlers = [handler]
+
+    app = cherrypy.tree.mount(website ,'/',conf)
+    #used to remove from log the incoming requests
+    app.log.access_log.addFilter( IgnoreRequests() )
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.subscribe('stop', website.stop)
     cherrypy.engine.start()

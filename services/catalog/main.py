@@ -7,8 +7,12 @@ import threading
 import socket
 import psutil
 import cherrypy
+import datetime
+from logging.handlers import QueueHandler
 from serviceManager import *
 from commons.settingsmanager import *
+import logging
+from commons.logger import *
 
 # Test comment
 # Rest service that exposes POST and GET methods to handle the ping, getBroker,
@@ -24,9 +28,9 @@ class RESTManagerService(threading.Thread):
         self.daemon = True
 
         if not self._broker:
-            print ("[ERROR] No MQTT broker available")
+            logging.error("No MQTT broker available")
         else:
-            print ("[INFO] " + self._broker["uri"] + " MQTT broker selected")
+            logging.debug(self._broker["uri"] + " MQTT broker selected")
 
     # Given the list from the settings file, it tries all the broker and returns
     # the first one that works
@@ -79,7 +83,7 @@ class RESTManagerService(threading.Thread):
     def POST(self, *uri):
         body = json.loads(cherrypy.request.body.read())
         if len(uri) == 1:
-            print ("[INFO] Requested POST with uri " + str(uri))
+            logging.info("Requested POST with uri " + str(uri))
             if uri[0] == 'ping':
                 ret = self._serv.addService(body)
             else:
@@ -94,6 +98,7 @@ class RESTManagerService(threading.Thread):
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
+    Logger.setup(settings.getField('logVerbosity'), settings.getField('logFile'))
     conf={
             '/':{
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
@@ -102,8 +107,20 @@ if __name__=="__main__":
     }
     serviceCatalog = RESTManagerService(settings.getField("brokerList"), int(settings.getField("retantionTimeout")))
     serviceCatalog.start()
-    cherrypy.tree.mount(serviceCatalog,'/catalog/',conf)
+
+    # Remove reduntant date cherrypy log
+    #new_formatter = BlankFormatter()
+    #for h in cherrypy.log.error_log.handlers:
+    #    h.setFormatter(new_formatter)
+    cherrypy._cplogging.LogManager.time = lambda uno: ""
+    handler = MyLogHandler()
+    handler.setFormatter(BlankFormatter())
+    cherrypy.log.error_log.handlers = [handler]
+
+
+    app = cherrypy.tree.mount(serviceCatalog,'/catalog/',conf)
+    #used to remove from log the incoming requests
+    app.log.access_log.addFilter( IgnoreRequests() )
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.start()
-
     cherrypy.engine.block()

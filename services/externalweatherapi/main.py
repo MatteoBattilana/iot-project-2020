@@ -7,6 +7,8 @@ from commons.settingsmanager import *
 import cherrypy
 import os
 import json
+import logging
+from commons.logger import *
 
 
 class ExternalWeatherApi():
@@ -14,11 +16,10 @@ class ExternalWeatherApi():
 
     def __init__(self, pingTime, serviceList, serviceId, catalogAddress, safeWindSpeed, openweatherapikey):
         self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", groupId = None, notifier = None)
-        print("[INFO] Started")
+        logging.debug("Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey
         self._safeWindSpeed = safeWindSpeed
-        print("[INFO] openweathermap.com api key set to: " + self._openweatherapikey)
 
     def stop(self):
         self._ping.stop()
@@ -50,7 +51,7 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
             retInformation["temperature"] = r1.json()["main"]["temp"]
             retInformation["humidity"] = r1.json()["main"]["humidity"]
         else:
-            print("[ERROR] Unable to get temperature from openweatermap: " + json.dumps(r.json()))
+            logging.error("Unable to get temperature from openweatermap: " + json.dumps(r.json()))
 
         # Refer to https://openweathermap.org/weather-conditions
         if "weather" in r1.json() and (int(r1.json()["weather"][0]["id"]) < 800 or float(r1.json()["wind"]["speed"]) > safeWindSpeed) :
@@ -60,23 +61,22 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
 
 
     else:
-        print("[ERROR] Unable to contact openweatermap")
+        logging.error("Unable to contact openweatermap")
 
     r2 = requests.get("http://api.openweathermap.org/data/2.5/air_pollution?lat=" + lat + "&lon=" + lon + "&units=metric&appid=" + openweatherapikey)
-    print(json.dumps(r2.json(), indent=4))
     if r2.status_code == 200:
-        print("\nASD: " + str(r2.json()["list"][0]))
         if "list" in r2.json() and "components" in r2.json()["list"][0]:
             retInformation = {**retInformation, **r2.json()["list"][0]["components"]}
         else:
-            print("[ERROR] Unable to get temperature from openweatermap: " + json.dumps(r.json()))
+            logging.error("Unable to get temperature from openweatermap: " + json.dumps(r.json()))
     else:
-        print("[ERROR] Unable to contact openweatermap")
+        logging.error("Unable to contact openweatermap")
 
     return retInformation
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
+    Logger.setup(settings.getField('logVerbosity'), settings.getField('logFile'))
     availableServices = [
         {
             "serviceType": "REST",
@@ -106,8 +106,9 @@ if __name__=="__main__":
     }
     try:
         openweatermapkey = os.environ['OPENWETHERMAPAPIKEY']
+        logging.debug("openweathermap.com api key set to: " + openweatermapkey)
     except:
-        print("[ERROR] OPENWETHERMAPAPIKEY variabile not set")
+        logging.error("OPENWETHERMAPAPIKEY variabile not set")
         openweatermapkey = ""
 
     restManager = ExternalWeatherApi(
@@ -118,7 +119,16 @@ if __name__=="__main__":
         float(settings.getField('windSpeedSafe')),
         openweatermapkey
     )
-    cherrypy.tree.mount(restManager ,'/',conf)
+
+    # Remove reduntant date cherrypy log
+    cherrypy._cplogging.LogManager.time = lambda uno: ""
+    handler = MyLogHandler()
+    handler.setFormatter(BlankFormatter())
+    cherrypy.log.error_log.handlers = [handler]
+
+    app = cherrypy.tree.mount(restManager ,'/',conf)
+    #used to remove from log the incoming requests
+    app.log.access_log.addFilter( IgnoreRequests() )
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.subscribe('stop', restManager.stop)
     cherrypy.engine.start()
