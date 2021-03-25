@@ -37,6 +37,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._mqtt = None
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
+        self._channels = []
         self._channels = self.getChannelList()
         self.cache=ThingSpeakBulkUpdater(bulkLimit)
         self.updateBulkTime=bulkRate
