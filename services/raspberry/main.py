@@ -21,7 +21,7 @@ class SensorReader():
     def readSensors(self):
         # Use read_retry method. This will retry up to 15 times to
         # get a sensor reading (waiting 2 seconds between each retry).
-        humidity, temperature = Adafruit_DHT.read_retry(sensor, gpio)
+        humidity, temperature = Adafruit_DHT.read_retry(self.sensor, self.gpio)
 
         # Reading the DHT11 is very sensitive to timings and occasionally
         # the Pi might fail to get a valid reading. So check if readings are valid.
