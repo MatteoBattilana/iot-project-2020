@@ -50,7 +50,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._mqtt = None
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
-        self._channels = []                                 # it don't have to wait to fetch 
+        self._channels = []                                 # it don't have to wait to fetch
         self._channels = self.getChannelList()
         self.cache=ThingSpeakBulkUpdater(bulkLimit)
         self.updateBulkTime=bulkRate
@@ -160,7 +160,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                     if "field" + str(i) in channel:
                         mapped[channel["field" + str(i)]] = "field" + str(i)
         return mapped
-    
+
     #return the field number corresponding to a certain measure type (otherwise return -1)
     def getFieldNumber(self, channelName, measure_type):
         mapped = self.getFieldMapping(channelName)
@@ -426,7 +426,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         try:
             r = requests.get(uri)
             print(f"[THINGSPEAKADAPTOR][INFO] GET request with the following uri: {uri}")
-            return r.json() 
+            return r.json()
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] GET request to read data from ThingSpeak went wrong")
     def readStartEndData(self, channelName, start, end, field_id = -1):
@@ -468,13 +468,13 @@ class ThinkSpeakAdaptor(threading.Thread):
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] GET request from ThingSpeak went wrong")
     def GET(self, *uri, **params):
-        #uri format 
+        #uri format
         #https:localhost:port/channel/channelName/feeds?...
         #https:localhost:port/channel/channelName/field/fieldNumber/functionality?
         if len(uri) != 0:
-            if uri[0] == "channel":
+            if uri[0] == "channel" and len(uri) > 2:
                 channelName = uri[1]
-                if uri[2] == "feeds":
+                if uri[2] == "feeds" and len(uri) > 3:
                     #function to test
                     # 1 results
                     # 2 days
@@ -483,41 +483,49 @@ class ThinkSpeakAdaptor(threading.Thread):
                     # 5 sum
                     # 6 average
                     # 7 median
-                    if uri[3] == "getResultsData":
+                    if uri[3] == "getResultsData" and 'results' in params:
                         return json.dumps(self.readResultsData(channelName, results=params['results']), indent=3)
-                    elif uri[3] == "getLastDaysData":
+                    elif uri[3] == "getLastDaysData" and 'days' in params:
                         return json.dumps(self.readDaysData(channelName, days=params['days']), indent=3)
-                    elif uri[3] == "getLastMinutesData":
+                    elif uri[3] == "getLastMinutesData" and 'minutes' in params:
                         return json.dumps(self.readMinutesData(channelName, minutes=params['minutes']), indent=3)
-                    elif uri[3] == "getStartEndData":
+                    elif uri[3] == "getStartEndData" and 'start' in params and 'end' in params:
                         return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end']), indent=3)
-                    elif uri[3] == "getSum":
+                    elif uri[3] == "getStartEndData" and 'start' in params:
+                        return json.dumps(self.readStartEndData(channelName, start=params['start']), indent=3)
+                    elif uri[3] == "getStartEndData" and 'end' in params:
+                        return json.dumps(self.readStartEndData(channelName, end=params['end']), indent=3)
+                    elif uri[3] == "getSum" and 'sum' in params:
                         return json.dumps(self.readSumAvgMed(channelName, sum=params['sum']), indent=3)
-                    elif uri[3] == "getAvg":
+                    elif uri[3] == "getAvg" and 'average' in params:
                         return json.dumps(self.readSumAvgMed(channelName, average=params['average']), indent=3)
-                    elif uri[3] == "getMedian":
+                    elif uri[3] == "getMedian" and 'median' in params:
                         return json.dumps(self.readSumAvgMed(channelName, median=params['median']), indent=3)
                     else:
                         cherrypy.response.status = 404
                         return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
 
-                elif uri[2] == "measureType":
+                elif uri[2] == "measureType" and len(uri) > 4:
                     measureType = uri[3]
                     fieldNumber = self.getFieldNumber(channelName, measureType)
                     if fieldNumber != None:
-                        if uri[4] == "getResultsData":
+                        if uri[4] == "getResultsData" and 'results' in params:
                             return json.dumps(self.readResultsData(channelName, fieldNumber, results=params['results']), indent=3)
-                        elif uri[4] == "getLastDaysData":
+                        elif uri[4] == "getLastDaysData" and 'days' in params:
                             return json.dumps(self.readDaysData(channelName, fieldNumber, days=params['days']), indent=3)
-                        elif uri[4] == "getLastMinutesData":
+                        elif uri[4] == "getLastMinutesData" and 'minutes' in params:
                             return json.dumps(self.readMinutesData(channelName, fieldNumber, minutes=params['minutes']), indent=3)
-                        elif uri[4] == "getStartEndData":
+                        elif uri[4] == "getStartEndData" and 'start' in params and 'end' in params:
                             return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end'], field_id=fieldNumber), indent=3)
-                        elif uri[4] == "getSumData":
+                        elif uri[4] == "getStartEndData" and 'start' in params:
+                            return json.dumps(self.readStartEndData(channelName, start=params['start'], field_id=fieldNumber), indent=3)
+                        elif uri[4] == "getStartEndData" and 'end' in params:
+                            return json.dumps(self.readStartEndData(channelName, end=params['end'], field_id=fieldNumber), indent=3)
+                        elif uri[4] == "getSumData" and 'sum' in params:
                             return json.dumps(self.readSumAvgMed(channelName, fieldNumber, sum=params['sum']), indent=3)
-                        elif uri[4] == "getAvgData":
+                        elif uri[4] == "getAvgData" and 'average' in params:
                             return json.dumps(self.readSumAvgMed(channelName, fieldNumber, average=params['average']), indent=3)
-                        elif uri[4] == "getMedian":
+                        elif uri[4] == "getMedian" and 'median' in params:
                             return json.dumps(self.readSumAvgMed(channelName, fieldNumber, median=params['median']), indent=3)
                         else:
                             cherrypy.response.status = 404
@@ -550,7 +558,7 @@ if __name__=="__main__":
             "servicePort": 8080,
             "endPoint": [
                 {
-                    "type": "web",
+                    "type": "api",
                     "uri": "/",
                     "parameter": []
                 }
@@ -574,12 +582,10 @@ if __name__=="__main__":
             int(settings.getField('bulkLimit')),
             settings.getField('catalogAddress')
         )
-    
+
     rpi.start()
     cherrypy.tree.mount(rpi ,'/',conf)
     cherrypy.server.socket_host = '0.0.0.0'
     cherrypy.engine.subscribe('stop', rpi.stop)
     cherrypy.engine.start()
     cherrypy.engine.block()
-
-
