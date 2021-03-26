@@ -16,6 +16,5 @@ else
         export MQTT_PORT="1883"
 fi
 
-
 cd "$DIR"
 npm start -- --userDir /data
