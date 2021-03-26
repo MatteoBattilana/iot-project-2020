@@ -14,9 +14,16 @@
 
 Once the log messages are showing, the infrastructure is running and the web interface of node-red will be visible at: [http://localhost/ui](http://localhost/ui) 
 
+### Fix node-red problem
+You should enter the project directory, open the git bash terminal and execute:
+```
+git config --global core.eol lf
+git config --global core.autocrlf input
+find . -type f -print0 | xargs -0 dos2unix
+```
+
 
 ## GIT commands
-
 ### Update the repo to the last update without modification to the same file
 ```
 git fetch
