@@ -10,6 +10,6 @@
           "port": 1883
         }
       ],
-  "logVerbosity": "DEBUG",
+  "logVerbosity": "INFO",
   "logFile": "catalog.log"
 }

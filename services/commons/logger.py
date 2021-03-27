@@ -19,20 +19,22 @@ class IgnoreRequests(logging.Filter):
         return 'GET /' not in record.getMessage() and 'POST /' not in record.getMessage() and 'DELETE /' not in record.getMessage() and 'PUT /' not in record.getMessage()
 
 class Logger:
-
-    def setup(mode, filename):
+    def getLoggerLevel(mode):
         level=logging.DEBUG
         if mode:
             if mode == "INFO":
                 level=logging.INFO
-            if mode == "WARNING":
+            elif mode == "WARNING":
                 level=logging.WARNING
-            if mode == "ERROR":
+            elif mode == "ERROR":
                 level=logging.ERROR
-            if mode == "CRITICAL":
+            elif mode == "CRITICAL":
                 level=logging.CRITICAL
+        return level
+
+    def setup(mode, filename):
         headers = [logging.StreamHandler()]
         if filename:
             headers.append(logging.FileHandler(filename))
         format2 = '[%(asctime)s] %(levelname)-11s - %(message)s'
-        logging.basicConfig(level=mode, format=format2, handlers=headers)
+        logging.basicConfig(level=Logger.getLoggerLevel(mode), format=format2, handlers=headers)

@@ -125,6 +125,7 @@ if __name__=="__main__":
     handler = MyLogHandler()
     handler.setFormatter(BlankFormatter())
     cherrypy.log.error_log.handlers = [handler]
+    cherrypy.log.error_log.setLevel(Logger.getLoggerLevel(settings.getField('logVerbosity')))
 
     app = cherrypy.tree.mount(restManager ,'/',conf)
     #used to remove from log the incoming requests
