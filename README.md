@@ -19,7 +19,6 @@ You should enter the project directory, open the git bash terminal and execute:
 ```
 git config --global core.eol lf
 git config --global core.autocrlf input
-find . -type f -print0 | xargs -0 dos2unix
 ```
 
 
