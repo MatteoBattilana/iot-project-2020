@@ -429,12 +429,13 @@ class ThinkSpeakAdaptor(threading.Thread):
             return r.json()
         except Exception:
             print(f"[THINGSPEAKADAPTOR][ERROR] GET request to read data from ThingSpeak went wrong")
-    def readStartEndData(self, channelName, start, end, field_id = -1):
-        #https://api.thingspeak.com/channels/<channel_id>/feeds.json
+    def readStartEndData(self, channelName, start = changeDatetimeFormat(datetime.datetime.now() - timedelta(days=7)), end = changeDatetimeFormat(datetime.datetime.now() + timedelta(days=1)), field_id = -1):
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
         #start=changeDatetimeFormat(start)
         #end=changeDatetimeFormat(end)
+        if start > end:
+            return json.dumps({"error":{"status": 404, "message": "Start parameter must be previous with respect to end one"}}, indent=4)
         parameters="api_key="+read_api_key+"&start="+start+"&end="+end
         if field_id != -1:
             uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
@@ -552,18 +553,117 @@ if __name__=="__main__":
     }
     settings = SettingsManager("settings.json")
     availableServices = [
-        {
-            "serviceType": "REST",
-            "serviceIP": NetworkUtils.getIp(),
-            "servicePort": 8080,
-            "endPoint": [
-                {
-                    "type": "api",
-                    "uri": "/",
-                    "parameter": []
-                }
-            ]
-        }
+            {
+                "serviceType": "REST",
+                "serviceIP": NetworkUtils.getIp(),
+                "servicePort": 8080,
+                "endPoint": [
+                    {
+                        "type": "web",
+                        "uri": "/",
+                        "version": 1,
+                        "parameter": []
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/field/<measureType>/getResultsData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/field/<measureType>/getDaysData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "days", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/field/<measureType>/getMinutesData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/field/<measureType>/getStartEndData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "start", "unit": "datetime"},{"name":"end", "unit":"datetime"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/field/<measureType>/getSum",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "sum", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/field/<measureType>/getAvg",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "average", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/field/<measureType>//getMedian",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "median", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getResultsData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getDaysData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "days", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getMinutesData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getStartEndData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "start", "unit": "datetime"},{"name":"end", "unit":"datetime"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getSum",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "sum", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getAvg",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "average", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getMedian",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}]
+                        "version": 1,
+                        "parameter": [{"name": "median", "unit": "integer"}]
+                    }
+                ]
+            }
     ]
     try:
         thingspeak_api_key = os.environ['THINGSPEAKAPIKEY']
