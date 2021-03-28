@@ -568,49 +568,49 @@ if __name__=="__main__":
                     },
                     {
                         "type": "web",
-                        "uri": "/channel/<channelName>/field/<measureType>/getResultsData",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getResultsData",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "results", "unit": "integer"}]
                     },
                     {
                         "type": "web",
-                        "uri": "/channel/<channelName>/field/<measureType>/getDaysData",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getDaysData",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "days", "unit": "integer"}]
                     },
                     {
                         "type": "web",
-                        "uri": "/channel/<channelName>/field/<measureType>/getMinutesData",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getMinutesData",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "results", "unit": "integer"}]
                     },
                     {
                         "type": "web",
-                        "uri": "/channel/<channelName>/field/<measureType>/getStartEndData",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getStartEndData",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "start", "unit": "datetime"},{"name":"end", "unit":"datetime"}]
                     },
                     {
                         "type": "web",
-                        "uri": "/channel/<channelName>/field/<measureType>/getSum",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getSum",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "sum", "unit": "integer"}]
                     },
                     {
                         "type": "web",
-                        "uri": "/channel/<channelName>/field/<measureType>/getAvg",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getAvg",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "average", "unit": "integer"}]
                     },
                     {
                         "type": "web",
-                        "uri": "/channel/<channelName>/field/<measureType>/getMedian",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getMedian",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "median", "unit": "integer"}]
