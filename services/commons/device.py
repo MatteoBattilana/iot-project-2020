@@ -122,6 +122,7 @@ class Device(threading.Thread):
 
     # REST API
     def GET(self, *uri, **parameter):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         if len(uri) == 0:
             return json.dumps({"message": self._deviceName + " API endpoint"}, indent=4)
         if uri[0] == "setPingTime":

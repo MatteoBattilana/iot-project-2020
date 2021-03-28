@@ -32,6 +32,7 @@ class SensorReader():
 if __name__=="__main__":
     conf={
             '/':{
+                'tools.encode.text_only': False,
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             },

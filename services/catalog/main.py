@@ -16,6 +16,7 @@ from commons.settingsmanager import *
 # It is implemented using a thread
 class RESTManagerService(threading.Thread):
     exposed=True
+
     def __init__(self, brokerList, retantionTimeout):
         threading.Thread.__init__(self)
         self._serv = ServiceManager(retantionTimeout)
@@ -49,8 +50,9 @@ class RESTManagerService(threading.Thread):
             self._serv.cleanOldServices();
 
     def GET(self, *uri, **params):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         if len(uri) == 0:
-            return json.dumps({"message": "Catalog API endpoint"}, indent=4)
+            return json.dumps({"message": "<channelName>Catalog API endpoint"}, indent=4)
         elif uri[0] == 'getBroker':
             if not self._broker:
                 cherrypy.response.status = 503
@@ -77,6 +79,7 @@ class RESTManagerService(threading.Thread):
 
 
     def POST(self, *uri):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         body = json.loads(cherrypy.request.body.read())
         if len(uri) == 1:
             print ("[INFO] Requested POST with uri " + str(uri))
@@ -96,6 +99,7 @@ if __name__=="__main__":
     settings = SettingsManager("settings.json")
     conf={
             '/':{
+                'tools.encode.text_only': False,
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             }
