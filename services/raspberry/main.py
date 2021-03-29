@@ -48,6 +48,7 @@ if __name__=="__main__":
     Logger.setup(settings.getField('logVerbosity'), settings.getFieldOrDefault('logFile', ''))
     conf={
             '/':{
+                'tools.encode.text_only': False,
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             },

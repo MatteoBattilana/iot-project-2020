@@ -25,6 +25,7 @@ class ExternalWeatherApi():
         self._ping.stop()
 
     def GET(self, *uri, **parameter):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         if len(uri) == 0:
             return json.dumps({"message": "External weather API endpoint"}, indent=4)
         elif uri[0] == "currentWeatherStatus":
@@ -100,6 +101,7 @@ if __name__=="__main__":
     ]
     conf={
             '/':{
+                'tools.encode.text_only': False,
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             },

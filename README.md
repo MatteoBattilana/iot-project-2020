@@ -1,35 +1,28 @@
 # iot-project-2020
-IoT platform for user-involved air recirculation system
+## Windows 10 setup
+* Download git: [Git install tutorial](https://phoenixnap.com/kb/how-to-install-git-windows)
+* Download and install docker: [Docker installer](https://hub.docker.com/editions/community/docker-ce-desktop-windows/)
+* Set the environment variable: [Env variable tutorial](https://phoenixnap.com/kb/windows-set-environment-variable). The variable names you have to set are (the key values must asked to @MatteoBattilana):
+  - OPENWETHERMAPAPIKEY
+  - THINGSPEAKAPIKEY
+* Clone the project repository to your computer:
+  - Open the git bash just installed
+  - Write the following command: `git clone https://github.com/MatteoBattilana/iot-project-2020.git`
+* In order to start the architecture you have to:
+  - Enter the service directory: `cd iot-project-2020/services`
+  - Start the architecture (it will take a while): `docker-compose up`
 
-## Quick test - Docker-compose
-In order to test the docker-compose file and turn on the entire architecture, you can do:
+Once the log messages are showing, the infrastructure is running and the web interface of node-red will be visible at: [http://localhost/ui](http://localhost/ui) 
+
+### Fix node-red problem
+You should enter the project directory, open the git bash terminal and execute:
 ```
-cd services
-make start
+git config --global core.eol lf
+git config --global core.autocrlf input
 ```
-
-### If you want to rebuild everything (long process)
-```
-cd services
-make clean-start
-```
-
-### Modules
-In order to make the modules available for all services and devices implementation we need to use:
-```python
-import sys, os
-sys.path.insert(0, os.path.abspath('..'))
-```
-
-In order to make the external API work correctly, you need to set the `OPENWETHERMAPAPIKEY` variable with the key from openweathermap.com
-This mean that each Raspberry and ThinkSpeakAdaptor can be lauched only from inside its folder
-
-
-
 
 
 ## GIT commands
-
 ### Update the repo to the last update without modification to the same file
 ```
 git fetch

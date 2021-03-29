@@ -163,6 +163,18 @@ class ThinkSpeakAdaptor(threading.Thread):
                         mapped[channel["field" + str(i)]] = "field" + str(i)
         return mapped
 
+    #return the field number corresponding to a certain measure type (otherwise return -1)
+    def getFieldNumber(self, channelName, measure_type):
+        mapped = self.getFieldMapping(channelName)
+        keys = list(mapped.keys())
+        values = list(mapped.values())
+        to_return = -1
+        for i, key in enumerate(keys):
+            if key == measure_type:
+                to_return = values[i]
+                to_return = ''.join(filter(lambda i: i.isdigit(), to_return))
+                return to_return
+
     # add the fileds in missingFields to the channel on thingspeak
     def addFieldsToChannel(self, channelName, missingFields):
         channelID=self.getChannelID(channelName)
@@ -359,7 +371,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                         return api_key["api_key"]
         return "channelName not found"
 
-    def readDataSingleField(self, channelName, field_id, results = 8000, days = 1, minutes = 1440, start = datetime.datetime.now() , end = datetime.datetime.now() + timedelta(days=1), sum = 0, average = 0, median = 0, start_end = False):
+    def readResultsData(self, channelName, field_id = -1, results = 8000):
         #GET request
         #request parameters
         #results= numbers of entries to retrieve
@@ -370,52 +382,84 @@ class ThinkSpeakAdaptor(threading.Thread):
         #sum = X -> get the sum every X minutes
         #average = X -> get the avg every X minutes
         #median = X -> get the median every X minutes ("daily")
-        #https://api.thingspeak.com/channels/channel_id/fields/field_id.json?api_key=self._thingspeak_api_key&results=1&
+        #SINGLE FIELD --> https://api.thingspeak.com/channels/channel_id/fields/field_id.json?api_key=self._thingspeak_api_key&results=1&
+        #ALL FIELDS --> https://api.thingspeak.com/channels/<channel_id>/feeds.json
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
-        final_params=""
-        if median != 0:
-            final_params="&median="+str(median)
-        if average != 0:
-            final_params="&average="+str(average)
-        if sum != 0:
-            final_params="&sum="+str(sum)
-        if start_end == True:
-            start=changeDatetimeFormat(start)
-            end=changeDatetimeFormat(end)
-            parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&start="+start+"&end="+end+final_params
+        parameters="api_key="+read_api_key+"&results="+str(results)
+        #read data from a single field
+        if field_id != -1:
+            uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
+        #read data from all fields
         else:
-            parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+final_params
-
-        uri=self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
+            uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
         try:
             r = requests.get(uri)
             logging.debug(f"GET request with the following uri: {uri}")
-            response = r.json()
-            return json.dumps(response, indent=4)
-            #logging.debug(f"Response = {r.json()}")
-
+            return r.json()
+            #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
         except Exception:
-            logging.error(f"GET request to read data from ThingSpeak went wrong")
-    def readDataMultipleFields(self, channelName, results = 8000, days = 1, minutes = 1440, start = datetime.datetime.now() - timedelta(days=1), end = datetime.datetime.now(), sum = 0, average = 0, median = 0, start_end = False):
-        #https://api.thingspeak.com/channels/<channel_id>/feeds.json
-        final_params=""
-        if median != 0:
-            final_params="&median="+str(median)
-        if average != 0:
-            final_params="&average="+str(average)
-        if sum != 0:
-            final_params="&sum="+str(sum)
-        if start_end == True:
-            start=changeDatetimeFormat(start)
-            end=changeDatetimeFormat(end)
-            parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&start="+start+"&end="+end+"&sum="+str(sum)+"&average="+str(average)+"&median="+str(median)
-        else:
-            parameters="api_key="+read_api_key+"&results="+str(results)+"&days="+str(days)+"&minutes="+str(minutes)+"&sum="+str(sum)+"&average="+str(average)+"&median="+str(median)
-
+            logging.debug(f"GET request to read data from ThingSpeak went wrong")
+    def readDaysData(self, channelName, field_id = -1, days = 1):
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
-        uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
+        parameters="api_key="+read_api_key+"&days="+str(days)
+        if field_id != -1:
+            uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
+        else:
+            uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
+        try:
+            r = requests.get(uri)
+            logging.debug(f"GET request with the following uri: {uri}")
+            return r.json()
+        except Exception:
+            logging.debug(f"GET request to read data from ThingSpeak went wrong")
+    def readMinutesData(self, channelName, field_id = -1, minutes = 1440):
+        channelID=self.getChannelID(channelName)
+        read_api_key=self.getChannelApiKey(channelName, False)
+        parameters="api_key="+read_api_key+"&minutes="+str(minutes)
+        if field_id != -1:
+            uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
+        else:
+            uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
+        try:
+            r = requests.get(uri)
+            logging.debug(f"GET request with the following uri: {uri}")
+            return r.json()
+        except Exception:
+            logging.debug(f"GET request to read data from ThingSpeak went wrong")
+    def readStartEndData(self, channelName, start = changeDatetimeFormat(datetime.datetime.now() - timedelta(days=7)), end = changeDatetimeFormat(datetime.datetime.now() + timedelta(days=1)), field_id = -1):
+        channelID=self.getChannelID(channelName)
+        read_api_key=self.getChannelApiKey(channelName, False)
+        #start=changeDatetimeFormat(start)
+        #end=changeDatetimeFormat(end)
+        if start > end:
+            return json.dumps({"error":{"status": 404, "message": "Start parameter must be previous with respect to end one"}}, indent=4)
+        parameters="api_key="+read_api_key+"&start="+start+"&end="+end
+        if field_id != -1:
+            uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
+        #read data from all fields
+        else:
+            uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
+
+        try:
+            r =requests.get(uri)
+            logging.debug(f"GET request with the following uri: {uri}")
+            return r.json()
+            #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
+        except Exception:
+            logging.debug(f"GET request from ThingSpeak went wrong")
+    def readSumAvgMed(self, channelName, field_id = -1, sum = 0, average = 0, median = 0):
+        #https://api.thingspeak.com/channels/<channel_id>/feeds.json
+        channelID=self.getChannelID(channelName)
+        read_api_key=self.getChannelApiKey(channelName, False)
+        parameters="api_key="+read_api_key+"&sum="+str(sum)+"&average="+str(average)+"&median="+str(median)
+        if field_id != -1:
+            uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
+        #read data from all fields
+        else:
+            uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
+
         try:
             r =requests.get(uri)
             logging.debug(f"GET request with the following uri: {uri}")
@@ -424,13 +468,14 @@ class ThinkSpeakAdaptor(threading.Thread):
         except Exception:
             logging.error(f"GET request from ThingSpeak went wrong")
     def GET(self, *uri, **params):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
         #uri format
         #https:localhost:port/channel/channelName/feeds?...
         #https:localhost:port/channel/channelName/field/fieldNumber/functionality?
         if len(uri) != 0:
-            if uri[0] == "channel":
+            if uri[0] == "channel" and len(uri) > 2:
                 channelName = uri[1]
-                if uri[2] == "feeds":
+                if uri[2] == "feeds" and len(uri) > 3:
                     #function to test
                     # 1 results
                     # 2 days
@@ -439,44 +484,55 @@ class ThinkSpeakAdaptor(threading.Thread):
                     # 5 sum
                     # 6 average
                     # 7 median
-                    if uri[3] == "getResultsData":
-                        return json.dumps(self.readDataMultipleFields(channelName, results=params['results']), indent=3)
-                    elif uri[3] == "getLastDaysData":
-                        return json.dumps(self.readDataMultipleFields(channelName, days=params['days']), indent=3)
-                    elif uri[3] == "getLastMinutesData":
-                        return json.dumps(self.readDataMultipleFields(channelName, minutes=params['minutes']), indent=3)
-                    elif uri[3] == "getStartEndData":
-                        return json.dumps(self.readDataMultipleFields(channelName, start=params['start'], end=params['end'], start_end=True), indent=3)
-                    elif uri[3] == "getSumData":
-                        return json.dumps(self.readDataMultipleFields(channelName, sum=params['sum']), indent=3)
-                    elif uri[3] == "getAvgData":
-                        return json.dumps(self.readDataMultipleFields(channelName, average=params['average']), indent=3)
-                    elif uri[3] == "getMedian":
-                        return json.dumps(self.readDataMultipleFields(channelName, median=params['median']), indent=3)
+                    if uri[3] == "getResultsData" and 'results' in params:
+                        return json.dumps(self.readResultsData(channelName, results=params['results']), indent=3)
+                    elif uri[3] == "getLastDaysData" and 'days' in params:
+                        return json.dumps(self.readDaysData(channelName, days=params['days']), indent=3)
+                    elif uri[3] == "getLastMinutesData" and 'minutes' in params:
+                        return json.dumps(self.readMinutesData(channelName, minutes=params['minutes']), indent=3)
+                    elif uri[3] == "getStartEndData" and 'start' in params and 'end' in params:
+                        return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end']), indent=3)
+                    elif uri[3] == "getStartEndData" and 'start' in params:
+                        return json.dumps(self.readStartEndData(channelName, start=params['start']), indent=3)
+                    elif uri[3] == "getStartEndData" and 'end' in params:
+                        return json.dumps(self.readStartEndData(channelName, end=params['end']), indent=3)
+                    elif uri[3] == "getSum" and 'sum' in params:
+                        return json.dumps(self.readSumAvgMed(channelName, sum=params['sum']), indent=3)
+                    elif uri[3] == "getAvg" and 'average' in params:
+                        return json.dumps(self.readSumAvgMed(channelName, average=params['average']), indent=3)
+                    elif uri[3] == "getMedian" and 'median' in params:
+                        return json.dumps(self.readSumAvgMed(channelName, median=params['median']), indent=3)
                     else:
                         cherrypy.response.status = 404
                         return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
 
-                elif uri[2] == "field":
-
-                    fieldNumber = uri[3]
-                    if uri[4] == "getResultsData":
-                        return self.readDataSingleField(channelName, fieldNumber, results=params['results'])
-                    elif uri[4] == "getLastDaysData":
-                        return self.readDataSingleField(channelName, fieldNumber, days=params['days'])
-                    elif uri[4] == "getLastMinutesData":
-                        return self.readDataSingleField(channelName, fieldNumber, minutes=params['minutes'])
-                    elif uri[4] == "getStartEndData":
-                        return self.readDataSingleField(channelName, fieldNumber, start=params['start'], end=params['end'], start_end=True)
-                    elif uri[4] == "getSumData":
-                        return self.readDataSingleField(channelName, fieldNumber, sum=params['sum'])
-                    elif uri[4] == "getAvgData":
-                        return self.readDataSingleField(channelName, fieldNumber, average=params['average'])
-                    elif uri[4] == "getMedian":
-                        return self.readDataSingleField(channelName, fieldNUmber, median=params['median'])
+                elif uri[2] == "measureType" and len(uri) > 4:
+                    measureType = uri[3]
+                    fieldNumber = self.getFieldNumber(channelName, measureType)
+                    if fieldNumber != None:
+                        if uri[4] == "getResultsData" and 'results' in params:
+                            return json.dumps(self.readResultsData(channelName, fieldNumber, results=params['results']), indent=3)
+                        elif uri[4] == "getLastDaysData" and 'days' in params:
+                            return json.dumps(self.readDaysData(channelName, fieldNumber, days=params['days']), indent=3)
+                        elif uri[4] == "getLastMinutesData" and 'minutes' in params:
+                            return json.dumps(self.readMinutesData(channelName, fieldNumber, minutes=params['minutes']), indent=3)
+                        elif uri[4] == "getStartEndData" and 'start' in params and 'end' in params:
+                            return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end'], field_id=fieldNumber), indent=3)
+                        elif uri[4] == "getStartEndData" and 'start' in params:
+                            return json.dumps(self.readStartEndData(channelName, start=params['start'], field_id=fieldNumber), indent=3)
+                        elif uri[4] == "getStartEndData" and 'end' in params:
+                            return json.dumps(self.readStartEndData(channelName, end=params['end'], field_id=fieldNumber), indent=3)
+                        elif uri[4] == "getSumData" and 'sum' in params:
+                            return json.dumps(self.readSumAvgMed(channelName, fieldNumber, sum=params['sum']), indent=3)
+                        elif uri[4] == "getAvgData" and 'average' in params:
+                            return json.dumps(self.readSumAvgMed(channelName, fieldNumber, average=params['average']), indent=3)
+                        elif uri[4] == "getMedian" and 'median' in params:
+                            return json.dumps(self.readSumAvgMed(channelName, fieldNumber, median=params['median']), indent=3)
+                        else:
+                            cherrypy.response.status = 404
+                            return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
                     else:
-                        cherrypy.response.status = 404
-                        return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
+                        return json.dumps({"error":{"status": 404, "message": "Wrong measure type specified"}}, indent=4)
                 else:
                     cherrypy.response.status = 404
                     return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
@@ -493,23 +549,123 @@ if __name__=="__main__":
     Logger.setup(settings.getField('logVerbosity'), settings.getFieldOrDefault('logFile', ''))
     conf={
             '/':{
+                'tools.encode.text_only': False,
                 'request.dispatch':cherrypy.dispatch.MethodDispatcher(),
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             }
     }
     availableServices = [
-        {
-            "serviceType": "REST",
-            "serviceIP": NetworkUtils.getIp(),
-            "servicePort": 8080,
-            "endPoint": [
-                {
-                    "type": "web",
-                    "uri": "/",
-                    "parameter": []
-                }
-            ]
-        }
+            {
+                "serviceType": "REST",
+                "serviceIP": NetworkUtils.getIp(),
+                "servicePort": 8080,
+                "endPoint": [
+                    {
+                        "type": "web",
+                        "uri": "/",
+                        "version": 1,
+                        "parameter": []
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getResultsData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getDaysData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "days", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getMinutesData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getStartEndData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "start", "unit": "datetime"},{"name":"end", "unit":"datetime"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getSum",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "sum", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getAvg",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "average", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getMedian",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "median", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getResultsData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getDaysData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "days", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getMinutesData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getStartEndData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "start", "unit": "datetime"},{"name":"end", "unit":"datetime"}],
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getSum",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "sum", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getAvg",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "average", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/feeds/getMedian",
+                        "uri_parameters":[{"name":"channelName","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "median", "unit": "integer"}]
+                    }
+                ]
+            }
     ]
     try:
         thingspeak_api_key = os.environ['THINGSPEAKAPIKEY']
