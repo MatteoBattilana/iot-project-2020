@@ -9,6 +9,7 @@ from commons.netutils import *
 import threading
 import json
 import time
+import logging
 
 class Device(threading.Thread):
     exposed=True
@@ -81,7 +82,7 @@ class Device(threading.Thread):
         self.join()
 
     def run(self):
-        print("[INFO] Started")
+        logging.debug("Started")
         self._ping.start()
 
         lastTime = time.time()
@@ -91,7 +92,7 @@ class Device(threading.Thread):
                 self._mqtt.publish(self._publishTopic + self._deviceId, self._getRandomValues())
                 lastTime = time.time()
             time.sleep(1)
-        print ("[INFO] Stopped sensor read")
+        logging.debug("Stopped sensor read")
 
     def _getRandomValues(self):
         simulatedValues = self._sensorReader.readSensors()
@@ -103,7 +104,7 @@ class Device(threading.Thread):
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
-        print("[INFO] New id from catalog: " + newId)
+        logging.debug("New id from catalog: " + newId)
         self._deviceId = newId
         self._isMQTTconnected = False
         if self._mqtt is not None:

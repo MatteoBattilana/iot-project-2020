@@ -9,5 +9,7 @@
           "uri": "test.mosquitto.org",
           "port": 1883
         }
-      ]
+      ],
+  "logVerbosity": "INFO",
+  "logFile": "catalog.log"
 }

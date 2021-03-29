@@ -1,6 +1,7 @@
 import time
 import json
 import threading
+import logging
 
 class ThingSpeakBulkUpdater():
     def __init__(self, bulkLimit):
@@ -37,8 +38,8 @@ class ThingSpeakBulkUpdater():
                 if len(channelCache["data"]) < self.bulkLimit:
                     channelCache["data"].append(new_channel_update)
                 else:
-                    print(f"[THINGSPEAKBULKUPDATER][ERROR] Exceed maximum messages per bulk {self.bulkLimit}")
-        print(f"[THINGSPEAKBULKUPDATER][INFO] {self.cacheList}")
+                    logging.error(f"Exceed maximum messages per bulk {self.bulkLimit}")
+        logging.debug(f"{self.cacheList}")
         self.lock.release()
 
     def clearCache(self):
