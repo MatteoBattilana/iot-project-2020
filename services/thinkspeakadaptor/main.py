@@ -44,7 +44,7 @@ class ThinkSpeakAdaptor(threading.Thread):
     exposed=True
     def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, bulkLimit, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = self)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", "THINGSPEAK", groupId = None, notifier = self)
         self._ping.start()
         self._subscribeList = subscribeList
         self._isMQTTconnected = False

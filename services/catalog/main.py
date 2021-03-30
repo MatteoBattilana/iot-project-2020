@@ -67,6 +67,10 @@ class RESTManagerService(threading.Thread):
             return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
         elif uri[0] == 'searchByGroupId':
             return json.dumps(self._serv.searchByGroupId(params['groupId']), indent=4)
+        elif uri[0] == 'searchByServiceType':
+            return json.dumps(self._serv.searchByServiceType(params['serviceType']), indent=4)
+        elif uri[0] == 'searchByServiceSubType':
+            return json.dumps(self._serv.searchByServiceSubType(params['serviceSubType']), indent=4)
         elif uri[0] == 'getAllGroupId':
             return json.dumps(self._serv.searchAllGroupId(), indent=4)
         elif uri[0] == 'getAll':

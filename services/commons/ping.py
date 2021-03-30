@@ -14,7 +14,7 @@ json = {
 
 # Module for managing the ping to the catalog
 class Ping(threading.Thread):
-    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, groupId = None, notifier = None):
+    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, serviceSubType = None, groupId = None, notifier = None):
         threading.Thread.__init__(self)
         self._pingTime = pingTime
         self._serviceID = None
@@ -23,6 +23,8 @@ class Ping(threading.Thread):
         self._run = True
         json["serviceServiceList"] = serviceServiceList
         json["serviceType"] = serviceType
+        if serviceSubType is not None:
+            json["serviceSubType"] = serviceSubType
         json["serviceName"] = serviceName
         if groupId is not None:
             json["groupId"] = groupId

@@ -31,6 +31,20 @@ class ServiceManager():
                 return serv
         return {}
 
+    def searchByServiceType(self, type):
+        ret = []
+        for serv in self._list:
+            if serv['serviceType'] == type:
+                ret.append(serv)
+        return ret
+
+    def searchByServiceSubType(self, subtype):
+        ret = []
+        for serv in self._list:
+            if 'serviceSubType' in serv and serv['serviceSubType'] == subtype:
+                ret.append(serv)
+        return ret
+
     def searchAllGroupId(self):
         ret = []
         for serv in self._list:
