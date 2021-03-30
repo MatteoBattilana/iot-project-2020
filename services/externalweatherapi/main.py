@@ -15,13 +15,8 @@ class ExternalWeatherApi():
     exposed=True
 
     def __init__(self, pingTime, serviceList, serviceId, catalogAddress, safeWindSpeed, openweatherapikey):
-<<<<<<< Updated upstream
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", groupId = None, notifier = None)
-        logging.debug("Started")
-=======
         self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", "EXTERNALWEATHERAPI", groupId = None, notifier = None)
-        print("[INFO] Started")
->>>>>>> Stashed changes
+        logging.debug("Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey
         self._safeWindSpeed = safeWindSpeed
