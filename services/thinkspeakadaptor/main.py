@@ -27,15 +27,16 @@ def changeDatetimeFormat(_datetime):
     return _changed
 
 class ThreadHttpRequest(threading.Thread):
-    def __init__(self, url, jsonBody):
+    def __init__(self, url, jsonBody, channelName):
         threading.Thread.__init__(self)
         self.url = url
         self.jsonBody = jsonBody
+        self.channelName = channelName
 
     def run(self):
         try:
-            requests.post(self.url, json=self.jsonBody)
-            logging.debug(f"Sent data {self.jsonBody} in bulk to {self.url} in a POST request")
+            r = requests.post(self.url, json=self.jsonBody)
+            logging.info(f"Sent data {self.jsonBody} in bulk to channel {self.channelName} in a POST request")
         except Exception:
             logging.error(f"POST request went wrong")
 
@@ -151,7 +152,6 @@ class ThinkSpeakAdaptor(threading.Thread):
         #update THINGSPEAK CACHE
         date=datetime.datetime.fromtimestamp(_timestamp)
         self.cache.updateChannelCache(_channel_name, payload["e"], str(date), self.getFieldMapping(_channel_name))
-        logging.debug(f"Data sent to the cache")
 
     # Return the mapping of value type to its field: temperature - fieldX
     def getFieldMapping(self, channelName):
@@ -226,7 +226,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             for update in channelCache["data"]:
                 jsonBody["updates"].append(update)
 
-            thread = ThreadHttpRequest(self._baseUri+"channels/"+str(self.getChannelID(channelName))+"/bulk_update.json", jsonBody)
+            thread = ThreadHttpRequest(self._baseUri+"channels/"+str(self.getChannelID(channelName))+"/bulk_update.json", jsonBody, channelName)
             thread.start()
             tlist.append(thread)
 
@@ -348,14 +348,12 @@ class ThinkSpeakAdaptor(threading.Thread):
         try:
             r = requests.post(self._baseUri + "channels.json", json = jsonBody)
             #verify if it works like this
-            logging.debug(self._baseUri + "channels.json",)
             if r.status_code == 200:
                 newChannel = r.json()
                 for i,field_name in enumerate(fields_name):
                     newChannel["field"+str(i+1)]=field_name
 
                 self._channels.append(newChannel)
-                logging.debug(json.dumps(r.json(), indent=4))
                 logging.debug("Thingspeak Channel " + channelName + " opened with success")
             else:
                 logging.error("Unable to create a new channel " + channelName)

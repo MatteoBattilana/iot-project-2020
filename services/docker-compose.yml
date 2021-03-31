@@ -120,6 +120,7 @@ services:
 volumes:
   node-red:
   simulateddevice:
+  simulateddevice2:
   externalweatherapi:
   catalog:
   webinterface:
