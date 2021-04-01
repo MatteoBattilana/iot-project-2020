@@ -30,7 +30,7 @@ class SensorReader():
             't': time.time(),
             'v': randrange(0, 100)
         })
-        r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=7")
+        r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=1")
         jsonBody = r.json()
         sim_co2 = jsonBody["feeds"][0]["field7"]
         simulatedValues.append({
