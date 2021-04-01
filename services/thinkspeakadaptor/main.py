@@ -583,7 +583,7 @@ if __name__=="__main__":
                         "uri": "/channel/<channelName>/measureType/<measureType>/getMinutesData",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
-                        "parameter": [{"name": "results", "unit": "integer"}]
+                        "parameter": [{"name": "minutes", "unit": "integer"}]
                     },
                     {
                         "type": "web",
@@ -632,7 +632,7 @@ if __name__=="__main__":
                         "uri": "/channel/<channelName>/feeds/getMinutesData",
                         "uri_parameters":[{"name":"channelName","unit":"string"}],
                         "version": 1,
-                        "parameter": [{"name": "results", "unit": "integer"}]
+                        "parameter": [{"name": "minutes", "unit": "integer"}]
                     },
                     {
                         "type": "web",
