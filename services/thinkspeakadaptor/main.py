@@ -45,7 +45,7 @@ class ThinkSpeakAdaptor(threading.Thread):
     exposed=True
     def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, bulkLimit, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = self)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", "THINGSPEAK", groupId = None, notifier = self)
         self._ping.start()
         self._subscribeList = subscribeList
         self._isMQTTconnected = False
@@ -484,9 +484,9 @@ class ThinkSpeakAdaptor(threading.Thread):
                     # 7 median
                     if uri[3] == "getResultsData" and 'results' in params:
                         return json.dumps(self.readResultsData(channelName, results=params['results']), indent=3)
-                    elif uri[3] == "getLastDaysData" and 'days' in params:
+                    elif uri[3] == "getDaysData" and 'days' in params:
                         return json.dumps(self.readDaysData(channelName, days=params['days']), indent=3)
-                    elif uri[3] == "getLastMinutesData" and 'minutes' in params:
+                    elif uri[3] == "getMinutesData" and 'minutes' in params:
                         return json.dumps(self.readMinutesData(channelName, minutes=params['minutes']), indent=3)
                     elif uri[3] == "getStartEndData" and 'start' in params and 'end' in params:
                         return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end']), indent=3)
@@ -510,9 +510,9 @@ class ThinkSpeakAdaptor(threading.Thread):
                     if fieldNumber != None:
                         if uri[4] == "getResultsData" and 'results' in params:
                             return json.dumps(self.readResultsData(channelName, fieldNumber, results=params['results']), indent=3)
-                        elif uri[4] == "getLastDaysData" and 'days' in params:
+                        elif uri[4] == "getDaysData" and 'days' in params:
                             return json.dumps(self.readDaysData(channelName, fieldNumber, days=params['days']), indent=3)
-                        elif uri[4] == "getLastMinutesData" and 'minutes' in params:
+                        elif uri[4] == "getMinutesData" and 'minutes' in params:
                             return json.dumps(self.readMinutesData(channelName, fieldNumber, minutes=params['minutes']), indent=3)
                         elif uri[4] == "getStartEndData" and 'start' in params and 'end' in params:
                             return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end'], field_id=fieldNumber), indent=3)

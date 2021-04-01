@@ -16,7 +16,7 @@ class WebSite():
 
     def __init__(self, pingTime, serviceList, serviceName, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = None)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", "WEBINTERFACE", groupId = None, notifier = None)
         logging.debug("Started")
         self._ping.start()
 
