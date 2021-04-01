@@ -13,6 +13,7 @@ import json
 import time
 import logging
 from commons.logger import *
+import requests
 
 class SensorReader():
     def readSensors(self):
@@ -29,6 +30,16 @@ class SensorReader():
             't': time.time(),
             'v': randrange(0, 100)
         })
+        r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=7")
+        jsonBody = r.json()
+        sim_co2 = jsonBody["feeds"][0]["field7"]
+        simulatedValues.append({
+            'n': 'CO2',
+            'u': 'ppm',
+            't': time.time(),
+            'v': sim_co2
+            }
+        )
         return simulatedValues
 
 if __name__=="__main__":
