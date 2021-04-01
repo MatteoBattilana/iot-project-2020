@@ -106,7 +106,7 @@ services:
 volumes:
   node-red:
   simulateddevice:
-  simulateddevic2:
+  simulateddevice2:
   externalweatherapi:
   catalog:
   webinterface:

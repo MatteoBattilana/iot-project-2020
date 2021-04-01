@@ -5,5 +5,5 @@
   "groupId": "home2",
   "MQTTTopic": "/iot-programming-2343/",
   "catalogAddress": "http://catalog:8080/catalog",
-  "logVerbosity": "DEBUG"
+  "logVerbosity": "ERROR"
 }
