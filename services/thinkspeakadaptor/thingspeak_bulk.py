@@ -22,13 +22,7 @@ class ThingSpeakBulkUpdater():
         #at the moment the field are fixed a priori
 
         self.lock.acquire()
-        new_channel_update={
-            "field1":"",
-            "field2":"",
-            "field3":"",
-            "field4":"",
-            "created_at":""
-        }
+        new_channel_update = {}
         new_channel_update["created_at"]=timestamp
         for new_data in newdatas:
             new_channel_update[fieldMapping[new_data["n"]]]=new_data["v"]
@@ -37,9 +31,9 @@ class ThingSpeakBulkUpdater():
             if channelCache["channel"] == channelName:
                 if len(channelCache["data"]) < self.bulkLimit:
                     channelCache["data"].append(new_channel_update)
+                    logging.info("Added to cache " + str(new_channel_update) + " for " + channelName)
                 else:
                     logging.error(f"Exceed maximum messages per bulk {self.bulkLimit}")
-        logging.debug(f"{self.cacheList}")
         self.lock.release()
 
     def clearCache(self):
