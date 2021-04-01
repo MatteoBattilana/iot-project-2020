@@ -61,6 +61,7 @@ class Device(threading.Thread):
                 self._settingsManager.getField('catalogAddress'),
                 self._settingsManager.getField('deviceName'),
                 "DEVICE",
+                "RASPBERRY",
                 self._settingsManager.getField('groupId'),
                 self
             )

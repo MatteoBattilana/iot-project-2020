@@ -10,6 +10,5 @@
           "port": 1883
         }
       ],
-  "logVerbosity": "ERROR",
-  "logFile": "catalog.log"
+  "logVerbosity": "WARNING"
 }
