@@ -73,7 +73,8 @@ class Device(threading.Thread):
         self._deviceName = self._settingsManager.getField('deviceName')
         self._mqtt = None
         self._run = True
-
+        if self._settingsManager.getFieldOrDefault('serviceId', ''):
+            self.onNewCatalogId(self._settingsManager.getField('serviceId'))
 
     def stop(self):
         if self._isMQTTconnected and self._mqtt is not None:

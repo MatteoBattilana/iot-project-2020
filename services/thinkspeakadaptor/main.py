@@ -57,17 +57,20 @@ class ThinkSpeakAdaptor(threading.Thread):
             groupId = None,
             notifier = self)
         self._ping.start()
-        self._subscribeList = settings.getField('subscribeTopics')
+        self._subscribeList = self._settings.getField('subscribeTopics')
         self._isMQTTconnected = False
-        self._catalogAddress = settings.getField('catalogAddress')
+        self._catalogAddress = self._settings.getField('catalogAddress')
         self._mqtt = None
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
         self._channels = []                                 # it don't have to wait to fetch
         self._channels = self.getChannelList()
-        self.cache=ThingSpeakBulkUpdater(int(settings.getField('bulkLimit')))
-        self.updateBulkTime=int(settings.getField('bulkRate'))
+        self.cache=ThingSpeakBulkUpdater(int(self._settings.getField('bulkLimit')))
+        self.updateBulkTime=int(self._settings.getField('bulkRate'))
         self._run=True
+
+        if self._settings.getFieldOrDefault('serviceId', ''):
+            self.onNewCatalogId(self._settings.getField('serviceId'))
 
 
     def run(self):
@@ -89,7 +92,6 @@ class ThinkSpeakAdaptor(threading.Thread):
     # Catalog new id callback
     def onNewCatalogId(self, newId):
         self._settings.updateField('serviceId', newId)
-        logging.debug("New id from catalog: " + newId)
         if self._mqtt is not None:
             self._mqtt.stop()
 
