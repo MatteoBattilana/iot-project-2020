@@ -105,7 +105,6 @@ class MQTTRetry(threading.Thread):
             if self._notifier != None:
                 self._notifier.onMQTTConnected()
             logging.info("Connected to the MQTT broker")
-            logging.info(self._subscribeList)
             for topic in self._subscribeList:
                 logging.debug("Subscribed to " + topic)
                 self._paho_mqtt.subscribe(topic, 2)

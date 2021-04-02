@@ -497,9 +497,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         #https:localhost:port/channel/channelName/feeds?...
         #https:localhost:port/channel/channelName/field/fieldNumber/functionality?
         if len(uri) != 0:
-            print("A")
             if uri[0] == "group":
-                print("B")
                 groupId = uri[1]
                 #http://172.20.0.6:8080/group/home1/getExternalFeeds?minutes=10
                 if uri[2] == "getExternalFeeds" and 'minutes' in params:
@@ -600,6 +598,20 @@ if __name__=="__main__":
                         "uri": "/",
                         "version": 1,
                         "parameter": []
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getExternalFeeds",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "minutes", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getInternalFeeds",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "minutes", "unit": "integer"}]
                     },
                     {
                         "type": "web",
