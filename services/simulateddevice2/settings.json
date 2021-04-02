@@ -1,9 +1,11 @@
 {
-  "pingTime": 60,
-  "sensorSamplingTime": 20,
-  "deviceName": "SIMULATED-DEVICE",
-  "groupId": "home2",
-  "MQTTTopic": "/iot-programming-2343/",
-  "catalogAddress": "http://catalog:8080/catalog",
-  "logVerbosity": "DEBUG"asd
+    "pingTime": 60,
+    "sensorSamplingTime": 20,
+    "deviceName": "SIMULATED-DEVICE",
+    "groupId": "home1",
+    "MQTTTopic": "/iot-programming-2343/",
+    "catalogAddress": "http://catalog:8080/catalog",
+    "logVerbosity": "DEBUG",
+    "serviceId": "SIMULATED-DEVICE-2",
+    "devicePosition": "internal"
 }
