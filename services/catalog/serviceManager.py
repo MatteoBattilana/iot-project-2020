@@ -64,30 +64,39 @@ class ServiceManager():
     def getAll(self):
         return self._list
 
-    # Internal function to insert a service
-    def _insertService(self, service, serviceName):
+    def _insertServiceByServiceId(self, service, serviceId):
         self._lock.acquire()
-        service['serviceId'] = serviceName + "-" + str(self._currentIndex)
+        service['serviceId'] = serviceId
         service['lastUpdate'] = time.time()
-        self._currentIndex = self._currentIndex + 1
+        if (len(serviceId.split('-')) == 2):
+            self._currentIndex = max(int(serviceId.split('-')[1]), self._currentIndex) + 1
+        else:
+            self._currentIndex = self._currentIndex + 1
         self._list.append(service)
         self._lock.release()
         logging.debug("Added service new service: " + str(service['serviceId']))
         return service
 
+    # Internal function to insert a service
+    def _insertService(self, service):
+        return self._insertServiceByServiceId(service, service["serviceName"] + "-" + str(self._currentIndex))
+
     def addService(self, service):
         # If the service is not in the list, it is simply added
-        if "serviceId" not in service or self.searchById(service["serviceId"]) == {}:
-            return self._insertService(service, service["serviceName"])
+        if "serviceId" not in service and "serviceName" in service:
+            return self._insertService(service)
 
-        # Otherwaise I update its information by keeping its id
-        self._lock.acquire()
-        for idx, serv in enumerate(self._list):
-            if serv['serviceId'] == service["serviceId"]:
-                service['lastUpdate'] = time.time()
-                service['serviceId'] = service["serviceId"]
-                self._list[idx] = service
-        self._lock.release()
+        if self.searchById(service["serviceId"]) == {}:
+            self._insertServiceByServiceId(service, service["serviceId"])
+        else:
+            # Otherwaise I update its information by keeping its id
+            self._lock.acquire()
+            for idx, serv in enumerate(self._list):
+                if serv['serviceId'] == service["serviceId"]:
+                    service['lastUpdate'] = time.time()
+                    service['serviceId'] = service["serviceId"]
+                    self._list[idx] = service
+            self._lock.release()
 
         logging.debug("Updated service service with id: " + str(service['serviceId']))
         return service

@@ -1,12 +1,13 @@
 {
-  "pingTime": 60,
-  "bulkRate": 20,
-  "bulkLimit": 900,
-  "serviceName": "THINGSPEAK-ADAPTOR",
-  "subscribeTopics": [
-      "/iot-programming-2343/#"
-  ],
-  "catalogAddress": "http://catalog:8080/catalog",
-  "logVerbosity": "DEBUG",
-  "logFile": "log.log"
+    "pingTime": 60,
+    "bulkRate": 20,
+    "bulkLimit": 900,
+    "serviceName": "THINGSPEAK-ADAPTOR",
+    "subscribeTopics": [
+        "/iot-programming-2343/#"
+    ],
+    "catalogAddress": "http://catalog:8080/catalog",
+    "logVerbosity": "DEBUG",
+    "logFile": "log.log",
+    "serviceId": "THINGSPEAK-ADAPTOR-3"
 }

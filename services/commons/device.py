@@ -55,12 +55,12 @@ class Device(threading.Thread):
             }
         ]
         self._ping = Ping(
-
                 int(self._settingsManager.getField('pingTime')),
                 serviceList,
                 self._settingsManager.getField('catalogAddress'),
                 self._settingsManager.getField('deviceName'),
                 "DEVICE",
+                self._settingsManager.getFieldOrDefault('serviceId', ''),
                 "RASPBERRY",
                 self._settingsManager.getField('groupId'),
                 self
@@ -105,6 +105,7 @@ class Device(threading.Thread):
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
+        self._settingsManager.updateField('serviceId', newId)
         logging.debug("New id from catalog: " + newId)
         self._deviceId = newId
         self._isMQTTconnected = False

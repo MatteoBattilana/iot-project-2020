@@ -43,20 +43,30 @@ class ThreadHttpRequest(threading.Thread):
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
     exposed=True
-    def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, bulkLimit, catalogAddress):
+    def __init__(self, settings, serviceList, thingspeak_api_key):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", "THINGSPEAK", groupId = None, notifier = self)
+        self._settings = settings
+        self._ping = Ping(
+            int(self._settings.getField('pingTime')),
+            serviceList,
+            self._settings.getField('catalogAddress'),
+            self._settings.getField('serviceName'),
+            "SERVICE",
+            self._settings.getFieldOrDefault('serviceId', ''),
+            "THINGSPEAK",
+            groupId = None,
+            notifier = self)
         self._ping.start()
-        self._subscribeList = subscribeList
+        self._subscribeList = settings.getField('subscribeTopics')
         self._isMQTTconnected = False
-        self._catalogAddress = catalogAddress
+        self._catalogAddress = settings.getField('catalogAddress')
         self._mqtt = None
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
         self._channels = []                                 # it don't have to wait to fetch
         self._channels = self.getChannelList()
-        self.cache=ThingSpeakBulkUpdater(bulkLimit)
-        self.updateBulkTime=bulkRate
+        self.cache=ThingSpeakBulkUpdater(int(settings.getField('bulkLimit')))
+        self.updateBulkTime=int(settings.getField('bulkRate'))
         self._run=True
 
 
@@ -78,6 +88,7 @@ class ThinkSpeakAdaptor(threading.Thread):
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
+        self._settings.updateField('serviceId', newId)
         logging.debug("New id from catalog: " + newId)
         if self._mqtt is not None:
             self._mqtt.stop()
@@ -673,14 +684,9 @@ if __name__=="__main__":
         thingspeak_api_key = ""
 
     rpi = ThinkSpeakAdaptor(
-            int(settings.getField('pingTime')),
-            availableServices,
-            settings.getField('serviceName'),
-            settings.getField('subscribeTopics'),
-            thingspeak_api_key,
-            int(settings.getField('bulkRate')),
-            int(settings.getField('bulkLimit')),
-            settings.getField('catalogAddress')
+        settings,
+        availableServices,
+        thingspeak_api_key
         )
     rpi.start()
 
