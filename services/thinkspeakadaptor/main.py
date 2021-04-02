@@ -27,15 +27,16 @@ def changeDatetimeFormat(_datetime):
     return _changed
 
 class ThreadHttpRequest(threading.Thread):
-    def __init__(self, url, jsonBody):
+    def __init__(self, url, jsonBody, channelName):
         threading.Thread.__init__(self)
         self.url = url
         self.jsonBody = jsonBody
+        self.channelName = channelName
 
     def run(self):
         try:
-            requests.post(self.url, json=self.jsonBody)
-            logging.debug(f"Sent data {self.jsonBody} in bulk to {self.url} in a POST request")
+            r = requests.post(self.url, json=self.jsonBody)
+            logging.info(f"Sent data {self.jsonBody} in bulk to channel {self.channelName} in a POST request")
         except Exception:
             logging.error(f"POST request went wrong")
 
@@ -44,7 +45,7 @@ class ThinkSpeakAdaptor(threading.Thread):
     exposed=True
     def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, bulkLimit, catalogAddress):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", groupId = None, notifier = self)
+        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", "THINGSPEAK", groupId = None, notifier = self)
         self._ping.start()
         self._subscribeList = subscribeList
         self._isMQTTconnected = False
@@ -151,7 +152,6 @@ class ThinkSpeakAdaptor(threading.Thread):
         #update THINGSPEAK CACHE
         date=datetime.datetime.fromtimestamp(_timestamp)
         self.cache.updateChannelCache(_channel_name, payload["e"], str(date), self.getFieldMapping(_channel_name))
-        logging.debug(f"Data sent to the cache")
 
     # Return the mapping of value type to its field: temperature - fieldX
     def getFieldMapping(self, channelName):
@@ -226,7 +226,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             for update in channelCache["data"]:
                 jsonBody["updates"].append(update)
 
-            thread = ThreadHttpRequest(self._baseUri+"channels/"+str(self.getChannelID(channelName))+"/bulk_update.json", jsonBody)
+            thread = ThreadHttpRequest(self._baseUri+"channels/"+str(self.getChannelID(channelName))+"/bulk_update.json", jsonBody, channelName)
             thread.start()
             tlist.append(thread)
 
@@ -348,14 +348,12 @@ class ThinkSpeakAdaptor(threading.Thread):
         try:
             r = requests.post(self._baseUri + "channels.json", json = jsonBody)
             #verify if it works like this
-            logging.debug(self._baseUri + "channels.json",)
             if r.status_code == 200:
                 newChannel = r.json()
                 for i,field_name in enumerate(fields_name):
                     newChannel["field"+str(i+1)]=field_name
 
                 self._channels.append(newChannel)
-                logging.debug(json.dumps(r.json(), indent=4))
                 logging.debug("Thingspeak Channel " + channelName + " opened with success")
             else:
                 logging.error("Unable to create a new channel " + channelName)
@@ -486,9 +484,9 @@ class ThinkSpeakAdaptor(threading.Thread):
                     # 7 median
                     if uri[3] == "getResultsData" and 'results' in params:
                         return json.dumps(self.readResultsData(channelName, results=params['results']), indent=3)
-                    elif uri[3] == "getLastDaysData" and 'days' in params:
+                    elif uri[3] == "getDaysData" and 'days' in params:
                         return json.dumps(self.readDaysData(channelName, days=params['days']), indent=3)
-                    elif uri[3] == "getLastMinutesData" and 'minutes' in params:
+                    elif uri[3] == "getMinutesData" and 'minutes' in params:
                         return json.dumps(self.readMinutesData(channelName, minutes=params['minutes']), indent=3)
                     elif uri[3] == "getStartEndData" and 'start' in params and 'end' in params:
                         return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end']), indent=3)
@@ -512,9 +510,9 @@ class ThinkSpeakAdaptor(threading.Thread):
                     if fieldNumber != None:
                         if uri[4] == "getResultsData" and 'results' in params:
                             return json.dumps(self.readResultsData(channelName, fieldNumber, results=params['results']), indent=3)
-                        elif uri[4] == "getLastDaysData" and 'days' in params:
+                        elif uri[4] == "getDaysData" and 'days' in params:
                             return json.dumps(self.readDaysData(channelName, fieldNumber, days=params['days']), indent=3)
-                        elif uri[4] == "getLastMinutesData" and 'minutes' in params:
+                        elif uri[4] == "getMinutesData" and 'minutes' in params:
                             return json.dumps(self.readMinutesData(channelName, fieldNumber, minutes=params['minutes']), indent=3)
                         elif uri[4] == "getStartEndData" and 'start' in params and 'end' in params:
                             return json.dumps(self.readStartEndData(channelName, start=params['start'], end=params['end'], field_id=fieldNumber), indent=3)

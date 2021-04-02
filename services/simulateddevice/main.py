@@ -38,7 +38,7 @@ class SensorReader():
         jsonBody = r.json()
         sim_co2 = jsonBody["feeds"][0]["field7"]
         simulatedValues.append({
-            'n': 'CO2',
+            'n': 'co2',
             'u': 'ppm',
             't': time.time(),
             'v': sim_co2
