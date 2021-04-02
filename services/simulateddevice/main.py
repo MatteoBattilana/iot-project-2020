@@ -18,19 +18,23 @@ import requests
 class SensorReader():
     def readSensors(self):
         simulatedValues = []
+        r = requests.get("https://api.thingspeak.com/channels/297675/feeds.json?results=1")
+        jsonBody = r.json()
+        sim_temp = jsonBody["feeds"][0]["field1"]
         simulatedValues.append({
             'n': 'temperature',
             'u': 'celsius',
             't': time.time(),
-            'v': randrange(-20, 40)
+            'v': sim_temp
         })
+        sim_hum = jsonBody["feeds"][0]["field2"]
         simulatedValues.append({
             'n': 'humidity',
             'u': 'celsius',
             't': time.time(),
-            'v': randrange(0, 100)
+            'v': sim_hum
         })
-        r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=7")
+        r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=1")
         jsonBody = r.json()
         sim_co2 = jsonBody["feeds"][0]["field7"]
         simulatedValues.append({
