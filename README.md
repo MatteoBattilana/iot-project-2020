@@ -67,20 +67,20 @@ Once you have done your work, open a pull request using the GitHub interface
 ### PROJECT REST ENDPOINTS
 * CATALOG:
  Catalog services research:
- - search by Id: [http://localhost:8080/catalog/searchById?serviceId=ID](http://localhost:8080/catalog/searchById?serviceId=EXTERNAL-API-0)
- - search by GroupId: [http://localhost:8080/catalog/searchByGroupId?groupId=GROUPID]()
- - search by ServiceType: [http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICETYPE](http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICE)
- - search by ServiceSubType: [http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=SERVICESUBTYPE](http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI)
- - get all GroupId: [http://localhost:8080/catalog/getAllGroupId](http://localhost:8080/catalog/getAllGroupId)
- - get all services: [http://localhost:8080/catalog/getAll](http://localhost:8080/catalog/getAll)
- - get system status: [http://localhost:8080/catalog/getSystemStatus](http://localhost:8080/catalog/getSystemStatus)
- - get the broker in use: [http://localhost:8080/catalog/getBroker](http://localhost:8080/catalog/getBroker)
+  - search by Id: [http://localhost:8080/catalog/searchById?serviceId=ID](http://localhost:8080/catalog/searchById?serviceId=EXTERNAL-API-0)
+  - search by GroupId: [http://localhost:8080/catalog/searchByGroupId?groupId=GROUPID]()
+  - search by ServiceType: [http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICETYPE](http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICE)
+  - search by ServiceSubType: [http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=SERVICESUBTYPE](http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI)
+  - get all GroupId: [http://localhost:8080/catalog/getAllGroupId](http://localhost:8080/catalog/getAllGroupId)
+  - get all services: [http://localhost:8080/catalog/getAll](http://localhost:8080/catalog/getAll)
+  - get system status: [http://localhost:8080/catalog/getSystemStatus](http://localhost:8080/catalog/getSystemStatus)
+  - get the broker in use: [http://localhost:8080/catalog/getBroker](http://localhost:8080/catalog/getBroker)
 * NODE-RED:
- Web Interface address: [http://localhost/ui](http://localhost/ui)
- Node-red framework access: [http://localhost](http://localhost)
+  - Web Interface address: [http://localhost/ui](http://localhost/ui)
+  - Node-red framework access: [http://localhost](http://localhost)
 * THINGSPEAK ADAPTOR:
  Reading Data from ThingSpeak:
- - get last N measureType data: [http://localhost:8090/channel/<channelName>/measureType/<measureType>/getResultsData?results=N](http://localhost:8090/channel/home1/measureType/temperature/getResultsData?results=1)
+  - get last N measureType data: [http://localhost:8090/channel/<channelName>/measureType/<measureType>/getResultsData?results=N](http://localhost:8090/channel/home1/measureType/temperature/getResultsData?results=1)
   - get last D days of measureType data: [http://localhost:8090/channel/<channelName>/measureType/<measureType>/getDaysData?days=D](http://localhost:8090/channel/home1/measureType/humidity/getDaysData?days=1)
   - get last M minutes of measureType data: [http://localhost:8090/channel/<channelName>/measureType/<measureType>/getMinutesData?minutes=M](http://localhost:8090/channel/home1/measureType/temperature/getMinutesData?minutes=5)
   - get measureType data from START to END date: [http://localhost:8090/channel/<channelName>/measureType/<measureType>/getStartEndData?Start=START&End=END](http://localhost:8090/channel/home1/measureType/temperature/getStartEndData?Start=2021-03-30%2010:10:00&End=2021-04-03%2015:40:00)
@@ -95,4 +95,4 @@ Once you have done your work, open a pull request using the GitHub interface
   - get all fields data average every AVG minutes (daily): [http://localhost:8090/channel/<channelName>/feeds/getAvgData?average=AVG](http://localhost:8090/channel/home1/feeds/getAvgData?average=720)
   - get all fields data median every MEDIAN minutes (daily): [http://localhost:8090/channel/<channelName>/feeds/getMedianData?median=MEDIAN](http://localhost:8090/channel/home1/feeds/getMedianData?median=720)
 * EXTERNAL WEATHER API:
-- get the current weather status at latitude LAT and longitude LON: [http://localhost:8070/currentWeatherStatus?lat=LAT&lon=LON](http://localhost:8070/currentWeatherStatus?lat=45.06226619601743&lon=7.661825314722597)
+  - get the current weather status at latitude LAT and longitude LON: [http://localhost:8070/currentWeatherStatus?lat=LAT&lon=LON](http://localhost:8070/currentWeatherStatus?lat=45.06226619601743&lon=7.661825314722597)
