@@ -17,22 +17,21 @@ class ExternalWeatherApi():
     def __init__(self, settings, serviceList, openweatherapikey):
         self._settings = settings
         self._ping = Ping(
-                int(self._settings.getField('pingTime')),
-                serviceList,
-                self._settings.getField('catalogAddress'),
-                self._settings.getField('deviceName'),
-                "SERVICE",
-                self._settings.getFieldOrDefault('serviceId', ''),
-                "EXTERNALWEATHERAPI",
-                groupId = None,
-                self
-            )
+            int(self._settings.getField('pingTime')),
+            serviceList,
+            self._settings.getField('catalogAddress'),
+            self._settings.getField('serviceName'),
+            "SERVICE",
+            self._settings.getFieldOrDefault('serviceId', ''),
+            "EXTERNALWEATHERAPI",
+            groupId = None,
+            notifier = self)
         logging.debug("Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey
         self._safeWindSpeed = float(settings.getField('windSpeedSafe'))
 
-    
+
     # Catalog new id callback
     def onNewCatalogId(self, newId):
         self._settings.updateField('serviceId', newId)
