@@ -64,3 +64,11 @@ Once you have done your work, open a pull request using the GitHub interface
 * Simulation Tool for CO2 distribution behavior: [Educational tool for CO2 concentration simulations](https://github.com/bph-tuwien/bph_co2)
 * One example of informations about IAQ (there are several ones): [Indoor Air Quality](http://www.iaquk.org.uk/ESW/Files/IAQ_Rating_Index.pdf) 
 
+### PROJECT REST ENDPOINTS
+* CATALOG
+* NODE-RED
+* THINGSPEAK ADAPTOR:
+ Reading Data from ThingSpeak:
+ - get last N data: http:/localhost:8090/channel/<channelName>/measureType/<measureType>/getResultsData?results=N
+  - get last D days of data : http:/localhost:8090/channel/<channelName>/measureType/<measureType>/getDaysData?days=D
+* 

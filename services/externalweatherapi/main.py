@@ -34,7 +34,7 @@ class ExternalWeatherApi():
                     return json.dumps(_getCurrentWeatherStatus(parameter['lat'], parameter['lon'], self._safeWindSpeed, self._openweatherapikey), indent=4)
                 else:
                     cherrypy.response.status = 503
-                    return json.dumps({"error":{"status": 503, "message": "Unable to contact external weather API"}}, indent=4)
+                    return json.dumps({"error":{"status": 503, "message": "Unable to contact external weather API: missing parameters"}}, indent=4)
             else:
                 cherrypy.response.status = 503
                 return json.dumps({"error":{"status": 503, "message": "OPENWETHERMAPAPIKEY not set"}}, indent=4)

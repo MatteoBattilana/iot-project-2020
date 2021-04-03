@@ -175,7 +175,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                 to_return = ''.join(filter(lambda i: i.isdigit(), to_return))
                 return to_return
 
-    # add the fileds in missingFields to the channel on thingspeak
+    # add the fields in missingFields to the channel on thingspeak
     def addFieldsToChannel(self, channelName, missingFields):
         channelID=self.getChannelID(channelName)
         url = self._baseUri+"channels/"+str(channelID)+".json?api_key=" + self._thingspeak_api_key + "&" + "&".join(missingFields)

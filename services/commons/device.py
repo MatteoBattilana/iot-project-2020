@@ -90,17 +90,23 @@ class Device(threading.Thread):
         while self._run:
             if self._isMQTTconnected and time.time() - lastTime > self._sensorSamplingTime:
                 #read sensors
-                self._mqtt.publish(self._publishTopic + self._deviceId, self._getRandomValues())
-                lastTime = time.time()
+                if self._getRandomValues != {}
+                    self._mqtt.publish(self._publishTopic + self._deviceId, self._getRandomValues())
+                    lastTime = time.time()
+                else:
+                    logging.error(f"Sensor reading is not possible")
             time.sleep(1)
         logging.debug("Stopped sensor read")
 
     def _getRandomValues(self):
-        simulatedValues = self._sensorReader.readSensors()
-        return {
-            'bn': self._deviceId,
-            'e': simulatedValues
-            }
+        if self._sensorReader.readSensors() != []:
+            simulatedValues = self._sensorReader.readSensors()
+            return {
+                'bn': self._deviceId,
+                'e': simulatedValues
+                }
+        else:
+            return {}
 
 
     # Catalog new id callback
