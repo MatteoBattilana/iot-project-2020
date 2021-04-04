@@ -90,7 +90,7 @@ class Device(threading.Thread):
         while self._run:
             if self._isMQTTconnected and time.time() - lastTime > self._sensorSamplingTime:
                 #read sensors
-                if self._getRandomValues != {}
+                if self._getRandomValues != {}:
                     self._mqtt.publish(self._publishTopic + self._deviceId, self._getRandomValues())
                     lastTime = time.time()
                 else:
