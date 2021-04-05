@@ -14,12 +14,27 @@ from commons.logger import *
 class ExternalWeatherApi():
     exposed=True
 
-    def __init__(self, pingTime, serviceList, serviceId, catalogAddress, safeWindSpeed, openweatherapikey):
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceId, "SERVICE", "EXTERNALWEATHERAPI", groupId = None, notifier = None)
+    def __init__(self, settings, serviceList, openweatherapikey):
+        self._settings = settings
+        self._ping = Ping(
+            int(self._settings.getField('pingTime')),
+            serviceList,
+            self._settings.getField('catalogAddress'),
+            self._settings.getField('serviceName'),
+            "SERVICE",
+            self._settings.getFieldOrDefault('serviceId', ''),
+            "EXTERNALWEATHERAPI",
+            groupId = None,
+            notifier = self)
         logging.debug("Started")
         self._ping.start()
         self._openweatherapikey = openweatherapikey
-        self._safeWindSpeed = safeWindSpeed
+        self._safeWindSpeed = float(settings.getField('windSpeedSafe'))
+
+
+    # Catalog new id callback
+    def onNewCatalogId(self, newId):
+        self._settings.updateField('serviceId', newId)
 
     def stop(self):
         self._ping.stop()
@@ -114,11 +129,8 @@ if __name__=="__main__":
         openweatermapkey = ""
 
     restManager = ExternalWeatherApi(
-        int(settings.getField('pingTime')),
+        settings,
         availableServices,
-        settings.getField('serviceName'),
-        settings.getField('catalogAddress'),
-        float(settings.getField('windSpeedSafe')),
         openweatermapkey
     )
 

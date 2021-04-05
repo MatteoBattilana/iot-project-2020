@@ -14,10 +14,10 @@ json = {
 
 # Module for managing the ping to the catalog
 class Ping(threading.Thread):
-    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, serviceSubType = None, groupId = None, notifier = None):
+    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, initalServiceId, serviceSubType = None, groupId = None, devicePosition = None, notifier = None):
         threading.Thread.__init__(self)
         self._pingTime = pingTime
-        self._serviceID = None
+        self._serviceID = initalServiceId
         self._catalogAddress = catalogAddress
         self._notifier = notifier
         self._run = True
@@ -28,6 +28,8 @@ class Ping(threading.Thread):
         json["serviceName"] = serviceName
         if groupId is not None:
             json["groupId"] = groupId
+        if devicePosition is not None:
+            json["devicePosition"] = devicePosition
 
 
     # sending ping every self._pingTime s
@@ -70,6 +72,6 @@ class Ping(threading.Thread):
                     self._notifier.onNewCatalogId(r.json()['serviceId'])        #callback for new id
                 self._serviceID = r.json()['serviceId']
             else:
-                logging.error("Unable to register service to the catalog: " + r.json()["error"]["message"])
+                logging.error("Unable to register service to the catalog: " + r.json())
         except Exception as e:
             logging.error("Unable to register service to the catalog 1: " + str(e))

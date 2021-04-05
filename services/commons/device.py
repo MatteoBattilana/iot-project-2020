@@ -55,14 +55,15 @@ class Device(threading.Thread):
             }
         ]
         self._ping = Ping(
-
                 int(self._settingsManager.getField('pingTime')),
                 serviceList,
                 self._settingsManager.getField('catalogAddress'),
                 self._settingsManager.getField('deviceName'),
                 "DEVICE",
+                self._settingsManager.getFieldOrDefault('serviceId', ''),
                 "RASPBERRY",
                 self._settingsManager.getField('groupId'),
+                self._settingsManager.getField('devicePosition'),
                 self
             )
         self._sensorSamplingTime = int(self._settingsManager.getField('sensorSamplingTime'))
@@ -72,8 +73,10 @@ class Device(threading.Thread):
         self._deviceId = ""
         self._deviceName = self._settingsManager.getField('deviceName')
         self._mqtt = None
+        if self._settingsManager.getFieldOrDefault('serviceId', ''):
+            self.onNewCatalogId(self._settingsManager.getField('serviceId'))
+        self._devicePosition = self._settingsManager.getField('devicePosition')
         self._run = True
-
 
     def stop(self):
         if self._isMQTTconnected and self._mqtt is not None:
@@ -103,7 +106,8 @@ class Device(threading.Thread):
             simulatedValues = self._sensorReader.readSensors()
             return {
                 'bn': self._deviceId,
-                'e': simulatedValues
+                'e': simulatedValues,
+                'p': self._devicePosition
                 }
         else:
             return {}
@@ -111,6 +115,7 @@ class Device(threading.Thread):
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
+        self._settingsManager.updateField('serviceId', newId)
         logging.debug("New id from catalog: " + newId)
         self._deviceId = newId
         self._isMQTTconnected = False

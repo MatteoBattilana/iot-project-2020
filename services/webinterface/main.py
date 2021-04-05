@@ -14,11 +14,24 @@ from commons.logger import *
 class WebSite():
     exposed=True
 
-    def __init__(self, pingTime, serviceList, serviceName, catalogAddress):
+    def __init__(self, settings, serviceList):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", "WEBINTERFACE", groupId = None, notifier = None)
+        self._settings = settings
+        self._ping = Ping(
+            int(self._settings.getField('pingTime')), 
+            serviceList, 
+            self._settings.getField('catalogAddress'),
+            self._settings.getField('serviceName'),
+            "SERVICE",
+            self._settings.getFieldOrDefault('serviceId', ''),
+            "WEBINTERFACE",
+            groupId = None, notifier = self)
         logging.debug("Started")
         self._ping.start()
+
+    # Catalog new id callback
+    def onNewCatalogId(self, newId):
+        self._settings.updateField('serviceId', newId)
 
     def GET(self):
         return open("html/index.html")
@@ -58,10 +71,8 @@ if __name__=="__main__":
             },
     }
     website = WebSite(
-        int(settings.getField('pingTime')),
-        availableServices,
-        settings.getField('serviceName'),
-        settings.getField('catalogAddress')
+        settings,
+        availableServices
     )
 
     # Remove reduntant date cherrypy log
