@@ -236,12 +236,16 @@ class ThinkSpeakAdaptor(threading.Thread):
                 "write_api_key": self.getChannelApiKey(channelName),
                 "updates":[]
             }
+
+            mustSend = False
             for update in channelCache["data"]:
+                mustSend = True
                 jsonBody["updates"].append(update)
 
-            thread = ThreadHttpRequest(self._baseUri+"channels/"+str(self.getChannelID(channelName))+"/bulk_update.json", jsonBody, channelName)
-            thread.start()
-            tlist.append(thread)
+            if mustSend:
+                thread = ThreadHttpRequest(self._baseUri+"channels/"+str(self.getChannelID(channelName))+"/bulk_update.json", jsonBody, channelName)
+                thread.start()
+                tlist.append(thread)
 
         for i in tlist:
             i.join()
