@@ -18,28 +18,41 @@ import requests
 class SensorReader():
     def readSensors(self):
         simulatedValues = []
-        simulatedValues.append({
+        try:
+            r = requests.get("https://api.thingspeak.com/channels/297675/feeds.json?results=1")
+            if r.status_code == 200:
+                jsonBody = r.json()
+                sim_temp = jsonBody["feeds"][0]["field1"]
+                simulatedValues.append({
             'n': 'temperature',
             'u': 'celsius',
             't': time.time(),
-            'v': randrange(-20, 40)
+            'v': sim_temp
         })
-        simulatedValues.append({
+                sim_hum = jsonBody["feeds"][0]["field2"]
+                simulatedValues.append({
             'n': 'humidity',
             'u': 'celsius',
             't': time.time(),
-            'v': randrange(0, 100)
+            'v': sim_hum
         })
-        r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=1")
-        jsonBody = r.json()
-        sim_co2 = jsonBody["feeds"][0]["field7"]
-        simulatedValues.append({
+        except Exception as e:
+            logging.error(f"ThingSpeak GET request to read data went wrong")
+        
+        try:
+            r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=1")
+            if r.status_code == 200:
+                jsonBody = r.json()
+                sim_co2 = jsonBody["feeds"][0]["field7"]
+                simulatedValues.append({
             'n': 'co2',
             'u': 'ppm',
             't': time.time(),
             'v': sim_co2
             }
-        )
+            )
+        except Exception as e:
+            logging.error(f"ThingSpeak GET request to read data went wrong")
         return simulatedValues
 
 if __name__=="__main__":
