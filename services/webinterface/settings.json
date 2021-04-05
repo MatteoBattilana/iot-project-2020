@@ -1,7 +1,7 @@
 {
     "pingTime": 60,
     "serviceName": "WEB-INTERFACE",
-    "catalogAddress": "http://catalog:8080/catalog",
+    "catalogAddress": "http://catalog/catalog",
     "logVerbosity": "ERROR",
     "serviceId": "WEB-INTERFACE-2"
 }

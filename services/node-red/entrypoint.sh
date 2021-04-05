@@ -4,8 +4,9 @@ DIR=`pwd`
 cd /data
 npm install
 export MQTT_BROKER="test.mosquitto.org"
+export GROUP_ID=$1
 
-resp=$(curl -s 'http://127.0.0.1:8080/catalog/getBroker')
+resp=$(curl -s 'http://catalog/catalog/getBroker')
 if [[ "$resp" == *"uri"* ]]; then
         uri=$(echo "${resp}" | python -c 'import json,sys;obj=json.load(sys.stdin);print obj["uri"]')
         port=$(echo "${resp}" | python -c 'import json,sys;obj=json.load(sys.stdin);print obj["port"]')

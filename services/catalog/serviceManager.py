@@ -38,6 +38,18 @@ class ServiceManager():
                 ret.append(serv)
         return ret
 
+    def getWebInterfaceByGroup(self, groupId):
+        url = ''
+        for serv in self._list:
+            if 'groupId' in serv and serv['groupId'] == groupId and 'serviceType' in serv and serv['serviceType'] == 'SERVICE':
+                for service in serv['serviceList']:
+                    if service['serviceType'] == "HTML":
+                        for endpoint in service['endPoint']:
+                            if endpoint['type'] == 'nodered-ui':
+                                url = "http://" + service['serviceIP'] + ":" + str(service['servicePort']) + endpoint['uri']
+        return url
+
+
     def searchByServiceSubType(self, subtype):
         ret = []
         for serv in self._list:

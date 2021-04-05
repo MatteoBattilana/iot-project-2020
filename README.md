@@ -62,19 +62,22 @@ Once you have done your work, open a pull request using the GitHub interface
 * ThinkSpeak channel with Temperature and Humidity from North Italy: [Stazione Meteo Carema - Airale](https://thingspeak.com/channels/297675)
 * ThinkSpeak University Project: [CO2-measurement and demand-oriented ventilation](https://www.umwelt-campus.de/en/forschung/projekte/iot-werkstatt/translate-to-englisch-ideen-zur-corona-krise)
 * Simulation Tool for CO2 distribution behavior: [Educational tool for CO2 concentration simulations](https://github.com/bph-tuwien/bph_co2)
-* One example of informations about IAQ (there are several ones): [Indoor Air Quality](http://www.iaquk.org.uk/ESW/Files/IAQ_Rating_Index.pdf) 
+* One example of informations about IAQ (there are several ones): [Indoor Air Quality](http://www.iaquk.org.uk/ESW/Files/IAQ_Rating_Index.pdf)
 
 ### PROJECT REST ENDPOINTS
+* UI
+In order to make the web interface as transparent as possible, the ui can be run as:
+  - [http://localhost/ui/GROUPID](http://localhost/ui/home1)
 * CATALOG:
  Catalog services research:
-  - search by Id: [http://localhost:8080/catalog/searchById?serviceId=ID](http://localhost:8080/catalog/searchById?serviceId=EXTERNAL-API-0)
-  - search by GroupId: [http://localhost:8080/catalog/searchByGroupId?groupId=GROUPID]()
-  - search by ServiceType: [http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICETYPE](http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICE)
-  - search by ServiceSubType: [http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=SERVICESUBTYPE](http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI)
-  - get all GroupId: [http://localhost:8080/catalog/getAllGroupId](http://localhost:8080/catalog/getAllGroupId)
-  - get all services: [http://localhost:8080/catalog/getAll](http://localhost:8080/catalog/getAll)
-  - get system status: [http://localhost:8080/catalog/getSystemStatus](http://localhost:8080/catalog/getSystemStatus)
-  - get the broker in use: [http://localhost:8080/catalog/getBroker](http://localhost:8080/catalog/getBroker)
+  - search by Id: [http://localhost/catalog/searchById?serviceId=ID](http://localhost/catalog/searchById?serviceId=EXTERNAL-API-0)
+  - search by GroupId: [http://localhost/catalog/searchByGroupId?groupId=GROUPID]()
+  - search by ServiceType: [http://localhost/catalog/searchByServiceType?serviceType=SERVICETYPE](http://localhost/catalog/searchByServiceType?serviceType=SERVICE)
+  - search by ServiceSubType: [http://localhost/catalog/searchByServiceSubType?serviceSubType=SERVICESUBTYPE](http://localhost/catalog/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI)
+  - get all GroupId: [http://localhost/catalog/getAllGroupId](http://localhost/catalog/getAllGroupId)
+  - get all services: [http://localhost/catalog/getAll](http://localhost/catalog/getAll)
+  - get system status: [http://localhost/catalog/getSystemStatus](http://localhost/catalog/getSystemStatus)
+  - get the broker in use: [http://localhost/catalog/getBroker](http://localhost/catalog/getBroker)
 * NODE-RED:
   - Web Interface address: [http://localhost/ui](http://localhost/ui)
   - Node-red framework access: [http://localhost](http://localhost)

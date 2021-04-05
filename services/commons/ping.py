@@ -8,7 +8,7 @@ import logging
 # base structure to send during the ping, the serviceId is added only after a
 # valid one i received
 json = {
-    "serviceServiceList": [],
+    "serviceList": [],
     "serviceName": ""
 }
 
@@ -21,7 +21,7 @@ class Ping(threading.Thread):
         self._catalogAddress = catalogAddress
         self._notifier = notifier
         self._run = True
-        json["serviceServiceList"] = serviceServiceList
+        json["serviceList"] = serviceServiceList
         json["serviceType"] = serviceType
         if serviceSubType is not None:
             json["serviceSubType"] = serviceSubType

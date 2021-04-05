@@ -6,7 +6,7 @@
     "subscribeTopics": [
         "/iot-programming-2343/#"
     ],
-    "catalogAddress": "http://catalog:8080/catalog",
+    "catalogAddress": "http://catalog/catalog",
     "logVerbosity": "DEBUG",
     "serviceId": "THINGSPEAK-ADAPTOR-4"
 }

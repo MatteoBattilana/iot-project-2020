@@ -21,11 +21,10 @@ from commons.logger import *
 class RESTManagerService(threading.Thread):
     exposed=True
 
-    def __init__(self, brokerList, retantionTimeout):
+    def __init__(self, brokerList, serviceManager):
         threading.Thread.__init__(self)
-        self._serv = ServiceManager(retantionTimeout)
+        self._serv = serviceManager
         self._broker = self._getMQTTBrokerAvailable(brokerList)  #check first MQTT server available
-        self._retantionTimeout = retantionTimeout
         self.daemon = True
 
         if not self._broker:
@@ -71,6 +70,13 @@ class RESTManagerService(threading.Thread):
             return json.dumps(self._serv.searchByServiceType(params['serviceType']), indent=4)
         elif uri[0] == 'searchByServiceSubType':
             return json.dumps(self._serv.searchByServiceSubType(params['serviceSubType']), indent=4)
+        elif uri[0] == 'getWebInterfaceUrlByGroup':
+            url = self._serv.getWebInterfaceByGroup(params['groupId'])
+            if url:
+                return json.dumps({"url": url}, indent=4)
+            else:
+                cherrypy.response.status = 503
+                return json.dumps({"error":{"status": 503, "message": "No web interface available for " + params['groupId']}}, indent=4)
         elif uri[0] == 'getAllGroupId':
             return json.dumps(self._serv.searchAllGroupId(), indent=4)
         elif uri[0] == 'getAll':
@@ -103,6 +109,24 @@ class RESTManagerService(threading.Thread):
 
         return json.dumps(ret, indent=4)
 
+class UIManager():
+    exposed=True
+    def __init__(self, serviceManager):
+        self._serviceManager = serviceManager
+
+    def GET(self, *uri, **params):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
+        print(str(uri))
+        if len(uri) == 0:
+            return json.dumps({"message": "UI interface endpoint"}, indent=4)
+        else:
+            url = self._serviceManager.getWebInterfaceByGroup(uri[0])
+            if url:
+                raise cherrypy.HTTPRedirect(url)
+            else:
+                cherrypy.response.status = 404
+                return json.dumps({"error":{"status": 503, "message": "No web interface available for " + uri[0]}}, indent=4)
+
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
     Logger.setup(settings.getField('logVerbosity'), settings.getFieldOrDefault('logFile', ''))
@@ -113,7 +137,8 @@ if __name__=="__main__":
                 'tools.staticdir.root': os.path.abspath(os.getcwd()),
             }
     }
-    serviceCatalog = RESTManagerService(settings.getField("brokerList"), int(settings.getField("retantionTimeout")))
+    serviceManager = ServiceManager(int(settings.getField("retantionTimeout")))
+    serviceCatalog = RESTManagerService(settings.getField("brokerList"), serviceManager)
     serviceCatalog.start()
 
     # Remove reduntant date cherrypy log
@@ -128,8 +153,11 @@ if __name__=="__main__":
 
 
     app = cherrypy.tree.mount(serviceCatalog,'/catalog/',conf)
+    uiapp = cherrypy.tree.mount(UIManager(serviceManager),'/ui/',conf)
     #used to remove from log the incoming requests
     app.log.access_log.addFilter( IgnoreRequests() )
+    uiapp.log.access_log.addFilter( IgnoreRequests() )
     cherrypy.server.socket_host = '0.0.0.0'
+    cherrypy.server.socket_port = 80
     cherrypy.engine.start()
     cherrypy.engine.block()
