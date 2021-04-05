@@ -43,21 +43,34 @@ class ThreadHttpRequest(threading.Thread):
 #baseUri="https://api.thingspeak.com/"
 class ThinkSpeakAdaptor(threading.Thread):
     exposed=True
-    def __init__(self, pingTime, serviceList, serviceName, subscribeList, thingspeak_api_key, bulkRate, bulkLimit, catalogAddress):
+    def __init__(self, settings, serviceList, thingspeak_api_key):
         threading.Thread.__init__(self)
-        self._ping = Ping(pingTime, serviceList, catalogAddress, serviceName, "SERVICE", "THINGSPEAK", groupId = None, notifier = self)
-        self._ping.start()
-        self._subscribeList = subscribeList
+        self._settings = settings
+        self._subscribeList = self._settings.getField('subscribeTopics')
         self._isMQTTconnected = False
-        self._catalogAddress = catalogAddress
+        self._catalogAddress = self._settings.getField('catalogAddress')
         self._mqtt = None
         self._baseUri = "https://api.thingspeak.com/"
         self._thingspeak_api_key = thingspeak_api_key
         self._channels = []                                 # it don't have to wait to fetch
         self._channels = self.getChannelList()
-        self.cache=ThingSpeakBulkUpdater(bulkLimit)
-        self.updateBulkTime=bulkRate
+        self.cache=ThingSpeakBulkUpdater(int(self._settings.getField('bulkLimit')))
+        self.updateBulkTime=int(self._settings.getField('bulkRate'))
+        self._ping = Ping(
+            int(self._settings.getField('pingTime')),
+            serviceList,
+            self._settings.getField('catalogAddress'),
+            self._settings.getField('serviceName'),
+            "SERVICE",
+            self._settings.getFieldOrDefault('serviceId', ''),
+            "THINGSPEAK",
+            groupId = None,
+            notifier = self)
+        self._ping.start()
         self._run=True
+
+        if self._settings.getFieldOrDefault('serviceId', ''):
+            self.onNewCatalogId(self._settings.getField('serviceId'))
 
 
     def run(self):
@@ -78,7 +91,7 @@ class ThinkSpeakAdaptor(threading.Thread):
 
     # Catalog new id callback
     def onNewCatalogId(self, newId):
-        logging.debug("New id from catalog: " + newId)
+        self._settings.updateField('serviceId', newId)
         if self._mqtt is not None:
             self._mqtt.stop()
 
@@ -105,7 +118,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         # ]
         # }
 
-        _channel_name=topic.split("/")[2]       #home1
+        _channel_name=topic.split("/")[3]       #RASPBERRY-3
         #if the _channel_name is not present inside the channelList (the channel has to be created) -1 is returned
         _channel_id=self.getChannelID(_channel_name)
 
@@ -412,6 +425,19 @@ class ThinkSpeakAdaptor(threading.Thread):
             return r.json()
         except Exception:
             logging.debug(f"GET request to read data from ThingSpeak went wrong")
+
+    def getFeedsGroupId(self, groupId, type, minutes = 1440):
+        channelName = []
+        ret = []
+        r = requests.get(self._catalogAddress + "/searchByGroupId?groupId=" + groupId)
+        if r.status_code == 200:
+            for channel in r.json():
+                print("ASD")
+                if "devicePosition" in channel and channel["devicePosition"] == type:
+                    ret.append(self.readMinutesData(channel["serviceId"], minutes=minutes))
+
+        return ret
+
     def readMinutesData(self, channelName, field_id = -1, minutes = 1440):
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
@@ -471,6 +497,15 @@ class ThinkSpeakAdaptor(threading.Thread):
         #https:localhost:port/channel/channelName/feeds?...
         #https:localhost:port/channel/channelName/field/fieldNumber/functionality?
         if len(uri) != 0:
+            if uri[0] == "group":
+                groupId = uri[1]
+                #http://172.20.0.6:8080/group/home1/getExternalFeeds?minutes=10
+                if uri[2] == "getExternalFeeds" and 'minutes' in params:
+                    print(groupId)
+                    return json.dumps(self.getFeedsGroupId(groupId, "external", minutes=params['minutes']), indent=3)
+                if uri[2] == "getInternalFeeds" and 'minutes' in params:
+                    return json.dumps(self.getFeedsGroupId(groupId, "internal", minutes=params['minutes']), indent=3)
+
             if uri[0] == "channel" and len(uri) > 2:
                 channelName = uri[1]
                 if uri[2] == "feeds" and len(uri) > 3:
@@ -563,6 +598,20 @@ if __name__=="__main__":
                         "uri": "/",
                         "version": 1,
                         "parameter": []
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getExternalFeeds",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "minutes", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getInternalFeeds",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "minutes", "unit": "integer"}]
                     },
                     {
                         "type": "web",
@@ -673,14 +722,9 @@ if __name__=="__main__":
         thingspeak_api_key = ""
 
     rpi = ThinkSpeakAdaptor(
-            int(settings.getField('pingTime')),
-            availableServices,
-            settings.getField('serviceName'),
-            settings.getField('subscribeTopics'),
-            thingspeak_api_key,
-            int(settings.getField('bulkRate')),
-            int(settings.getField('bulkLimit')),
-            settings.getField('catalogAddress')
+        settings,
+        availableServices,
+        thingspeak_api_key
         )
     rpi.start()
 

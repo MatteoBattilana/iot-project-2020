@@ -17,6 +17,20 @@ services:
     ports:
       - "8080:8080"             # accessible using the 8080 port
 
+  simulateddevice2:
+    container_name: simulateddevice2
+    networks:
+      net1:
+    depends_on:
+      catalog:
+        condition: service_healthy
+    links:
+        - catalog
+    volumes:
+      - .:/code
+    build:
+        context: ./
+        dockerfile: ./simulateddevice2/Dockerfile
 
   simulateddevice:
     container_name: simulateddevice

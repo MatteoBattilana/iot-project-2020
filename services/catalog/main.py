@@ -56,7 +56,7 @@ class RESTManagerService(threading.Thread):
     def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         if len(uri) == 0:
-            return json.dumps({"message": "<channelName>Catalog API endpoint"}, indent=4)
+            return json.dumps({"message": "Catalog API endpoint"}, indent=4)
         elif uri[0] == 'getBroker':
             if not self._broker:
                 cherrypy.response.status = 503
