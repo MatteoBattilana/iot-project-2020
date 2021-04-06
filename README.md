@@ -67,8 +67,8 @@ Once you have done your work, open a pull request using the GitHub interface
 ### PROJECT REST ENDPOINTS
 * CATALOG:
  Catalog services research:
-  - search by Id: [http://localhost:8080/catalog/searchById?serviceId=ID](http://localhost:8080/catalog/searchById?serviceId=EXTERNAL-API-0)
-  - search by GroupId: [http://localhost:8080/catalog/searchByGroupId?groupId=GROUPID]()
+  - search by Id: [http://localhost:8080/catalog/searchById?serviceId=ID](http://localhost:8080/catalog/searchById?serviceId=SIMULATED-DEVICE-1)
+  - search by GroupId: [http://localhost:8080/catalog/searchByGroupId?groupId=GROUPID](http://localhost:8080/catalog/searchByGroupId?groupId=home1)
   - search by ServiceType: [http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICETYPE](http://localhost:8080/catalog/searchByServiceType?serviceType=SERVICE)
   - search by ServiceSubType: [http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=SERVICESUBTYPE](http://localhost:8080/catalog/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI)
   - get all GroupId: [http://localhost:8080/catalog/getAllGroupId](http://localhost:8080/catalog/getAllGroupId)
@@ -86,7 +86,7 @@ Once you have done your work, open a pull request using the GitHub interface
   - get measure type MEASURETYPE data from START to END date from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/measureType/MEASURETYPE/getStartEndData?start=START&end=END](http://localhost:8090/channel/SIMULATED-DEVICE-1/measureType/temperature/getStartEndData?start=2021-03-30%2010:10:00&end=2021-04-03%2015:40:00)
   - get measure type MEASURETYPE data sum every SUM minutes (daily) from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/measureType/MEASURETYPE/getSum?sum=SUM](http://localhost:8090/channel/SIMULATED-DEVICE-1/measureType/humidity/getSum?sum=daily)
   - get measure type MEASURETYPE data average every AVG minutes (daily) from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/measureType/MEASURETYPE/getAvg?average=AVG](http://localhost:8090/channel/SIMULATED-DEVICE-1/measureType/co2/getAvg?average=daily)
-  - get measure type MEASURETYPE data median every MEDIAN minutes (daily) from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/measureType/MEASURETYPE/getMedian?median=MEDIAN](http://localhost:8090/channel/SIMULATED-DEVICE-1/measureType/temperature/getMedian?median=60)
+  - get measure type MEASURETYPE data median every MEDIAN minutes (daily) from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/measureType/MEASURETYPE/getMedian    ?median=MEDIAN](http://localhost:8090/channel/SIMULATED-DEVICE-1/measureType/temperature/getMedian?median=60)
   - get last N data from all fields of channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/feeds/getResultsData?results=N](http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getResultsData?results=10)
   - get last D days of data from all fields of channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/feeds/getDaysData?days=D](http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getDaysData?days=7)
   - get last M minutes of data from all fields of channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/feeds/getMinutesData?minutes=M](http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getMinutesData?minutes=60)
