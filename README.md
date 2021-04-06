@@ -11,6 +11,7 @@
   - Write the following command: `git clone https://github.com/MatteoBattilana/iot-project-2020.git`
 * In order to start the architecture you have to:
   - Enter the service directory: `cd iot-project-2020/services`
+  - Build the architecture (it has to be done once unless you made some changes to Dockerfiles or requirements.txt files): `docker-compose build`
   - Start the architecture (it will take a while): `docker-compose up`
 
 Once the log messages are showing, the infrastructure is running and the web interface of node-red will be visible at: [http://localhost/ui](http://localhost/ui)
