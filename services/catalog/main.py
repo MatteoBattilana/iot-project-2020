@@ -111,6 +111,7 @@ class RESTManagerService(threading.Thread):
 
 class UIManager():
     exposed=True
+    
     def __init__(self, serviceManager):
         self._serviceManager = serviceManager
 
@@ -158,6 +159,6 @@ if __name__=="__main__":
     app.log.access_log.addFilter( IgnoreRequests() )
     uiapp.log.access_log.addFilter( IgnoreRequests() )
     cherrypy.server.socket_host = '0.0.0.0'
-    cherrypy.server.socket_port = 80
+    cherrypy.server.socket_port = 8080
     cherrypy.engine.start()
     cherrypy.engine.block()

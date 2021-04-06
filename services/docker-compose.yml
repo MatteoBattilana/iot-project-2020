@@ -8,107 +8,24 @@ services:
         context: ./
         dockerfile: ./catalog/Dockerfile
     healthcheck:
-        test: ["CMD-SHELL", "curl -f http://catalog/catalog/getBroker | grep uri"]
-        interval: 15s
-        timeout: 7s
+        test: ["CMD-SHELL", "curl -f http://catalog:8080/catalog/getBroker | grep uri"]
+        interval: 3s
+        timeout: 4s
         retries: 5
     volumes:
       - .:/code
     ports:
-      - "80:80"             # accessible using the 8080 port
+      - "8080:8080"             # accessible using the 8080 port
 
-  simulateddevice2:
-    container_name: simulateddevice2
-    networks:
-      net1:
-    depends_on:
-      catalog:
-        condition: service_healthy
-    links:
-        - catalog
-    volumes:
-      - .:/code
-    build:
-        context: ./
-        dockerfile: ./simulateddevice2/Dockerfile
-
-  simulateddevice:
-    container_name: simulateddevice
-    networks:
-      net1:
-    depends_on:
-      catalog:
-        condition: service_healthy
-    links:
-        - catalog
-    volumes:
-      - .:/code
-    build:
-        context: ./
-        dockerfile: ./simulateddevice/Dockerfile
-
-
-  externalweatherapi:
-    container_name: externalweatherapi
-    ports:
-      - "8070:8080"             # accessible using the 8070 port for testing
-    networks:
-      net1:
-    depends_on:
-      catalog:
-        condition: service_healthy
-    links:
-        - catalog
-    volumes:
-      - .:/code
-    environment:
-        - OPENWETHERMAPAPIKEY=${OPENWETHERMAPAPIKEY}
-    build:
-        context: ./
-        dockerfile: ./externalweatherapi/Dockerfile
-
-  thinkspeakadaptor:
-    container_name: thinkspeakadaptor
-    networks:
-      net1:
-    depends_on:
-      catalog:
-        condition: service_healthy
-    links:
-        - catalog
-    volumes:
-      - .:/code
-    environment:
-        - THINGSPEAKAPIKEY=${THINGSPEAKAPIKEY}
-    build:
-        context: ./
-        dockerfile: ./thinkspeakadaptor/Dockerfile
-    ports:
-      - "8090:8080"
-
-  webinterface:
-    container_name: webinterface
-    networks:
-      net1:
-    depends_on:
-      catalog:
-        condition: service_healthy
-    links:
-        - catalog
-    volumes:
-      - .:/code
-    build:
-        context: ./
-        dockerfile: ./webinterface/Dockerfile
-    ports:
-      - "8088:8080"             # accessible using the 8080 port
-
-  node-red-home1:
-    container_name: node-red
+  homee:
+    container_name: homee
     image: nodered/node-red:latest
     user: root:root             # necessary, otherwise we get 'access denied'
     entrypoint: /data/entrypoint.sh
     command: home1
+    depends_on:
+      catalog:
+        condition: service_healthy
     environment:
       - TZ=Europe/Amsterdam
     networks:
@@ -116,7 +33,20 @@ services:
     volumes:
       - ./node-red:/data
 
+  web:
+    image: nginx:latest
+    volumes:
+      - ./nginx-templates:/etc/nginx/
+    ports:
+      - "80:80"
+    depends_on:
+      catalog:
+        condition: service_healthy
+    networks:
+      net1:
+
 volumes:
+  nginx-templates:
   node-red:
   simulateddevice:
   simulateddevice2:

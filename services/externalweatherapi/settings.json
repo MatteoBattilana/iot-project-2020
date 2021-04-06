@@ -3,5 +3,6 @@
     "windSpeedSafe": 10,
     "serviceName": "EXTERNAL-API",
     "catalogAddress": "http://catalog/catalog",
-    "logVerbosity": "ERROR"
+    "logVerbosity": "ERROR",
+    "serviceId": "EXTERNAL-API-4"
 }
