@@ -108,6 +108,9 @@ services:
     image: nodered/node-red:latest
     user: root:root             # necessary, otherwise we get 'access denied'
     entrypoint: /data/entrypoint.sh
+    depends_on:
+      catalog:
+        condition: service_healthy
     environment:
       - TZ=Europe/Amsterdam
     ports:
