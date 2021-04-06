@@ -3,6 +3,5 @@
     "windSpeedSafe": 10,
     "serviceName": "EXTERNAL-API",
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "DEBUG",
-    "serviceId": "EXTERNAL-API-0"
+    "logVerbosity": "DEBUG"
 }
