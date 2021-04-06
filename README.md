@@ -14,8 +14,6 @@
   - Build the architecture (it has to be done once unless you made some changes to Dockerfiles or requirements.txt files): `docker-compose build`
   - Start the architecture (it will take a while): `docker-compose up`
 
-Once the log messages are showing, the infrastructure is running and the web interface of node-red will be visible at: [http://localhost/ui](http://localhost/ui)
-
 
 ### Fix node-red problem
 You should enter the project directory, open the git bash terminal and execute:
@@ -60,8 +58,8 @@ Once you have done your work, open a pull request using the GitHub interface
 
 ### Material links which can be useful
 * ThingSpeak channel with CO2 data: [BME Air Quality](https://thingspeak.com/channels/1207176)
-* ThinkSpeak channel with Temperature and Humidity from North Italy: [Stazione Meteo Carema - Airale](https://thingspeak.com/channels/297675)
-* ThinkSpeak University Project: [CO2-measurement and demand-oriented ventilation](https://www.umwelt-campus.de/en/forschung/projekte/iot-werkstatt/translate-to-englisch-ideen-zur-corona-krise)
+* ThingSpeak channel with Temperature and Humidity from North Italy: [Stazione Meteo Carema - Airale](https://thingspeak.com/channels/297675)
+* ThingSpeak University Project: [CO2-measurement and demand-oriented ventilation](https://www.umwelt-campus.de/en/forschung/projekte/iot-werkstatt/translate-to-englisch-ideen-zur-corona-krise)
 * Simulation Tool for CO2 distribution behavior: [Educational tool for CO2 concentration simulations](https://github.com/bph-tuwien/bph_co2)
 * One example of informations about IAQ (there are several ones): [Indoor Air Quality](http://www.iaquk.org.uk/ESW/Files/IAQ_Rating_Index.pdf) 
 
