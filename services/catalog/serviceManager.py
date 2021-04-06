@@ -6,16 +6,6 @@ import threading
 from datetime import datetime
 import logging
 
-#default dictionary to be returned in case no service is found in the catalog
-default_service={
-    "serviceServicesList":[],
-    "serviceName":"",
-    "serviceType":"",
-    "serviceSubType":"",
-    "serviceId":"",
-    "lastUpdate":None
-}
-
 
 # Menager for services and devices, using lock
 class ServiceManager():
@@ -39,16 +29,13 @@ class ServiceManager():
         for serv in self._list:
             if 'serviceId' in serv and serv['serviceId'] == id:
                 return serv
-        return default_service
+        return []
 
     def searchByServiceType(self, type):
         ret = []
         for serv in self._list:
             if serv['serviceType'] == type:
                 ret.append(serv)
-        #serviceType not found
-        if len(ret) == 0:
-            return default_service
         return ret
 
     def searchByServiceSubType(self, subtype):
@@ -56,9 +43,6 @@ class ServiceManager():
         for serv in self._list:
             if 'serviceSubType' in serv and serv['serviceSubType'] == subtype:
                 ret.append(serv)
-        #serviceType not found
-        if len(ret) == 0:
-            return default_service
         return ret
 
     def searchAllGroupId(self):
@@ -66,9 +50,6 @@ class ServiceManager():
         for serv in self._list:
             if 'groupId' in serv and serv['groupId'] not in ret:
                 ret.append(serv['groupId'])
-        #serviceType not found
-        if len(ret) == 0:
-            return default_service
         return ret
 
 
@@ -77,9 +58,6 @@ class ServiceManager():
         for serv in self._list:
             if 'groupId' in serv and serv['groupId'] == id:
                 ret.append(serv)
-        #serviceType not found
-        if len(ret) == 0:
-            return default_service
         return ret
 
     # Returns all the devices available
