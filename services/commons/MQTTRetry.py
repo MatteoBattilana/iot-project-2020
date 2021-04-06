@@ -42,8 +42,6 @@ class MQTTRetry(threading.Thread):
 
     # Thread body necessary to perform the MQTT reconnection retry
     def run(self):
-        self._setupMQTT()
-
         lastTime = 0
         while self._run:
             if self._isMQTTconnected == False and self._isMQTTTryingConnecting == False and time.time() - lastTime > 30:
@@ -95,7 +93,7 @@ class MQTTRetry(threading.Thread):
 
     #MQTT callbacks
     def _onDisconnect(self, client, userdata, rc):
-        logging.error("Disconnected from MQTT broker")
+        logging.error("Disconnected from MQTT broker: " + PahoMQTT.connack_string(rc))
         self._isMQTTconnected = False
         if self._notifier != None:
             self._notifier.onMQTTConnectionError(PahoMQTT.connack_string(rc))
