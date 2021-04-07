@@ -57,7 +57,7 @@ class SensorReader():
                 'n': 'humidity',
                 'u': 'celsius',
                 't': time.time(),
-                'v': int(humidity)
+                'v': round(humidity)
             })
         else:
             logging.warning("Invalid humidity from sensor")
