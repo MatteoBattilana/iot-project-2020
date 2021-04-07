@@ -103,8 +103,8 @@ class Device(threading.Thread):
         logging.debug("Stopped sensor read")
 
     def _getRandomValues(self):
-        if self._sensorReader.readSensors() != []:
-            simulatedValues = self._sensorReader.readSensors()
+        simulatedValues = self._sensorReader.readSensors()
+        if simulatedValues != []:
             return {
                 'bn': self._deviceId,
                 'e': simulatedValues,

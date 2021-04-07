@@ -26,13 +26,12 @@ class SensorReader():
         humidity, temperature = (None, None)
         hr = []
         tr = []
-        for i in range(10):
+        for i in range(5):
             h, t = Adafruit_DHT.read_retry(self.sensor, self.gpio)
             if h is not None:
                 hr.append(h)
             if t is not None:
                 tr.append(t)
-            time.sleep(0.1)
         
         if len(hr) > 0:
             humidity = sum(hr) / len(hr)
