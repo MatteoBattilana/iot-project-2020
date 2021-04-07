@@ -94,11 +94,12 @@ class Device(threading.Thread):
             if self._isMQTTconnected and time.time() - lastTime > self._sensorSamplingTime:
                 #read sensors
                 if self._getRandomValues != {}:
+                    logging.info("Publishing sensor values")
                     self._mqtt.publish(self._publishTopic + self._deviceId, self._getRandomValues())
                     lastTime = time.time()
                 else:
                     logging.error(f"Sensor reading is not possible")
-            time.sleep(1)
+            time.sleep(0.1)
         logging.debug("Stopped sensor read")
 
     def _getRandomValues(self):
