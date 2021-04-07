@@ -29,7 +29,7 @@ class ServiceManager():
         for serv in self._list:
             if 'serviceId' in serv and serv['serviceId'] == id:
                 return serv
-        return []
+        return {}
 
     def searchByServiceType(self, type):
         ret = []
