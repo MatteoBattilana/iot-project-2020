@@ -43,19 +43,21 @@ class SensorReader():
         # Reading the DHT11 is very sensitive to timings and occasionally
         # the Pi might fail to get a valid reading. So check if readings are valid.
         simulatedValues = []
-        if humidity is not None:
+        if temperature is not None:
+            logging.warning("Invalid temperature from humidity")
             simulatedValues.append({
                 'n': 'temperature',
                 'u': 'celsius',
                 't': time.time(),
                 'v': temperature
             })
-        if temperature is not None:
+        if humidity is not None:
+            logging.warning("Invalid humidity from sensor")
             simulatedValues.append({
                 'n': 'humidity',
                 'u': 'celsius',
                 't': time.time(),
-                'v': humidity
+                'v': int(humidity)
             })
         return simulatedValues
 
