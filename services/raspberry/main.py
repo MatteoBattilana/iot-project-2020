@@ -44,21 +44,23 @@ class SensorReader():
         # the Pi might fail to get a valid reading. So check if readings are valid.
         simulatedValues = []
         if temperature is not None:
-            logging.warning("Invalid temperature from humidity")
             simulatedValues.append({
                 'n': 'temperature',
                 'u': 'celsius',
                 't': time.time(),
                 'v': temperature
             })
+        else:
+            logging.warning("Invalid temperature from humidity")
         if humidity is not None:
-            logging.warning("Invalid humidity from sensor")
             simulatedValues.append({
                 'n': 'humidity',
                 'u': 'celsius',
                 't': time.time(),
                 'v': int(humidity)
             })
+        else:
+            logging.warning("Invalid humidity from sensor")
         return simulatedValues
 
 if __name__=="__main__":
