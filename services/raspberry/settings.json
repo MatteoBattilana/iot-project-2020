@@ -3,8 +3,9 @@
     "sensorSamplingTime": 10,
     "deviceName": "RASPBERRY",
     "groupId": "home1",
-    "MQTTTopic": "/iot-programming-2343/",
-    "catalogAddress": "http://192.168.1.3:8080/catalog",
-    "logVerbosity": "ERROR",
-    "devicePosition": "internal"
+    "MQTTTopic": "/iot-programming-2343/",    
+    "catalogAddress": "http://programming-iot.westeurope.cloudapp.azure.com:8080/catalog",
+    "logVerbosity": "DEBUG",
+    "devicePosition": "internal",
+    "serviceId": "RASPBERRY-7"
 }
