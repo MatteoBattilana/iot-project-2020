@@ -22,7 +22,7 @@ class ServiceManager():
         for serv in self._list[:]:
             if time.time() - serv['lastUpdate'] > self._retentionTimeout:
                 logging.debug("Removed service: " + str(serv['serviceId']))
-                self._list.remove(serv);
+                self._list.remove(serv)
         self._lock.release()
 
     def searchById(self, id):
