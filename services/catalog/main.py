@@ -67,6 +67,7 @@ class RESTManagerService(threading.Thread):
             if self._serv.searchById(params['serviceId']) != {}:
                 return json.dumps(self._serv.searchById(params['serviceId']), indent=4)
             else:
+                cherrypy.response.status = 404
                 return json.dumps({"error":{"status": 404, "message": f" Service {params['serviceId']} do not exist"}}, indent=4)
         elif uri[0] == 'searchByGroupId':
             return json.dumps(self._serv.searchByGroupId(params['groupId']), indent=4)
