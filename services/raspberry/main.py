@@ -1,4 +1,5 @@
 # Path hack.
+import re
 import sys, os
 sys.path.insert(0, os.path.abspath('..'))
 from commons.MQTTRetry import *
@@ -32,21 +33,24 @@ class SensorReader():
                     if ser.in_waiting > 0:
                         try:
                             string_read = ser.readline().decode('utf-8').rstrip()
-                            if string_read[0] == 'T':
-                                return float(string_read[1:])
+                            x = re.search("^T(.*)C(.*)E$", string_read)
+                            if x:
+                                logging.debug("From arduino: " + str(float(x[1])) + " " + str(float(x[2])))
+                                return (float(x[1]), float(x[2]))
                         except:
                             pass
                     if i > 10:
-                        return None
+                        return (None, None)
                     i+=1
                     time.sleep(0.5)
-                return None
+                return (None, None)
             except:
-                return None
+                return (None, None)
 
     def readSensors(self):
-        humidity, temperature = (None, None)
-        arduinoTemp = self.getArduinoThermistorTemperature()
+        humidity, temperature, co2 = (None, None, None)
+        arduinoTemp, arduinoCo2 = self.getArduinoThermistorTemperature()
+        co2 = arduinoCo2
         temperature = arduinoTemp
 
         # Use read_retry method. This will retry up to 15 times to
@@ -69,6 +73,15 @@ class SensorReader():
         # Reading the DHT11 is very sensitive to timings and occasionally
         # the Pi might fail to get a valid reading. So check if readings are valid.
         simulatedValues = []
+        if co2 is not None:
+            simulatedValues.append({
+                'n': 'co2',
+                'u': 'ppm',
+                't': time.time(),
+                'v': co2
+            })
+        else:
+            logging.warning("Invalid co2 from arduino")
         if temperature is not None:
             simulatedValues.append({
                 'n': 'temperature',
@@ -77,7 +90,7 @@ class SensorReader():
                 'v': temperature
             })
         else:
-            logging.warning("Invalid temperature from humidity")
+            logging.warning("Invalid temperature from sensor")
         if humidity is not None:
             simulatedValues.append({
                 'n': 'humidity',
