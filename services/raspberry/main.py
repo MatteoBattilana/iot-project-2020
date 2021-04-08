@@ -23,7 +23,7 @@ class SensorReader():
 
     def getArduinoThermistorTemperature(self):
         # read thermistor from arduino
-        logging.debug("Asked Arduino")
+        logging.debug("Asked arduino")
         ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
         ser.flush()
         for i in range(10):
@@ -50,6 +50,13 @@ class SensorReader():
             if h is not None:
                 hr.append(h)
             if t is not None:
+                tr.append(t)
+        
+        if len(hr) > 0 and humidity is None:
+            humidity = sum(hr) / len(hr)
+        if len(tr) > 0 and temperature is None:
+            temperature = sum(tr) / len(tr)
+
 
         # Reading the DHT11 is very sensitive to timings and occasionally
         # the Pi might fail to get a valid reading. So check if readings are valid.
