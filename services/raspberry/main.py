@@ -14,16 +14,34 @@ import time
 import Adafruit_DHT
 import logging
 from commons.logger import *
+import serial
 
 class SensorReader():
     def __init__(self):
         self.sensor=Adafruit_DHT.DHT11
         self.gpio=17
 
+    def getArduinoThermistorTemperature(self):
+        # read thermistor from arduino
+        ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+        ser.flush()
+        for i in range(10):
+            if ser.in_waiting > 0:
+                try:
+                    read_t = float(ser.readline().decode('utf-8').rstrip())
+                    logging.debug("Arduino temp: " + read_t)
+                    return read_t
+                except Exception:
+                    pass
+        return None
+
     def readSensors(self):
+        humidity, temperature = (None, None)
+        arduinoTemp = self.getArduinoThermistorTemperature()
+        temperature = arduinoTemp
+
         # Use read_retry method. This will retry up to 15 times to
         # get a sensor reading (waiting 2 seconds between each retry).
-        humidity, temperature = (None, None)
         hr = []
         tr = []
         for i in range(5):
@@ -33,9 +51,9 @@ class SensorReader():
             if t is not None:
                 tr.append(t)
         
-        if len(hr) > 0:
+        if len(hr) > 0 and humidity is None:
             humidity = sum(hr) / len(hr)
-        if len(tr) > 0:
+        if len(tr) > 0 and temperature is None:
             temperature = sum(tr) / len(tr)
 
 
