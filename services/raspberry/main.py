@@ -22,19 +22,27 @@ class SensorReader():
         self.gpio=17
 
     def getArduinoThermistorTemperature(self):
-        # read thermistor from arduino
-        logging.debug("Asked arduino")
-        ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
-        ser.flush()
-        for i in range(10):
-            if ser.in_waiting > 0:
-                try:
-                    read_t = float(ser.readline().decode('utf-8').rstrip())
-                    logging.debug("Arduino temp: " + read_t)
-                    return read_t
-                except Exception:
-                    pass
-        return None
+            # read thermistor from arduino
+            logging.debug("Asked arduino")
+            try:
+                i = 0
+                ser = serial.Serial('/dev/ttyACM0', 9600, timeout=1)
+                ser.flush()
+                while True:
+                    if ser.in_waiting > 0:
+                        try:
+                            string_read = ser.readline().decode('utf-8').rstrip()
+                            if string_read[0] == 'T':
+                                return float(string_read[1:])
+                        except:
+                            pass
+                    if i > 10:
+                        return None
+                    i+=1
+                    time.sleep(0.5)
+                return None
+            except:
+                return None
 
     def readSensors(self):
         humidity, temperature = (None, None)
