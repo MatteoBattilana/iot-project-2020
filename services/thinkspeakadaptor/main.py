@@ -7,6 +7,8 @@ import json
 import socket
 import time
 import requests
+#import numpy
+#from numpy import median
 from commons.netutils import *
 from commons.settingsmanager import *
 from thingspeak_bulk import *
@@ -438,7 +440,10 @@ class ThinkSpeakAdaptor(threading.Thread):
             for channel in r.json():
                 print("ASD")
                 if "devicePosition" in channel and channel["devicePosition"] == type:
+                    #if measureType == None:
                     ret.append(self.readMinutesData(channel["serviceId"], minutes=minutes))
+                    #else:
+                    #    ret.append(self.readMinutesData())
 
         return ret
 
@@ -495,6 +500,96 @@ class ThinkSpeakAdaptor(threading.Thread):
             #logging.debug(f"Response = {r.json()}")
         except Exception:
             logging.error(f"GET request from ThingSpeak went wrong")
+
+    def dayStats(self, groupId, day = datetime.datetime.now(), measureType = None, type = "internal" ):
+        #AVERAGE
+        #MEDIAN
+        #STANDARD DEVIATION
+        #MAX VALUE
+        #MIN VALUE
+        return_stats=[]
+        channelName = []
+        ret = []
+        r = requests.get(self._catalogAddress + "/searchByGroupId?groupId=" + groupId)
+        if r.status_code == 200:
+            for channel in r.json():
+                if "devicePosition" in channel and channel["devicePosition"] == type:
+                    #now it read only last day of feeds
+                    r = self.readDaysData(channel["serviceId"])
+                    fields=[]
+                    field_datas=[]
+                    if r != []:
+                        for i in range(1, 8):
+                            if "field"+str(i) in r.json()["channel"]:
+                                measure_type = r.json()["channel"]["field" + str(i)]
+                                fields.append(measure_type)
+
+                    #daily stats regarding all type of measures
+                    if measureType == None:
+                        for i, field in enumerate(fields):
+                            for feed in r.json()["feeds"]:
+                                data = feed["field"+str(i)]
+                                field_datas.append(data)
+                            avg = self.computeAverage(field_datas)
+                            median = self.computeMedian(field_datas)
+                            dev_std = self.computeStdDev(field_datas)
+                            min = self.computeMin(field_datas)
+                            max = self.computeMax(field_datas)
+                            return_stats.append(
+                                {
+                                    "measureType":measureType,
+                                    "average":avg,
+                                    "median":median,
+                                    "standard_deviation":dev_std,
+                                    "maximum":max,
+                                    "minimum":min
+                                }
+                            )
+            
+                    else:
+                        #return daily stats only about single measureType
+                        for i, field in enumerate(fields):
+                            if field == measureType:
+                                #get last day of measureType data
+                                r = self.readDaysData(channel["serviceId"], field_id=i)
+                                for feed in r.json()["feeds"]:
+                                    data = feed["field"+str(i)]
+                                    field_datas.append(data)
+                                return {
+                                    "measureType":measureType,
+                                    "average":self.computeAverage(field_datas),
+                                    "median":self.computeMedian(field_datas),
+                                    "standard_deviation":self.computeStdDev(field_datas),
+                                    "maximum":self.computeMax(field_datas),
+                                    "minimum":self.computeMin(field_datas)}
+                            else:
+                                logging.error("measureType not existing")
+        else:
+            logging.error(f"GroupId {groupId} not found")
+            
+            
+            
+           
+        
+    def weekStats(self, groupId, measureType = None):
+        pass
+    def monthStats(self, groupId, measureType = None):
+        pass
+    #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
+    def computeAverage(self, dataset):
+        return sum(dataset)/len(dataset)            
+    def computeStdDev(self, dataset):
+        stdev = sqrt( sum( (data - self.computeAverage(dataset) )^2 )/ (len(dataset) - 1) )
+        return stdev
+    def computeMin(self, dataset):
+        return min(dataset)
+    def computeMax(self, dataset):
+        return max(dataset)
+    def computeMedian(self, dataset):
+        return 1
+        #return median(dataset)
+
+        
     def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         #uri format
@@ -509,6 +604,8 @@ class ThinkSpeakAdaptor(threading.Thread):
                     return json.dumps(self.getFeedsGroupId(groupId, "external", minutes=params['minutes']), indent=3)
                 if uri[2] == "getInternalFeeds" and 'minutes' in params:
                     return json.dumps(self.getFeedsGroupId(groupId, "internal", minutes=params['minutes']), indent=3)
+                if uri[2] =="getDayStats" and 'measureType' in params:
+                    return json.dumps(self.dayStats(groupId, measureType=params['measureType']), indent=3)
 
             if uri[0] == "channel" and len(uri) > 2:
                 channelName = uri[1]
@@ -602,6 +699,27 @@ if __name__=="__main__":
                         "uri": "/",
                         "version": 1,
                         "parameter": []
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getDayStats",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "measureType", "unit": "string"},{"name":"day", "unit":"datetime"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getWeekStats",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "measureType", "unit": "string"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getMonthStats",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "measureType", "unit": "string"}]
                     },
                     {
                         "type": "web",

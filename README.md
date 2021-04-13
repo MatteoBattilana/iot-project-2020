@@ -93,5 +93,8 @@ Once you have done your work, open a pull request using the GitHub interface
   - get all fields data sum every SUM minutes (daily) from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/feeds/getSum?sum=SUM](http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getSum?sum=60)
   - get all fields data average every AVG minutes (daily) from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/feeds/getAvg?average=AVG](http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getAvg?average=720)
   - get all fields data median every MEDIAN minutes (daily) from channel CHANNELNAME: [http://localhost:8090/channel/CHANNELNAME/feeds/getMedian?median=MEDIAN](http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getMedian?median=720)
+  - get last MINUTES minutes GROUPID external feeds: [http://localhost:8090/group/GROUPID/getExternalFeeds?minutes=MINUTES](http://localhost:8090/group/home1/getExternalFeeds?minutes=60)
+  - get last MINUTES minutes GROUPID internal feeds: [http://localhost:8090/group/GROUPID/getInternalFeeds?minutes=MINUTES](http://localhost:8090/group/home1/getInternalFeeds?minutes=60)
+  - get daily statistics of MEASURETYPE from GROUPID group: [http://localhost:8090/group/GROUPID/getDayStats?measureType=MEASURETYPE](http://localhost:8090/group/home1/getDayStats?measureType=temperature)
 * EXTERNAL WEATHER API:
   - get the current weather status at latitude LAT and longitude LON: [http://localhost:8070/currentWeatherStatus?lat=LAT&lon=LON](http://localhost:8070/currentWeatherStatus?lat=45.06226619601743&lon=7.661825314722597)
