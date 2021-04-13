@@ -7,6 +7,7 @@ import json
 import socket
 import time
 import requests
+import math
 #import numpy
 #from numpy import median
 from commons.netutils import *
@@ -520,14 +521,14 @@ class ThinkSpeakAdaptor(threading.Thread):
                     field_datas=[]
                     if r != []:
                         for i in range(1, 8):
-                            if "field"+str(i) in r.json()["channel"]:
-                                measure_type = r.json()["channel"]["field" + str(i)]
+                            if "field"+str(i) in r["channel"]:
+                                measure_type = r["channel"]["field" + str(i)]
                                 fields.append(measure_type)
 
                     #daily stats regarding all type of measures
                     if measureType == None:
                         for i, field in enumerate(fields):
-                            for feed in r.json()["feeds"]:
+                            for feed in r["feeds"]:
                                 data = feed["field"+str(i)]
                                 field_datas.append(data)
                             avg = self.computeAverage(field_datas)
@@ -552,8 +553,9 @@ class ThinkSpeakAdaptor(threading.Thread):
                             if field == measureType:
                                 #get last day of measureType data
                                 r = self.readDaysData(channel["serviceId"], field_id=i)
-                                for feed in r.json()["feeds"]:
+                                for feed in r["feeds"]:
                                     data = feed["field"+str(i)]
+                                    #logging.debug(f"{data}")
                                     field_datas.append(data)
                                 return {
                                     "measureType":measureType,
@@ -577,9 +579,15 @@ class ThinkSpeakAdaptor(threading.Thread):
         pass
     #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
     def computeAverage(self, dataset):
-        return sum(dataset)/len(dataset)            
+        sum = 0
+        for i,data in enumerate(dataset):
+            sum = sum + int(data)
+        return sum/i            
     def computeStdDev(self, dataset):
-        stdev = sqrt( sum( (data - self.computeAverage(dataset) )^2 )/ (len(dataset) - 1) )
+        interm = 0
+        for i, data in enumerate(dataset):
+            interm = interm +  int( int(data) - self.computeAverage(dataset) )^2  
+        stdev = math.sqrt( interm / (len(dataset) - 1) )
         return stdev
     def computeMin(self, dataset):
         return min(dataset)
