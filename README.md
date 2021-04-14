@@ -96,5 +96,6 @@ Once you have done your work, open a pull request using the GitHub interface
   - get last MINUTES minutes GROUPID external feeds: [http://localhost:8090/group/GROUPID/getExternalFeeds?minutes=MINUTES](http://localhost:8090/group/home1/getExternalFeeds?minutes=60)
   - get last MINUTES minutes GROUPID internal feeds: [http://localhost:8090/group/GROUPID/getInternalFeeds?minutes=MINUTES](http://localhost:8090/group/home1/getInternalFeeds?minutes=60)
   - get daily statistics of MEASURETYPE from GROUPID group: [http://localhost:8090/group/GROUPID/getDayStats?measureType=MEASURETYPE](http://localhost:8090/group/home1/getDayStats?measureType=temperature)
+  - get all daily statistics from GROUPID group: [http://localhost:8090/group/GROUPID/getAllDayStats](http://localhost:8090/group/home1/getAllDayStats)
 * EXTERNAL WEATHER API:
   - get the current weather status at latitude LAT and longitude LON: [http://localhost:8070/currentWeatherStatus?lat=LAT&lon=LON](http://localhost:8070/currentWeatherStatus?lat=45.06226619601743&lon=7.661825314722597)
