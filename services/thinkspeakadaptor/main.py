@@ -502,7 +502,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         except Exception:
             logging.error(f"GET request from ThingSpeak went wrong")
 
-    def dayStats(self, groupId, day = datetime.datetime.now(), measureType = None, type = "internal" ):
+    def computeStats(self, groupId, lapse, day = datetime.datetime.now(), measureType = None, type = "internal"):
         #AVERAGE
         #MEDIAN
         #STANDARD DEVIATION
@@ -516,57 +516,69 @@ class ThinkSpeakAdaptor(threading.Thread):
             for channel in r.json():
                 if "devicePosition" in channel and channel["devicePosition"] == type:
                     #now it read only last day of feeds
-                    r = self.readDaysData(channel["serviceId"])
-                    fields=[]
-                    field_datas=[]
-                    if r != []:
-                        for i in range(1, 8):
-                            if "field"+str(i) in r["channel"]:
-                                measure_type = r["channel"]["field" + str(i)]
-                                fields.append(measure_type)
+                    if lapse == "daily":
+                        n_days = 1
+                    elif lapse == "weekly":
+                        n_days = 7
+                    elif lapse == "monthly":
+                        n_days = 30
+                    else:
+                        n_days = -1
+                        logging.error(f"Wrong value assigned: {lapse}")
+                    if n_days != -1:
+
+                        r = self.readDaysData(channel["serviceId"], days=n_days)
+                        fields=[]
+                        field_datas=[]
+                        if r != []:
+                            for i in range(1, 8):
+                                if "field"+str(i) in r["channel"]:
+                                    measure_type = r["channel"]["field" + str(i)]
+                                    fields.append(measure_type)
 
                     #daily stats regarding all type of measures
-                    if measureType == None:
-                        for i, field in enumerate(fields):
-                            for feed in r["feeds"]:
-                                data = feed["field"+str(i)]
-                                field_datas.append(float(data))
-                            avg = self.computeAverage(field_datas)
-                            median = self.computeMedian(field_datas)
-                            dev_std = self.computeStdDev(field_datas)
-                            min = self.computeMin(field_datas)
-                            max = self.computeMax(field_datas)
-                            return_stats.append(
-                                {
-                                    "measureType":measureType,
-                                    "average":avg,
-                                    "median":median,
-                                    "standard_deviation":dev_std,
-                                    "maximum":max,
-                                    "minimum":min
-                                }
-                            )
-            
-                    else:
-                        #return daily stats only about single measureType
-                        for i, field in enumerate(fields):
-                            if field == measureType:
-                                #get last day of measureType data
-                                r = self.readDaysData(channel["serviceId"], field_id=i)
+                        if measureType == None:
+                            for i, field in enumerate(fields):
                                 for feed in r["feeds"]:
-                                    data = feed["field"+str(i)]
+                                    data = feed["field"+str(i+1)]
                                     field_datas.append(float(data))
-                                return {
-                                    "measureType":measureType,
-                                    "average":self.computeAverage(field_datas),
-                                    "median":self.computeMedian(field_datas),
-                                    "standard_deviation":self.computeStdDev(field_datas),
-                                    "maximum":self.computeMax(field_datas),
-                                    "minimum":self.computeMin(field_datas)}
-                            else:
-                                logging.error("measureType not existing")
-        else:
-            logging.error(f"GroupId {groupId} not found")
+                                avg = self.computeAverage(field_datas)
+                                median = self.computeMedian(field_datas)
+                                dev_std = self.computeStdDev(field_datas)
+                                min = self.computeMin(field_datas)
+                                max = self.computeMax(field_datas)
+                                return_stats.append(
+                                    {
+                                        "measureType":field,
+                                        "average":avg,
+                                        "median":median,
+                                        "standard_deviation":dev_std,
+                                        "maximum":max,
+                                        "minimum":min
+                                    }
+                                )
+                            return return_stats
+            
+                        else:
+                            #return daily stats only about single measureType
+                            for i, field in enumerate(fields):
+                                if field == measureType:
+                                    #get last day of measureType data
+                                    r = self.readDaysData(channel["serviceId"], field_id=i, days=n_days)
+                                    for feed in r["feeds"]:
+                                        data = feed["field"+str(i+1)]
+                                        field_datas.append(float(data))
+                                    return {
+                                        "measureType":measureType,
+                                        "average":self.computeAverage(field_datas),
+                                        "median":self.computeMedian(field_datas),
+                                        "standard_deviation":self.computeStdDev(field_datas),
+                                        "maximum":self.computeMax(field_datas),
+                                        "minimum":self.computeMin(field_datas)}
+                                else:
+                                    logging.error("measureType not existing")
+            else:
+                logging.error(f"GroupId {groupId} not found")
             
             
             
@@ -611,10 +623,10 @@ class ThinkSpeakAdaptor(threading.Thread):
                     return json.dumps(self.getFeedsGroupId(groupId, "external", minutes=params['minutes']), indent=3)
                 if uri[2] == "getInternalFeeds" and 'minutes' in params:
                     return json.dumps(self.getFeedsGroupId(groupId, "internal", minutes=params['minutes']), indent=3)
-                if uri[2] =="getDayStats" and 'measureType' in params:
-                    return json.dumps(self.dayStats(groupId, measureType=params['measureType']), indent=3)
-                if uri[2] == "getAllDayStats":
-                    return json.dumps(self.dayStats(groupId), indent=3)
+                if uri[2] =="getStats" and 'measureType' in params and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse'], measureType=params['measureType']), indent=3)
+                if uri[2] == "getAllStats" and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse']), indent=3)
 
             if uri[0] == "channel" and len(uri) > 2:
                 channelName = uri[1]
