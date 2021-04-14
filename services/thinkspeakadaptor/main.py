@@ -8,8 +8,8 @@ import socket
 import time
 import requests
 import math
-#import numpy
-#from numpy import median
+import numpy
+from numpy import median
 from commons.netutils import *
 from commons.settingsmanager import *
 from thingspeak_bulk import *
@@ -530,7 +530,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                         for i, field in enumerate(fields):
                             for feed in r["feeds"]:
                                 data = feed["field"+str(i)]
-                                field_datas.append(data)
+                                field_datas.append(float(data))
                             avg = self.computeAverage(field_datas)
                             median = self.computeMedian(field_datas)
                             dev_std = self.computeStdDev(field_datas)
@@ -555,8 +555,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                                 r = self.readDaysData(channel["serviceId"], field_id=i)
                                 for feed in r["feeds"]:
                                     data = feed["field"+str(i)]
-                                    #logging.debug(f"{data}")
-                                    field_datas.append(data)
+                                    field_datas.append(float(data))
                                 return {
                                     "measureType":measureType,
                                     "average":self.computeAverage(field_datas),
@@ -579,14 +578,15 @@ class ThinkSpeakAdaptor(threading.Thread):
         pass
     #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
     def computeAverage(self, dataset):
-        sum = 0
+        sum = 0.0
         for i,data in enumerate(dataset):
-            sum = sum + int(data)
-        return sum/i            
+            sum = sum + (data)
+        return float(sum/i)            
     def computeStdDev(self, dataset):
-        interm = 0
+        interm = 0.0
+        avg = self.computeAverage(dataset)
         for i, data in enumerate(dataset):
-            interm = interm +  int( int(data) - self.computeAverage(dataset) )^2  
+            interm = interm +  float( math.pow(data - avg,2) )
         stdev = math.sqrt( interm / (len(dataset) - 1) )
         return stdev
     def computeMin(self, dataset):
@@ -594,8 +594,7 @@ class ThinkSpeakAdaptor(threading.Thread):
     def computeMax(self, dataset):
         return max(dataset)
     def computeMedian(self, dataset):
-        return 1
-        #return median(dataset)
+        return numpy.median(dataset)
 
         
     def GET(self, *uri, **params):
@@ -614,6 +613,8 @@ class ThinkSpeakAdaptor(threading.Thread):
                     return json.dumps(self.getFeedsGroupId(groupId, "internal", minutes=params['minutes']), indent=3)
                 if uri[2] =="getDayStats" and 'measureType' in params:
                     return json.dumps(self.dayStats(groupId, measureType=params['measureType']), indent=3)
+                if uri[2] == "getAllDayStats":
+                    return json.dumps(self.dayStats(groupId), indent=3)
 
             if uri[0] == "channel" and len(uri) > 2:
                 channelName = uri[1]
