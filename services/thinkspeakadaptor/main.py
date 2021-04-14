@@ -564,7 +564,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                             for i, field in enumerate(fields):
                                 if field == measureType:
                                     #get last day of measureType data
-                                    r = self.readDaysData(channel["serviceId"], field_id=i, days=n_days)
+                                    r = self.readDaysData(channel["serviceId"], field_id=i+1, days=n_days)
                                     for feed in r["feeds"]:
                                         data = feed["field"+str(i+1)]
                                         field_datas.append(float(data))
