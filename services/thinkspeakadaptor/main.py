@@ -580,20 +580,12 @@ class ThinkSpeakAdaptor(threading.Thread):
             else:
                 logging.error(f"GroupId {groupId} not found")
             
-            
-            
-           
-        
-    def weekStats(self, groupId, measureType = None):
-        pass
-    def monthStats(self, groupId, measureType = None):
-        pass
     #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
     def computeAverage(self, dataset):
         sum = 0.0
         for i,data in enumerate(dataset):
             sum = sum + (data)
-        return float(sum/i)            
+        return float(sum/len(dataset))            
     def computeStdDev(self, dataset):
         interm = 0.0
         avg = self.computeAverage(dataset)
@@ -623,6 +615,10 @@ class ThinkSpeakAdaptor(threading.Thread):
                     return json.dumps(self.getFeedsGroupId(groupId, "external", minutes=params['minutes']), indent=3)
                 if uri[2] == "getInternalFeeds" and 'minutes' in params:
                     return json.dumps(self.getFeedsGroupId(groupId, "internal", minutes=params['minutes']), indent=3)
+                if uri[2] =="getStats" and 'measureType' in params and 'type' in params and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse'], measureType=params['measureType'], type=params['type']), indent=3)
+                if uri[2] == "getAllStats" and 'type' in params and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse'], type=params['type']), indent=3)
                 if uri[2] =="getStats" and 'measureType' in params and 'lapse' in params:
                     return json.dumps(self.computeStats(groupId, lapse=params['lapse'], measureType=params['measureType']), indent=3)
                 if uri[2] == "getAllStats" and 'lapse' in params:

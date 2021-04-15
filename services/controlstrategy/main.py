@@ -58,8 +58,6 @@ class ControlStrategy(threading.Thread):
     def onMQTTMessageReceived(self, topic, message):
         payload = message
         logging.debug(f"payload = {payload}")
-
-    #to decide if today stats or generic day stats
     
     
 
