@@ -1,3 +1,6 @@
+# Path hack.
+import sys, os
+sys.path.insert(0, os.path.abspath('..'))
 from commons.MQTTRetry import *
 from commons.ping import *
 from commons.settingsmanager import *
@@ -6,9 +9,8 @@ from commons.netutils import *
 import requests
 import json
 import time
-import logging
 import threading
-import datetime
+import logging
 
 class ControlStrategy(threading.Thread):
     def __init(self, settings, serviceList):
@@ -33,7 +35,10 @@ class ControlStrategy(threading.Thread):
     
     def run(self):
         logging.debug("Started")
-        pass
+        while self._run:
+            #do something
+            time.sleep(1)
+
     def stop(self):
         self._ping.stop()
         if self._isMQTTconnected and self._mqtt is not None:
@@ -63,11 +68,11 @@ class ControlStrategy(threading.Thread):
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
+    Logger.setup(settings.getField('logVerbosity'), settings.getFieldOrDefault('logFile', ''))
+    
     availableServices=[]
-
-    ControlManager = ControlStrategy(
-        settings,
-        availableServices
-    )
+    
+    controlManager = ControlStrategy(settings, availableServices)
+    controlManager.start()
 
     
