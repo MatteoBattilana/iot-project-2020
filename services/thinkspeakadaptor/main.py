@@ -502,7 +502,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         except Exception:
             logging.error(f"GET request from ThingSpeak went wrong")
 
-    def computeStats(self, groupId, lapse, day = datetime.datetime.now(), measureType = None, type = "internal"):
+    def computeStats(self, groupId, lapse, measureType = None, type = "internal"):
         #AVERAGE
         #MEDIAN
         #STANDARD DEVIATION
@@ -525,60 +525,60 @@ class ThinkSpeakAdaptor(threading.Thread):
                     else:
                         n_days = -1
                         logging.error(f"Wrong value assigned: {lapse}")
-                    if n_days != -1:
+                        return {}
 
-                        r = self.readDaysData(channel["serviceId"], days=n_days)
-                        fields=[]
-                        field_datas=[]
-                        if r != []:
-                            for i in range(1, 8):
-                                if "field"+str(i) in r["channel"]:
-                                    measure_type = r["channel"]["field" + str(i)]
-                                    fields.append(measure_type)
+                    r = self.readDaysData(channel["serviceId"], days=n_days)
+                    fields=[]
+                    field_datas=[]
+                    if r != []:
+                        for i in range(1, 8):
+                            if "field"+str(i) in r["channel"]:
+                                measure_type = r["channel"]["field" + str(i)]
+                                fields.append(measure_type)
 
                     #daily stats regarding all type of measures
-                        if measureType == None:
-                            for i, field in enumerate(fields):
+                    if measureType == None:
+                        for i, field in enumerate(fields):
+                            for feed in r["feeds"]:
+                                data = feed["field"+str(i+1)]
+                                field_datas.append(float(data))
+                            avg = self.computeAverage(field_datas)
+                            median = self.computeMedian(field_datas)
+                            dev_std = self.computeStdDev(field_datas)
+                            min = self.computeMin(field_datas)
+                            max = self.computeMax(field_datas)
+                            return_stats.append(
+                                {
+                                    "measureType":field,
+                                    "average":avg,
+                                    "median":median,
+                                    "standard_deviation":dev_std,
+                                    "maximum":max,
+                                    "minimum":min
+                                }
+                            )
+                        return return_stats
+            
+                    else:
+                        #return daily stats only about single measureType
+                        for i, field in enumerate(fields):
+                            if field == measureType:
+                                #get last day of measureType data
+                                r = self.readDaysData(channel["serviceId"], field_id=i+1, days=n_days)
                                 for feed in r["feeds"]:
                                     data = feed["field"+str(i+1)]
                                     field_datas.append(float(data))
-                                avg = self.computeAverage(field_datas)
-                                median = self.computeMedian(field_datas)
-                                dev_std = self.computeStdDev(field_datas)
-                                min = self.computeMin(field_datas)
-                                max = self.computeMax(field_datas)
-                                return_stats.append(
-                                    {
-                                        "measureType":field,
-                                        "average":avg,
-                                        "median":median,
-                                        "standard_deviation":dev_std,
-                                        "maximum":max,
-                                        "minimum":min
-                                    }
-                                )
-                            return return_stats
-            
-                        else:
-                            #return daily stats only about single measureType
-                            for i, field in enumerate(fields):
-                                if field == measureType:
-                                    #get last day of measureType data
-                                    r = self.readDaysData(channel["serviceId"], field_id=i+1, days=n_days)
-                                    for feed in r["feeds"]:
-                                        data = feed["field"+str(i+1)]
-                                        field_datas.append(float(data))
-                                    return {
-                                        "measureType":measureType,
-                                        "average":self.computeAverage(field_datas),
-                                        "median":self.computeMedian(field_datas),
-                                        "standard_deviation":self.computeStdDev(field_datas),
-                                        "maximum":self.computeMax(field_datas),
-                                        "minimum":self.computeMin(field_datas)}
-                                else:
-                                    logging.error("measureType not existing")
-            else:
-                logging.error(f"GroupId {groupId} not found")
+                                return {
+                                    "measureType":measureType,
+                                    "average":self.computeAverage(field_datas),
+                                    "median":self.computeMedian(field_datas),
+                                    "standard_deviation":self.computeStdDev(field_datas),
+                                    "maximum":self.computeMax(field_datas),
+                                    "minimum":self.computeMin(field_datas)}
+                            else:
+                                logging.error("measureType not existing")
+        else:
+            logging.error(f"GroupId {groupId} not found")
             
     #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
     def computeAverage(self, dataset):
@@ -719,24 +719,17 @@ if __name__=="__main__":
                     },
                     {
                         "type": "web",
-                        "uri": "/group/<groupId>/getDayStats",
+                        "uri": "/group/<groupId>/getStats",
                         "uri_parameters":[{"name":"groupId","unit":"string"}],
                         "version": 1,
-                        "parameter": [{"name": "measureType", "unit": "string"},{"name":"day", "unit":"datetime"}]
+                        "parameter": [{"name": "measureType", "unit": "string"},{"name":"type", "unit":"string"},{"name":"lapse", "unit":"string"}]
                     },
                     {
                         "type": "web",
-                        "uri": "/group/<groupId>/getWeekStats",
+                        "uri": "/group/<groupId>/getAllStats",
                         "uri_parameters":[{"name":"groupId","unit":"string"}],
                         "version": 1,
-                        "parameter": [{"name": "measureType", "unit": "string"}]
-                    },
-                    {
-                        "type": "web",
-                        "uri": "/group/<groupId>/getMonthStats",
-                        "uri_parameters":[{"name":"groupId","unit":"string"}],
-                        "version": 1,
-                        "parameter": [{"name": "measureType", "unit": "string"}]
+                        "parameter": [{"name": "type", "unit": "string"},{"name":"lapse", "unit":"string"}]
                     },
                     {
                         "type": "web",
