@@ -7,6 +7,9 @@ import json
 import socket
 import time
 import requests
+import math
+import numpy
+from numpy import median
 from commons.netutils import *
 from commons.settingsmanager import *
 from thingspeak_bulk import *
@@ -438,7 +441,10 @@ class ThinkSpeakAdaptor(threading.Thread):
             for channel in r.json():
                 print("ASD")
                 if "devicePosition" in channel and channel["devicePosition"] == type:
+                    #if measureType == None:
                     ret.append(self.readMinutesData(channel["serviceId"], minutes=minutes))
+                    #else:
+                    #    ret.append(self.readMinutesData())
 
         return ret
 
@@ -495,6 +501,106 @@ class ThinkSpeakAdaptor(threading.Thread):
             #logging.debug(f"Response = {r.json()}")
         except Exception:
             logging.error(f"GET request from ThingSpeak went wrong")
+
+    def computeStats(self, groupId, lapse, measureType = None, type = "internal"):
+        #AVERAGE
+        #MEDIAN
+        #STANDARD DEVIATION
+        #MAX VALUE
+        #MIN VALUE
+        return_stats=[]
+        channelName = []
+        ret = []
+        r = requests.get(self._catalogAddress + "/searchByGroupId?groupId=" + groupId)
+        if r.status_code == 200:
+            for channel in r.json():
+                if "devicePosition" in channel and channel["devicePosition"] == type:
+                    #now it read only last day of feeds
+                    if lapse == "daily":
+                        n_days = 1
+                    elif lapse == "weekly":
+                        n_days = 7
+                    elif lapse == "monthly":
+                        n_days = 30
+                    else:
+                        n_days = -1
+                        logging.error(f"Wrong value assigned: {lapse}")
+                        return {}
+
+                    r = self.readDaysData(channel["serviceId"], days=n_days)
+                    fields=[]
+                    field_datas=[]
+                    if r != []:
+                        for i in range(1, 8):
+                            if "field"+str(i) in r["channel"]:
+                                measure_type = r["channel"]["field" + str(i)]
+                                fields.append(measure_type)
+
+                    #daily stats regarding all type of measures
+                    if measureType == None:
+                        for i, field in enumerate(fields):
+                            for feed in r["feeds"]:
+                                data = feed["field"+str(i+1)]
+                                field_datas.append(float(data))
+                            avg = self.computeAverage(field_datas)
+                            median = self.computeMedian(field_datas)
+                            dev_std = self.computeStdDev(field_datas)
+                            min = self.computeMin(field_datas)
+                            max = self.computeMax(field_datas)
+                            return_stats.append(
+                                {
+                                    "measureType":field,
+                                    "average":avg,
+                                    "median":median,
+                                    "standard_deviation":dev_std,
+                                    "maximum":max,
+                                    "minimum":min
+                                }
+                            )
+                        return return_stats
+            
+                    else:
+                        #return daily stats only about single measureType
+                        for i, field in enumerate(fields):
+                            if field == measureType:
+                                #get last day of measureType data
+                                r = self.readDaysData(channel["serviceId"], field_id=i+1, days=n_days)
+                                for feed in r["feeds"]:
+                                    data = feed["field"+str(i+1)]
+                                    field_datas.append(float(data))
+                                return {
+                                    "measureType":measureType,
+                                    "average":self.computeAverage(field_datas),
+                                    "median":self.computeMedian(field_datas),
+                                    "standard_deviation":self.computeStdDev(field_datas),
+                                    "maximum":self.computeMax(field_datas),
+                                    "minimum":self.computeMin(field_datas)}
+                            else:
+                                logging.error("measureType not existing")
+        else:
+            logging.error(f"GroupId {groupId} not found")
+            
+    #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
+    def computeAverage(self, dataset):
+        sum = 0.0
+        for i,data in enumerate(dataset):
+            sum = sum + (data)
+        return float(sum/len(dataset))            
+    def computeStdDev(self, dataset):
+        interm = 0.0
+        avg = self.computeAverage(dataset)
+        for i, data in enumerate(dataset):
+            interm = interm +  float( math.pow(data - avg,2) )
+        stdev = math.sqrt( interm / (len(dataset) - 1) )
+        return stdev
+    def computeMin(self, dataset):
+        return min(dataset)
+    def computeMax(self, dataset):
+        return max(dataset)
+    def computeMedian(self, dataset):
+        return numpy.median(dataset)
+
+        
     def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         #uri format
@@ -509,6 +615,14 @@ class ThinkSpeakAdaptor(threading.Thread):
                     return json.dumps(self.getFeedsGroupId(groupId, "external", minutes=params['minutes']), indent=3)
                 if uri[2] == "getInternalFeeds" and 'minutes' in params:
                     return json.dumps(self.getFeedsGroupId(groupId, "internal", minutes=params['minutes']), indent=3)
+                if uri[2] =="getStats" and 'measureType' in params and 'type' in params and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse'], measureType=params['measureType'], type=params['type']), indent=3)
+                if uri[2] == "getAllStats" and 'type' in params and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse'], type=params['type']), indent=3)
+                if uri[2] =="getStats" and 'measureType' in params and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse'], measureType=params['measureType']), indent=3)
+                if uri[2] == "getAllStats" and 'lapse' in params:
+                    return json.dumps(self.computeStats(groupId, lapse=params['lapse']), indent=3)
 
             if uri[0] == "channel" and len(uri) > 2:
                 channelName = uri[1]
@@ -602,6 +716,20 @@ if __name__=="__main__":
                         "uri": "/",
                         "version": 1,
                         "parameter": []
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getStats",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "measureType", "unit": "string"},{"name":"type", "unit":"string"},{"name":"lapse", "unit":"string"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/group/<groupId>/getAllStats",
+                        "uri_parameters":[{"name":"groupId","unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "type", "unit": "string"},{"name":"lapse", "unit":"string"}]
                     },
                     {
                         "type": "web",

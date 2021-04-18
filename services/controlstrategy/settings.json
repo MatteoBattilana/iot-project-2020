@@ -1,0 +1,10 @@
+{
+    "pingTime": 60,
+    "serviceName": "CONTROL-STRATEGY",
+    "subscribeTopics": [
+        "/iot-programming-2343/#"
+    ],
+    "catalogAddress": "http://catalog:8080/catalog",
+    "logVerbosity": "ERROR",
+    "serviceId": "CONTROL-STRATEGY-6"
+}
