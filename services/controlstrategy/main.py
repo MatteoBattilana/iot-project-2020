@@ -13,13 +13,14 @@ import threading
 import logging
 
 class ControlStrategy(threading.Thread):
-    def __init(self, settings, serviceList):
+    def __init__(self, settings, serviceList):
         threading.Thread.__init__(self)
         self._settings = settings
         self._subscribeList = self._settings.getField('subscribeTopics')
+        self._catalogAddress = self._settings.getField('catalogAddress')
         self._ping = Ping(int(self._settings.getField('pingTime')),
             serviceList,
-            self._settings.getField('catalogAddress'),
+            self._catalogAddress,
             self._settings.getField('serviceName'),
             "SERVICE",
             self._settings.getFieldOrDefault('serviceId', ''),
@@ -32,7 +33,7 @@ class ControlStrategy(threading.Thread):
 
         if self._settings.getFieldOrDefault('serviceId', ''):
             self.onNewCatalogId(self._settings.getField('serviceId'))
-    
+
     def run(self):
         logging.debug("Started")
         while self._run:
@@ -45,7 +46,7 @@ class ControlStrategy(threading.Thread):
             self._mqtt.stop()
         self._run=False
         self.join()
-    
+
     def onNewCatalogId(self, newId):
         self._settings.updateField('serviceId', newId)
         if self._mqtt is not None:
@@ -63,16 +64,14 @@ class ControlStrategy(threading.Thread):
     def onMQTTMessageReceived(self, topic, message):
         payload = message
         logging.debug(f"payload = {payload}")
-    
-    
+
+
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
     Logger.setup(settings.getField('logVerbosity'), settings.getFieldOrDefault('logFile', ''))
-    
+
     availableServices=[]
-    
+
     controlManager = ControlStrategy(settings, availableServices)
     controlManager.start()
-
-    
