@@ -5,7 +5,7 @@
     "groupId": "home1",
     "MQTTTopic": "/iot-programming-2343/",
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "DEBUG",
+    "logVerbosity": "ERROR",
     "serviceId": "SIMULATED-DEVICE-2",
     "devicePosition": "internal"
 }
