@@ -1,5 +1,6 @@
 {
     "pingTime": 60,
+    "cacheTimeInterval": 5,
     "temperatureThreshold": 30,
     "humidityThreshold": 70,
     "co2Threshold": 600,

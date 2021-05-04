@@ -1,6 +1,6 @@
 {
     "pingTime": 60,
-    "sensorSamplingTime": 20,
+    "sensorSamplingTime": 500,
     "deviceName": "SIMULATED-DEVICE",
     "groupId": "home1",
     "MQTTTopic": "/iot-programming-2343/",
