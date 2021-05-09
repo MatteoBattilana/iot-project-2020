@@ -5,15 +5,15 @@ import logging
 import datetime
 from datetime import *
 import time
+import cherrypy
 
-class ControlCache(threading.Thread):
+class ControlCache():
     def __init__(self, time_interval):
-        threading.Thread.__init__(self)
         self._cache = []
         self.lock = threading.Lock()
         self._time_interval = time_interval
 
-    def createCache(self, groupId):
+    def createCache(self, groupId, _type):
         new_cache = {
             "groupId":groupId,
             "temperature":[],
@@ -24,8 +24,14 @@ class ControlCache(threading.Thread):
         fields = []
 
         self.lock.acquire()
-
-        uri = "http://localhost:8090/channel/"+groupId+"/feeds/getMinutesData?minutes="+str(self._time_interval)
+        
+        if _type == "internal":
+            uri = "http://localhost:8090/group/"+groupId+"/getInternalFeeds?minutes="+str(self._time_interval)
+        elif _type == "external":
+            uri = "http://localhost:8090/group/"+groupId+"/getExternalFeeds?minutes="+str(self._time_interval)
+        else:
+            logging.error(f"Error: a wrong type has been specified")
+            uri = ""
         logging.debug(f"Call request to uri = {uri}")
         try:
             r = requests.get(uri)
@@ -54,6 +60,7 @@ class ControlCache(threading.Thread):
                 }
                 cache[measuretype].append(to_append)
 
+        #check if the cache has to be emptied
         for cache in self._cache:
                 if len(cache["temperature"]) != 0:
                     first_temp = cache["temperature"][0]["timestamp"]

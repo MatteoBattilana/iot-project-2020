@@ -15,6 +15,7 @@ import logging
 import numpy as np
 
 class ControlStrategy(threading.Thread):
+    exposed=True
     def __init__(self, settings, serviceList):
         threading.Thread.__init__(self)
         self._settings = settings
@@ -33,7 +34,7 @@ class ControlStrategy(threading.Thread):
         self._run=True
         self._mqtt = None
         self._cache = ControlCache(self._settings.getField('cacheTimeInterval'))
-        self._cache.start()
+        
 
         if self._settings.getFieldOrDefault('serviceId', ''):
             self.onNewCatalogId(self._settings.getField('serviceId'))
@@ -41,8 +42,22 @@ class ControlStrategy(threading.Thread):
     def run(self):
         logging.debug("Started")
         while self._run:
-            #do something
-            time.sleep(1)
+            uri = "http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getResultsData?results=10"
+       
+            logging.debug(f"Call request to uri = {uri}")
+            try:
+                r = requests.get(uri)
+                if r.status_code == 200:
+                    for i in range(1,8):
+                        if "field"+str(i) in r["channel"]:
+                            #in fields: field (position) i -> measuretype
+                            fields.append(r["channel"]["field"+str(i)])
+                    for feed in r["feeds"]:
+                        for i,field in enumerate(fields):
+                            new_cache[field].append(feed["field"]+str(i))
+            except Exception as e:
+                logging.error(f"Request Error {e} for uri={uri}")
+            time.sleep(15)
 
     def stop(self):
         self._ping.stop()
@@ -78,15 +93,15 @@ class ControlStrategy(threading.Thread):
         self._isMQTTconnected = False
     def onMQTTMessageReceived(self, topic, message):
         payload = message
+        logging.debug(f"{payload}")
     
         feeds = []
         fields = []
 
         groupId = payload["bn"]
-        
+        _type = payload["p"]
         if self._cache.findGroupIdCache(groupId) == False:
-            logging.debug(f"entered here")
-            self._cache.createCache(groupId)
+            self._cache.createCache(groupId, _type)
 
         logging.debug(f"{self._cache.getCache(groupId)}")
 
@@ -135,3 +150,4 @@ if __name__=="__main__":
 
     controlManager = ControlStrategy(settings, availableServices)
     controlManager.start()
+    
