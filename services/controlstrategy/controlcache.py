@@ -7,15 +7,17 @@ from datetime import *
 import time
 import cherrypy
 
+
 class ControlCache():
-    def __init__(self, time_interval):
+    def __init__(self, timeInterval, catalogAddress):
         self._cache = []
         self.lock = threading.Lock()
-        self._time_interval = time_interval
+        self._time_interval = timeInterval
+        self._catalogAddress = catalogAddress
 
-    def createCache(self, groupId, _type):
+    def createCache(self, serviceId, _type):
         new_cache = {
-            "groupId":groupId,
+            "serviceId":serviceId,
             "temperature":[],
             "humidity":[],
             "co2":[]
@@ -24,36 +26,48 @@ class ControlCache():
         fields = []
 
         self.lock.acquire()
+       
+        uri = str(self._catalogAddress)+"/searchByServiceSubType?serviceSubType=THINGSPEAK"
+        try:
+            r = requests.get(uri)
+            if r.status_code == 200:
+                for service in r.json()[0]["serviceServiceList"]:
+                    if service["serviceType"]  == "REST":
+                        thingspeak_adaptor_ip = service["serviceIP"]
+                        thingspeak_adaptor_port = service["servicePort"]
+        except Exception as e:
+            logging.debug(f"Exception Error: {e}")
+
+        baseUri = "http://"+str(thingspeak_adaptor_ip)+":"+str(thingspeak_adaptor_port)
         
-        if _type == "internal":
-            uri = "http://localhost:8090/group/"+groupId+"/getInternalFeeds?minutes="+str(self._time_interval)
-        elif _type == "external":
-            uri = "http://localhost:8090/group/"+groupId+"/getExternalFeeds?minutes="+str(self._time_interval)
-        else:
-            logging.error(f"Error: a wrong type has been specified")
-            uri = ""
-        logging.debug(f"Call request to uri = {uri}")
+        uri = baseUri+"/channel/"+serviceId+"/feeds/getMinutesData?minutes="+str(self._time_interval)
+
         try:
             r = requests.get(uri)
             if r.status_code == 200:
                 for i in range(1,8):
-                    if "field"+str(i) in r["channel"]:
+                    if "field"+str(i) in r.json()["channel"]:
                         #in fields: field (position) i -> measuretype
-                        fields.append(r["channel"]["field"+str(i)])
-                for feed in r["feeds"]:
+                        fields.append(r.json()["channel"]["field"+str(i)])
+                for feed in r.json()["feeds"]:
                     for i,field in enumerate(fields):
-                        new_cache[field].append(feed["field"]+str(i))
+                        datetime_obj = datetime.strptime(feed["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                        to_append = {
+                            "value":feed["field"+str(i+1)],
+                            "timestamp":datetime.timestamp(datetime_obj)
+                        }
+                        new_cache[str(field)].append(to_append)
+                
         except Exception as e:
             logging.error(f"Request Error {e} for uri={uri}")
-        
         self._cache.append(new_cache)
         self.lock.release()
     
-    def addToCache(self, groupId, measuretype, data, timestamp):
+    def addToCache(self, serviceId, measuretype, data, timestamp):
         self.lock.acquire()
-
+        #logging.debug("Data added to cache")
         for cache in self._cache:
-            if cache["groupId"] == groupId:
+            if cache["serviceId"] == serviceId:
                 to_append = {
                     "value":data,
                     "timestamp":timestamp
@@ -62,52 +76,53 @@ class ControlCache():
 
         #check if the cache has to be emptied
         for cache in self._cache:
-                if len(cache["temperature"]) != 0:
-                    first_temp = cache["temperature"][0]["timestamp"]
-                    last_temp = cache["temperature"][-1]["timestamp"]
-                    if (last_temp-first_temp)/60 > self._time_interval:
-                        self.popCache(cache["groupId"], "temperature")
-                if len(cache["humidity"]):
-                    first_hum = cache["humidity"][0]["timestamp"]
-                    last_hum = cache["humidity"][-1]["timestamp"]
-                    if (last_hum-first_hum)/60 > self._time_interval:
-                        self.popCache(cache["groupId"], "humidity")
-                if len(cache["co2"]):
-                    first_co2 = cache["co2"][0]["timestamp"]
-                    last_co2 = cache["co2"][-1]["timestamp"]
-                    if (last_co2-first_co2)/60 > self._time_interval:
-                        self.popCache(cache["groupId"], "co2")
+            if len(cache["temperature"]) > 1:
+                first_temp = cache["temperature"][0]["timestamp"]
+                last_temp = cache["temperature"][-1]["timestamp"]
+                if (last_temp-first_temp)/60 > self._time_interval:
+                    self.popCache(cache["serviceId"], "temperature")
+            if len(cache["humidity"]) > 1:
+                first_hum = cache["humidity"][0]["timestamp"]
+                last_hum = cache["humidity"][-1]["timestamp"]
+                if (last_hum-first_hum)/60 > self._time_interval:
+                    self.popCache(cache["serviceId"], "humidity")
+            if len(cache["co2"]) > 1:
+                first_co2 = cache["co2"][0]["timestamp"]
+                last_co2 = cache["co2"][-1]["timestamp"]
+                if (last_co2-first_co2)/60 > self._time_interval:
+                    self.popCache(cache["serviceId"], "co2")
         
         self.lock.release()
 
-    def popCache(self, groupId, measuretype):
-        self.lock.acquire()
+    def popCache(self, serviceId, measuretype):
+        #logging.debug("Data are popped from the cache")
+       
 
         for cache in self._cache:
-            if cache["groupId"] == groupId:
-                cache[measuretype].pop(0)
+            if cache["serviceId"] == serviceId:
+                cache[str(measuretype)].pop(0)
             
-        self.lock.release()
+     
     
-    def findGroupIdCache(self, groupId):
+    def findServiceIdCache(self, serviceId):
         for cache in self._cache:
-            if cache["groupId"] == groupId:
+            if cache["serviceId"] == serviceId:
                 return True
         return False
-    def getLastResults(self, groupId, measuretype, minutes=1):
+    def getLastResults(self, serviceId, measuretype, minutes=1):
         to_return = []
         _timestamp = datetime.timestamp(datetime.now())
         for cache in self._cache:
-            if cache["groupId"] == groupId and self._time_interval > minutes and len(cache[measuretype]) != 0:
+            if cache["serviceId"] == serviceId and self._time_interval > minutes and len(cache[measuretype]) != 0:
                 for data in cache[measuretype]:
-                    #if (_timestamp-data["timestamp"])/60 < minutes:
-                    if (cache[measuretype][-1]["timestamp"]-data["timestamp"])/60 < minutes:
+                    if (_timestamp-data["timestamp"])/60 < minutes:
+                    #if (cache[measuretype][-1]["timestamp"]-data["timestamp"])/60 < minutes:
                         value = data
                         to_return.append(value)
                 
         return to_return
-    def getCache(self, groupId):
+    def getCache(self, serviceId):
         for cache in self._cache:
-            if cache["groupId"] == groupId:
+            if cache["serviceId"] == serviceId:
                 return cache
         return -1

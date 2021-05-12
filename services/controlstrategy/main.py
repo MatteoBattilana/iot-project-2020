@@ -15,7 +15,6 @@ import logging
 import numpy as np
 
 class ControlStrategy(threading.Thread):
-    exposed=True
     def __init__(self, settings, serviceList):
         threading.Thread.__init__(self)
         self._settings = settings
@@ -33,7 +32,7 @@ class ControlStrategy(threading.Thread):
         self._ping.start()
         self._run=True
         self._mqtt = None
-        self._cache = ControlCache(self._settings.getField('cacheTimeInterval'))
+        self._cache = ControlCache(self._settings.getField('cacheTimeInterval'),self._settings.getField('catalogAddress'))
         
 
         if self._settings.getFieldOrDefault('serviceId', ''):
@@ -42,22 +41,7 @@ class ControlStrategy(threading.Thread):
     def run(self):
         logging.debug("Started")
         while self._run:
-            uri = "http://localhost:8090/channel/SIMULATED-DEVICE-1/feeds/getResultsData?results=10"
-       
-            logging.debug(f"Call request to uri = {uri}")
-            try:
-                r = requests.get(uri)
-                if r.status_code == 200:
-                    for i in range(1,8):
-                        if "field"+str(i) in r["channel"]:
-                            #in fields: field (position) i -> measuretype
-                            fields.append(r["channel"]["field"+str(i)])
-                    for feed in r["feeds"]:
-                        for i,field in enumerate(fields):
-                            new_cache[field].append(feed["field"]+str(i))
-            except Exception as e:
-                logging.error(f"Request Error {e} for uri={uri}")
-            time.sleep(15)
+            pass
 
     def stop(self):
         self._ping.stop()
@@ -67,14 +51,22 @@ class ControlStrategy(threading.Thread):
         self.join()
     
     def polyFitting(self, dataset, timeset, degree, time_horizon = 1):
-        floatlist=[]
+        floatlist = []
+        timelist = []
         for data in dataset:
             floatlist.append(float(data))
-        time_horizon = timeset[len(timeset) - 1] - timeset[len(timeset) - 2]
 
-        coefs = np.polyfit(timeset, floatlist, degree)
+        logging.debug(f"{timeset}")
+        #remove timestamp (first data) offset from timeset list
+        for timedata in timeset:
+            _time_data = int(timedata - timeset[0])
+            timelist.append(_time_data)
+        logging.debug(f"{timelist}")
+        time_horizon = timelist[len(timelist) - 1] - timelist[len(timelist) - 2]
+
+        coefs = np.polyfit(timelist, floatlist, degree)
         poly = np.poly1d(coefs)
-        next_value = poly(timeset.pop() + time_horizon)
+        next_value = poly(timelist.pop() + time_horizon)
         return next_value
 
     def onNewCatalogId(self, newId):
@@ -98,46 +90,45 @@ class ControlStrategy(threading.Thread):
         feeds = []
         fields = []
 
-        groupId = payload["bn"]
+        serviceId = payload["bn"]
         _type = payload["p"]
-        if self._cache.findGroupIdCache(groupId) == False:
-            self._cache.createCache(groupId, _type)
+        if self._cache.findServiceIdCache(serviceId) == False:
+            self._cache.createCache(serviceId, _type)
 
-        logging.debug(f"{self._cache.getCache(groupId)}")
+        logging.debug(f"{self._cache.getCache(serviceId)}")
 
         for field in payload["e"]:
-            #logging.debug(f"{field}")
             measure_type = field["n"]
             actual_value = float(field["v"])
             key = str(measure_type)+"Threshold"
             threshold = float(self._settings.getField(key))
 
-            if self._cache.getLastResults(groupId, measure_type) != []:
+            if self._cache.getLastResults(serviceId, measure_type) != []:
                 #list with last two values
-                past_data = self._cache.getLastResults(groupId, measure_type)
+                past_data = self._cache.getLastResults(serviceId, measure_type)
                 past_values = []
                 for data in past_data:
-                    #logging.debug(f"data = {data}")
                     past_values.append(data['value'])
                 #list with last 5 values
-                if self._cache.getLastResults(groupId, measure_type, minutes=2) != []:
+                if self._cache.getLastResults(serviceId, measure_type, minutes=2) != []:
                     time_values = []
                     to_interp = []
-                    for data in self._cache.getLastResults(groupId, measure_type, minutes=2):
+                    for data in self._cache.getLastResults(serviceId, measure_type, minutes=2):
                         to_interp.append(data['value'])
                         time_values.append(data['timestamp'])
                     #logging.debug(f"last_four={to_interp}")
                     #logging.debug(f"time={time_values}")
                     #in case the actual value is under threshold but the polynomial interpolation tells us it is going to pass the threshold -> notification
-                    predicted = self.polyFitting(to_interp, time_values, 2)
-                    logging.debug(f"{predicted}")
-                    if (float(predicted) > threshold):
-                        logging.debug(f"Attention: {measure_type} is going to pass critical value. Actual value = {actual_value}, last two values = {past_values} and predicted value = {predicted}")
+                    if len(to_interp) == len(time_values) and len(time_values) > 1:
+                        predicted = self.polyFitting(to_interp, time_values, 2)
+                        logging.debug(f"{predicted}")
+                        if (float(predicted) > threshold):
+                            logging.debug(f"Attention: {measure_type} is going to pass critical value. Actual value = {actual_value}, last two values = {past_values} and predicted value = {predicted}")
 
                 #in case the actual value is > threshold and even the last two values had passed it -> notification
                 if actual_value > threshold and  all(float(val) > threshold for val in past_values):
                     logging.debug(f"Attention: {measure_type} passed critical value. Actual value = {actual_value}, last two values = {past_values}")
-            self._cache.addToCache(groupId, measure_type, field["v"], field["t"])
+            self._cache.addToCache(serviceId, measure_type, field["v"], field["t"])
 
 
 
