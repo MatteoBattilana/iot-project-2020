@@ -4,6 +4,10 @@
     "temperatureThreshold": 30,
     "humidityThreshold": 70,
     "co2Threshold": 600,
+    "externalTemperatureMin": 15,
+    "externalTemperatureMax": 25,
+    "externalHumidityMin": 0,
+    "externalHumidityMax": 50,
     "serviceName": "CONTROL-STRATEGY",
     "subscribeTopics": [
         "/iot-programming-2343/#"
