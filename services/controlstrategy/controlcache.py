@@ -5,7 +5,17 @@ import logging
 import datetime
 from datetime import *
 import time
-import cherrypy
+
+def changeDatetimeFormat(_datetime):
+    year=str(_datetime.year)
+    month=str(_datetime.month)
+    day=str(_datetime.day)
+    hour=str(_datetime.hour)
+    minute=str(_datetime.minute)
+    second=str(_datetime.second)
+    _changed=year+"-"+month+"-"+day+"%20"+hour+":"+minute+":"+second
+    return _changed
+
 
 
 class ControlCache():
@@ -40,7 +50,28 @@ class ControlCache():
 
         baseUri = "http://"+str(thingspeak_adaptor_ip)+":"+str(thingspeak_adaptor_port)
         
-        uri = baseUri+"/channel/"+serviceId+"/feeds/getMinutesData?minutes="+str(self._time_interval)
+        uri = baseUri+"/channel/"+serviceId+"/feeds/getResultsData?results=1"
+
+        try:
+            r = requests.get(uri)
+            if r.status_code == 200:
+                last_update = r.json()["feeds"][0]["created_at"]
+        except Exception as e:
+            logging.error(f"Request Error {e} for uri={uri}")
+
+        #from the last entry timestamp i obtain the start timestamp (self._time_interval minutes before)
+        end_timestamp = datetime.timestamp( datetime.strptime(last_update, "%Y-%m-%dT%H:%M:%SZ") )
+        start_timestamp = end_timestamp - float(self._time_interval*60)
+
+        #then i obtain them in datetime form
+        start = datetime.fromtimestamp(start_timestamp)
+        end = datetime.fromtimestamp(end_timestamp)
+
+        #finally i convert them in the format accepted by thingspeak
+        start = changeDatetimeFormat(start)
+        end = changeDatetimeFormat(end)
+
+        uri = baseUri+"/channel/"+serviceId+"/feeds/getStartEndData?start="+start+"&end="+end
 
         try:
             r = requests.get(uri)
