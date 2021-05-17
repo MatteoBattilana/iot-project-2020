@@ -95,13 +95,17 @@ class ControlStrategy(threading.Thread):
     
         feeds = []
         fields = []
+        base_name = []
 
-        serviceId = payload["bn"]
+        base_name = payload["bn"].split("/")
+        groupId = base_name[0]
+        serviceId = base_name[1]
+        
         _type = payload["p"]
-        if self._cache.findServiceIdCache(serviceId) == False:
-            self._cache.createCache(serviceId, _type)
+        if self._cache.findGroupServiceIdCache(groupId, serviceId) == False:
+            self._cache.createCache(groupId, serviceId, _type)
 
-        logging.debug(f"{self._cache.getCache(serviceId)}")
+        logging.debug(f"{self._cache.getServiceCache(groupId, serviceId)}")
 
         for field in payload["e"]:
             measure_type = field["n"]
@@ -109,10 +113,10 @@ class ControlStrategy(threading.Thread):
             key = str(measure_type)+"Threshold"
             threshold = float(self._settings.getField(key))
 
-            if self._cache.getLastResults(serviceId, measure_type) != []:
+            if self._cache.getLastResults(groupId, serviceId, measure_type) != []:
 
                 #list with last value/values (in order to state the real behavior of the system)
-                past_data = self._cache.getLastResults(serviceId, measure_type)
+                past_data = self._cache.getLastResults(groupId, serviceId, measure_type)
                 past_values = []
                 for data in past_data:
                     past_values.append(data['value'])
@@ -123,10 +127,10 @@ class ControlStrategy(threading.Thread):
                     #logging.debug(f"Attention: {measure_type} passed critical value. Actual value = {actual_value}, last two values = {past_values}")
                 else:
                     #list with last 5 values
-                    if self._cache.getLastResults(serviceId, measure_type, minutes=2) != []:
+                    if self._cache.getLastResults(groupId, serviceId, measure_type, minutes=2) != []:
                         time_values = []
                         to_interp = []
-                        for data in self._cache.getLastResults(serviceId, measure_type, minutes=2):
+                        for data in self._cache.getLastResults(groupId, serviceId, measure_type, minutes=2):
                             to_interp.append(data['value'])
                             time_values.append(data['timestamp'])
                         #logging.debug(f"last_four={to_interp}")
@@ -191,7 +195,7 @@ class ControlStrategy(threading.Thread):
 
                 
             self._raisedFlag = False
-            self._cache.addToCache(serviceId, measure_type, field["v"], field["t"])
+            self._cache.addToCache(groupId, serviceId, measure_type, field["v"], field["t"])
 
 
 

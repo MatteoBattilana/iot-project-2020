@@ -103,9 +103,10 @@ class Device(threading.Thread):
 
     def _getRandomValues(self):
         simulatedValues = self._sensorReader.readSensors()
+        
         if simulatedValues != []:
             return {
-                'bn': self._deviceId,
+                'bn': self._settingsManager.getField('groupId')+"/"+self._deviceId,
                 'e': simulatedValues,
                 'p': self._devicePosition
                 }
