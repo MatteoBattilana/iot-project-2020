@@ -1,5 +1,7 @@
 # Path hack.
 import sys, os
+
+import requests
 sys.path.insert(0, os.path.abspath('..'))
 from commons.ping import *
 from commons.netutils import *
@@ -39,24 +41,70 @@ class ExternalWeatherApi():
     def stop(self):
         self._ping.stop()
 
-    def GET(self, *uri, **parameter):
+    def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         if len(uri) == 0:
             return json.dumps({"message": "External weather API endpoint"}, indent=4)
         elif uri[0] == "currentWeatherStatus":
             if self._openweatherapikey:
-                if "lat" in parameter and "lon" in parameter:
-                    return json.dumps(_getCurrentWeatherStatus(parameter['lat'], parameter['lon'], self._safeWindSpeed, self._openweatherapikey), indent=4)
+                if "lat" in params and "lon" in params:
+                    return json.dumps(_getCurrentWeatherStatus(params['lat'], params['lon'], self._safeWindSpeed, self._openweatherapikey), indent=4)
                 else:
                     cherrypy.response.status = 503
                     return json.dumps({"error":{"status": 503, "message": "Unable to contact external weather API: missing parameters"}}, indent=4)
             else:
                 cherrypy.response.status = 503
                 return json.dumps({"error":{"status": 503, "message": "OPENWETHERMAPAPIKEY not set"}}, indent=4)
+        elif uri[0] == "forecastWeatherStatus":
+            if self._openweatherapikey:
+                if "lat" in params and "lon" in params and "minutes" in params and "hours" in params:
+                    return json.dumps(_getForecastWeather(params['lat'], params['lon'], self._openweatherapikey, params['minutes'], params['hours']), indent=4)
+                elif "lat" in params and "lon" in params:
+                    return json.dumps(_getForecastWeather(params['lat'], params['lon'], self._openweatherapikey), indent=4)
+                else:
+                    logging.error("Specified parameters are incorrect or missing")
         else:
             cherrypy.response.status = 404
             return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
+def _getForecastWeather(lat, lon, openweatherapikey, minutes=60, hours=48):
+    #for the next 60 minutes we can discover possible precipitations (volume in mm)
+    #for the next 48 hours we can also obtain the temperatures, humidities and pressure
+    retInformation = {
+        "minutes":[],
+        "hours":[]
+    }
+    
+    uri = "https://api.openweathermap.org/data/2.5/onecall?lat="+str(lat)+"&lon="+str(lon)+"&appid="+openweatherapikey
+    r = requests.get(uri)
+    logging.debug(f"my uri is {uri}")
+    minutes = int(minutes)
+    hours = int(hours)
+    if r.status_code == 200:
+        logging.debug(r.json())
+        if minutes <= 60 and hours <= 48:
+            for i in range(1, minutes):
+                retInformation["minutes"].append(
+                    {
+                    "timestamp":r.json()["minutely"][i]["dt"],
+                    "precipitations":r.json()["minutely"][i]["precipitation"]
+                }) 
+            for j in range(1, hours):
+                retInformation["hours"].append(
+                    {
+                        "timestamp":r.json()["hourly"][j]["dt"],
+                        "temperature":float(r.json()["hourly"][j]["temp"])-273.15,
+                        "pressure":r.json()["hourly"][j]["pressure"],
+                        "humidity":r.json()["hourly"][j]["humidity"],
+                        "wind_speed":r.json()["hourly"][j]["wind_speed"]
 
+                    }
+                )
+        else:
+            logging.error(f"Specified parameters cannot accepted by the openweatherapi")
+    else:
+        logging.error(f"Unable to contact openweathermap")
+    return retInformation
+        
 def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
     # http://api.openweathermap.org/data/2.5/air_pollution?lat=45.672383&lon=11.5411214&units=metric&appid=9ee2ff4386066f12e552d13a4bd53e8e
     # http://api.openweathermap.org/data/2.5/weather?lat=45.672383&lon=11.5411214&appid=9ee2ff4386066f12e552d13a4bd53e8e
