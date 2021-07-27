@@ -1,6 +1,6 @@
 {
     "pingTime": 60,
-    "cacheTimeInterval": 5,
+    "cacheRetationTimeInterval": 60,
     "temperatureThreshold": 30,
     "humidityThreshold": 70,
     "co2Threshold": 600,
@@ -8,6 +8,7 @@
     "externalTemperatureMax": 25,
     "externalHumidityMin": 0,
     "externalHumidityMax": 50,
+    "polyFittingPredict": 30,
     "serviceName": "CONTROL-STRATEGY",
     "subscribeTopics": [
         "/iot-programming-2343/#"

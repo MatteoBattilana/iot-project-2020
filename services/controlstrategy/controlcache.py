@@ -53,29 +53,9 @@ class ControlCache():
             logging.debug(f"Exception Error: {e}")
 
         baseUri = "http://"+str(thingspeak_adaptor_ip)+":"+str(thingspeak_adaptor_port)
-        
-        uri = baseUri+"/channel/"+serviceId+"/feeds/getResultsData?results=1"
 
-        try:
-            r = requests.get(uri)
-            if r.status_code == 200:
-                last_update = r.json()["feeds"][0]["created_at"]
-        except Exception as e:
-            logging.error(f"Request Error {e} for uri={uri}")
-
-        #from the last entry timestamp i obtain the start timestamp (self._time_interval minutes before)
-        end_timestamp = datetime.timestamp( datetime.strptime(last_update, "%Y-%m-%dT%H:%M:%SZ") )
-        start_timestamp = end_timestamp - float(self._time_interval*60)
-
-        #then i obtain them in datetime form
-        start = datetime.fromtimestamp(start_timestamp)
-        end = datetime.fromtimestamp(end_timestamp)
-
-        #finally i convert them in the format accepted by thingspeak
-        start = changeDatetimeFormat(start)
-        end = changeDatetimeFormat(end)
-
-        uri = baseUri+"/channel/"+serviceId+"/feeds/getStartEndData?start="+start+"&end="+end
+        # fetch last hour
+        uri = baseUri+"/channel/"+serviceId+"/feeds/getMinutesData?minutes=" + str(self._time_interval)
 
         try:
             r = requests.get(uri)
@@ -148,17 +128,15 @@ class ControlCache():
                     if cache["serviceId"] == serviceId:
                         return True
         return False
-    def getLastResults(self, groupId, serviceId, measuretype, minutes=1):
+    def getLastResults(self, groupId, serviceId, measuretype):
         to_return = []
         _timestamp = datetime.timestamp(datetime.now())
         for group_id in self._cache:
             for cache in group_id["serviceIds"]:
-                if cache["serviceId"] == serviceId and self._time_interval > minutes and len(cache[measuretype]) != 0:
+                if cache["serviceId"] == serviceId and len(cache[measuretype]) != 0:
                     for data in cache[measuretype]:
-                        if (_timestamp-data["timestamp"])/60 < minutes:
-                        #if (cache[measuretype][-1]["timestamp"]-data["timestamp"])/60 < minutes:
-                            value = data
-                            to_return.append(value)
+                        value = data
+                        to_return.append(value)
                 
         return to_return
     def getServiceCache(self, groupId, serviceId):
