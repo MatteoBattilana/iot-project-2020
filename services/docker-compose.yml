@@ -67,6 +67,23 @@ services:
         context: ./
         dockerfile: ./externalweatherapi/Dockerfile
 
+  telegram-bot:
+    container_name: telegram-bot
+    networks:
+      net1:
+    depends_on:
+      catalog:
+        condition: service_healthy
+    links:
+      - catalog
+    volumes:
+      - .:/code
+    environment:
+      - TELEGRAMTOKEN=${TELEGRAMTOKEN}
+    build:
+      context: ./
+      dockerfile: ./telegram-bot/Dockerfile
+
   thinkspeakadaptor:
     container_name: thinkspeakadaptor
     networks:
