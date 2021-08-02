@@ -84,7 +84,7 @@ For example, if the sensor needs to perform a query about the externa weather co
 2. Check if the list is not empty
 3. Take the last one and perform the desire request
 
-
+At this point, one the catalog has been loaded, the new services will perform a ping to it in order to be registered in the catalog list of the active services. This is both for SERVICE and DEVICE. In order to simplify this, a class shared among all the services has been created and named `ping.py`. 
 
 
 
