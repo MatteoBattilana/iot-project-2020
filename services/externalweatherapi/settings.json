@@ -1,8 +1,9 @@
 {
     "pingTime": 60,
     "windSpeedSafe": 10,
+    "minRainVolume":10,
     "serviceName": "EXTERNAL-API",
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "ERROR",
+    "logVerbosity": "DEBUG",
     "serviceId": "EXTERNAL-API-2"
 }

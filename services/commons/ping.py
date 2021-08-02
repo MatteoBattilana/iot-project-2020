@@ -51,7 +51,6 @@ class Ping(threading.Thread):
     def setGroupId(self, groupId):
         logging.debug("GroupId set to " + groupId + " s")
         json["groupId"] = groupId
-        # TODO: must save new configuration
 
 
     def sendPing(self):

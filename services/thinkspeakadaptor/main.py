@@ -448,6 +448,15 @@ class ThinkSpeakAdaptor(threading.Thread):
 
         return ret
 
+    def getResultsGroupId(self, groupId, results):
+        channelName = []
+        ret = []
+        r = requests.get(self._catalogAddress + "/searchByGroupId?groupId=" + groupId)
+        if r.status_code == 200:
+            for channel in r.json():
+                ret.append(self.readResultsData(channel["serviceId"], results=results))
+        return ret    
+
     def readMinutesData(self, channelName, field_id = -1, minutes = 1440):
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
@@ -610,6 +619,8 @@ class ThinkSpeakAdaptor(threading.Thread):
             if uri[0] == "group":
                 groupId = uri[1]
                 #http://172.20.0.6:8080/group/home1/getExternalFeeds?minutes=10
+                if uri[2] == "getFeedsByResults" and 'results' in params:
+                    return json.dumps(self.getResultsGroupId(groupId,params['results']))
                 if uri[2] == "getExternalFeeds" and 'minutes' in params:
                     print(groupId)
                     return json.dumps(self.getFeedsGroupId(groupId, "external", minutes=params['minutes']), indent=3)
