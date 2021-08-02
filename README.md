@@ -1,4 +1,93 @@
 # iot-project-2020
+# Description of the infrastructure
+The entire infrastructure is based on a central service that is called Broker. It keeps a list of available services with their corresponding REST and MQTT endopoints in order to allows the other services to know which services are available. Within a time, that is called retationTime, each service must perform a ping operation that is nothing else than a notification to the catalog to say "I'm still alive". In this way, the record for that service will not be removed from the catalog.
+This is done by saving an additional information in the json of each service called lastUpdate that contains the time in which the last ping has been performed.
+
+Eache service is indentified by and id (SIMULATED-DEVICE-1) but it is defined also by two attributes:
+- TYPE: it can assume only two values: [SERVICE, DEVICE]
+- SUBTYPE: ideally it can be every type, depends on the alive services in the infrastructure, at the moment we have [EXTERNALWEATHERAPI, WEBINTERFACE, ...]
+- groupId: only the services with TYPE = DEVICE have this attribute. Since the infrastructure must be scalable and maybe in the future, this will be used by more than one user, the groupId attribute define to which location the device belong. For example, if we have two users: Marco and Matteo, the sensor that are inside Marco's house will have a different groupId. At the moment this has been implemented in the code and works correctly but no simulated sensors have been implemented. This is because this is not actually requested.
+
+This is an extract from a http://localhost:8080/catalog/getAll response request:
+
+```json
+{
+    "serviceName": "SIMULATED-DEVICE",
+    "serviceType": "DEVICE",
+    "serviceSubType": "RASPBERRY",
+    "groupId": "home1",
+    "devicePosition": "internal",
+    "serviceServiceList": [
+      {
+        "serviceType": "MQTT",
+        "endPoint": [
+          {
+            "topic": "/iot-programming-2343/",
+            "type": "temperature"
+          }
+        ]
+      },
+      {
+        "serviceType": "REST",
+        "serviceIP": "172.20.0.4",
+        "servicePort": 8080,
+        "endPoint": [
+          {
+            "type": "web",
+            "uri": "/",
+            "version": 1,
+            "parameter": [
+              
+            ]
+          },
+          {
+            "type": "configuration",
+            "uri": "/setPingTime",
+            "version": 1,
+            "parameter": [
+              {
+                "name": "pingTime",
+                "unit": "integer"
+              }
+            ]
+          },
+          {
+            "type": "configuration",
+            "uri": "/setGroupId",
+            "version": 1,
+            "parameter": [
+              {
+                "name": "groupId",
+                "unit": "string"
+              }
+            ]
+          },
+          {
+            "type": "action",
+            "uri": "/forceSensorSampling",
+            "version": 1,
+            "parameter": [
+              
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceId": "SIMULATED-DEVICE-2",
+    "lastUpdate": 1627895704.1240659
+  }
+```
+
+It's important to say that each service cannot directly communication each others since the ip of the service can change, but they must ask the catalog the ip/port and enpoints of a specific one.
+For example, if the sensor needs to perform a query about the externa weather condition, it must request to the catolog which is the ip and port for that desired service. So,
+1. http://catalog:8080/catalog/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI
+2. Check if the list is not empty
+3. Take the last one and perform the desire request
+
+
+
+
+
 ## Windows 10 setup
 * Download git: [Git install tutorial](https://phoenixnap.com/kb/how-to-install-git-windows)
 * Download and install docker: [Docker installer](https://hub.docker.com/editions/community/docker-ce-desktop-windows/)
