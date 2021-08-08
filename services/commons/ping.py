@@ -19,11 +19,11 @@ class Ping(threading.Thread):
         json["serviceId"] = serviceId
         json["serviceName"] = serviceName
         json["serviceType"] = serviceType
-        if serviceSubType is not None:
+        if serviceSubType:
             json["serviceSubType"] = serviceSubType
-        if groupId is not None:
+        if groupId:
             json["groupId"] = groupId
-        if devicePosition is not None:
+        if devicePosition:
             json["devicePosition"] = devicePosition
         json["serviceServiceList"] = serviceServiceList
 
@@ -48,8 +48,9 @@ class Ping(threading.Thread):
         self._pingTime = pingTime
 
     def setGroupId(self, groupId):
-        logging.debug("GroupId set to " + groupId + " s")
-        json["groupId"] = groupId
+        if groupId:
+            logging.debug("GroupId set to " + groupId)
+            json["groupId"] = groupId
 
 
     def sendPing(self):

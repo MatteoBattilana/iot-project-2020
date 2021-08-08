@@ -432,7 +432,6 @@ class ThinkSpeakAdaptor(threading.Thread):
         r = requests.get(self._catalogAddress + "/searchByGroupId?groupId=" + groupId)
         if r.status_code == 200:
             for channel in r.json():
-                print("ASD")
                 if "devicePosition" in channel and channel["devicePosition"] == type:
                     #if measureType == None:
                     ret.append(self.readMinutesData(channel["serviceId"], minutes=minutes))
