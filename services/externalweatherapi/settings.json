@@ -2,6 +2,8 @@
     "pingTime": 60,
     "windSpeedSafe": 10,
     "minRainVolume":10,
+    "temperature_lower_bound":18,
+    "temperature_upper_bound":23,
     "serviceName": "EXTERNAL-API",
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "DEBUG",
