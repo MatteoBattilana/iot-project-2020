@@ -7,5 +7,5 @@
     "catalogAddress": "http://programming-iot.westeurope.cloudapp.azure.com:8080/catalog",
     "logVerbosity": "DEBUG",
     "devicePosition": "internal",
-    "serviceId": "RASPBERRY-7"
+    "serviceId": "RASPBERRY-A1"
 }

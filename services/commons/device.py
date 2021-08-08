@@ -66,26 +66,22 @@ class Device(threading.Thread):
                 self._settingsManager.getField('catalogAddress'),
                 self._settingsManager.getField('deviceName'),
                 "DEVICE",
-                self._settingsManager.getFieldOrDefault('serviceId', ''),
+                self._settingsManager.getField('serviceId'),
                 "RASPBERRY",
                 self._settingsManager.getField('groupId'),
-                self._settingsManager.getField('devicePosition'),
-                self
+                self._settingsManager.getField('devicePosition')
             )
         self._sensorSamplingTime = int(self._settingsManager.getField('sensorSamplingTime'))
         self._publishTopic = self._settingsManager.getField('MQTTTopic') + self._settingsManager.getField('groupId') + "/"
         self._catalogAddress = self._settingsManager.getField('catalogAddress')
-        self._isMQTTconnected = False
-        self._deviceId = ""
+        self._deviceId = self._settingsManager.getField('serviceId')
         self._deviceName = self._settingsManager.getField('deviceName')
         self._mqtt = None
-        if self._settingsManager.getFieldOrDefault('serviceId', ''):
-            self.onNewCatalogId(self._settingsManager.getField('serviceId'))
         self._devicePosition = self._settingsManager.getField('devicePosition')
         self._run = True
 
     def stop(self):
-        if self._isMQTTconnected and self._mqtt is not None:
+        if self._mqtt is not None:
             self._mqtt.stop()
         self._ping.stop()
         self._run = False
@@ -113,9 +109,12 @@ class Device(threading.Thread):
         logging.debug("Started")
         self._ping.start()
 
+        self._mqtt = MQTTRetry(self._deviceId, self, self._catalogAddress)
+        self._mqtt.start()
+
         lastTime = time.time()
         while self._run:
-            if self._isMQTTconnected and time.time() - lastTime > self._sensorSamplingTime:
+            if time.time() - lastTime > self._sensorSamplingTime:
                 #read sensors
                 self._publishSampledSensor()
                 lastTime = time.time()
@@ -123,20 +122,6 @@ class Device(threading.Thread):
             time.sleep(1)
         logging.debug("Stopped sensor read")
 
-
-
-
-    # Catalog new id callback
-    def onNewCatalogId(self, newId):
-        self._settingsManager.updateField('serviceId', newId)
-        logging.debug("New id from catalog: " + newId)
-        self._deviceId = newId
-        self._isMQTTconnected = False
-        if self._mqtt is not None:
-            self._mqtt.stop()
-
-        self._mqtt = MQTTRetry(self._deviceId, self, self._catalogAddress)
-        self._mqtt.start()
 
     #MQTT callbacks
     def onMQTTConnected(self):

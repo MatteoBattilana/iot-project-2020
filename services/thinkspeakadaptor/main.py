@@ -58,6 +58,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._channels = []                                 # it don't have to wait to fetch
         self._channels = self.getChannelList()
         self.cache=ThingSpeakBulkUpdater(int(self._settings.getField('bulkLimit')))
+        self._serviceId = self._settings.getField('serviceId')
         self.updateBulkTime=int(self._settings.getField('bulkRate'))
         self._ping = Ping(
             int(self._settings.getField('pingTime')),
@@ -65,19 +66,19 @@ class ThinkSpeakAdaptor(threading.Thread):
             self._settings.getField('catalogAddress'),
             self._settings.getField('serviceName'),
             "SERVICE",
-            self._settings.getFieldOrDefault('serviceId', ''),
+            self._settings.getField('serviceId'),
             "THINGSPEAK",
-            groupId = None,
-            notifier = self)
-        self._ping.start()
+            groupId = None)
         self._run=True
-
-        if self._settings.getFieldOrDefault('serviceId', ''):
-            self.onNewCatalogId(self._settings.getField('serviceId'))
-
 
     def run(self):
         logging.debug("Started")
+        self._ping.start()
+
+        self._mqtt = MQTTRetry(self._serviceId, self, self._catalogAddress)
+        self._mqtt.subscribe(self._subscribeList)
+        self._mqtt.start()
+
         lastTime = 0
         while self._run:
             if time.time() - lastTime > self.updateBulkTime:
@@ -85,6 +86,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                 lastTime = time.time()
             time.sleep(1)
         logging.debug("Stopped ThingSpeak")
+
     def stop(self):
         self._ping.stop()
         if self._isMQTTconnected and self._mqtt is not None:
@@ -92,15 +94,6 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._run=False
         self.join()
 
-    # Catalog new id callback
-    def onNewCatalogId(self, newId):
-        self._settings.updateField('serviceId', newId)
-        if self._mqtt is not None:
-            self._mqtt.stop()
-
-        self._mqtt = MQTTRetry(newId, self, self._catalogAddress)
-        self._mqtt.subscribe(self._subscribeList)
-        self._mqtt.start()
 
     #MQTT callbacks
     def onMQTTConnected(self):

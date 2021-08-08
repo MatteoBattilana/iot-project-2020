@@ -8,5 +8,5 @@
     ],
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "ERROR",
-    "serviceId": "THINGSPEAK-ADAPTOR-4"
+    "serviceId": "THINGSPEAK-ADAPTOR-A1"
 }

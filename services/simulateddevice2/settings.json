@@ -6,6 +6,6 @@
     "MQTTTopic": "/iot-programming-2343/",
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "ERROR",
-    "serviceId": "SIMULATED-DEVICE-2",
+    "serviceId": "SIMULATED-DEVICE-A2",
     "devicePosition": "internal"
 }

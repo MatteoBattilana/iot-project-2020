@@ -120,6 +120,9 @@ class RESTManagerService(threading.Thread):
             if uri[0] == 'ping':
                 # Used to update the ping record in the list, like updating the last update paramenter
                 ret = self._serv.addService(body)
+                if not ret:
+                    cherrypy.response.status = 404
+                    ret = {"error":{"status": 404, "message": "Missing serviceId"}}
             else:
                 cherrypy.response.status = 404
                 ret = {"error":{"status": 404, "message": "Unknown method"}}
