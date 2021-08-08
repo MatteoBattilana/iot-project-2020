@@ -6,7 +6,9 @@ This is done by saving an additional information in the json of each service cal
 Eache service is indentified by and id (SIMULATED-DEVICE-1) but it is defined also by two attributes:
 - TYPE: it can assume only two values: [SERVICE, DEVICE]
 - SUBTYPE: ideally it can be every type, depends on the alive services in the infrastructure, at the moment we have [EXTERNALWEATHERAPI, WEBINTERFACE, ...]
-- groupId: only the services with TYPE = DEVICE have this attribute. Since the infrastructure must be scalable and maybe in the future, this will be used by more than one user, the groupId attribute define to which location the device belong. For example, if we have two users: Marco and Matteo, the sensor that are inside Marco's house will have a different groupId. At the moment this has been implemented in the code and works correctly but no simulated sensors have been implemented. This is because this is not actually requested.
+- groupId: only the services with TYPE = DEVICE have this attribute. Since the infrastructure must be scalable and maybe in the future, this will be used by more than one user, the groupId attribute define to which room the device belong. For example, if we have two users: Marco and Matteo, the sensor that are inside Marco's house will have a different groupId. At the moment this has been implemented in the code and works correctly but no simulated sensors have been implemented. This is because this is not actually requested.
+
+Update: at the startup the sensor is not associated to any groupId, via Telegram the user must configure a new device by calling the /setGroupId API of the sensor by passing the new groupId and the pin, that works like a password. The id of the service/device is set via a json configuration file.
 
 This is an extract from a http://localhost:8080/catalog/getAll response request:
 
