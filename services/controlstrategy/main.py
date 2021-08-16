@@ -102,7 +102,7 @@ class ControlStrategy(threading.Thread):
         serviceId = base_name[1]
 
         # if the cache does not contains the reference groupId / serviceId I create it
-        # by loading its content from thinkspeak
+        # by loading its content from thingspeak
         _type = payload["sensor_position"]
         if self._cache.findGroupServiceIdCache(groupId, serviceId) == False:
             self._cache.createCache(groupId, serviceId, _type)
@@ -138,6 +138,7 @@ class ControlStrategy(threading.Thread):
                         time_values.append(data['timestamp'])
                     #logging.debug(f"last_four={to_interp}")
                     #logging.debug(f"time={time_values}")
+
                     #in case the actual value is under threshold but the polynomial interpolation tells us it is going to pass the threshold -> notification
                     if len(time_values) > 1:
                         predicted = self.polyFitting(to_interp, time_values, 2, int(self._settings.getField("polyFittingPredict")) )
@@ -169,34 +170,40 @@ class ControlStrategy(threading.Thread):
                         _ext_temp = r.json()["temperature"]
                         _ext_hum = r.json()["humidity"]
                         _safe_to_open = r.json()["safeOpenWindow"]
-                        if _safe_to_open == True and _ext_temp < self._settings.getField('externalTemperatureMax') and _ext_temp > self._settings.getField('externalTemperatureMax') and _ext_hum > self._settings.getField('externalHumidityMin') and _ext_hum < self._settings.getField('externalHumidityMax'):
-                            if self._predictFlag == True:
+
+                        #the external conditions are good -> in case we want to circulate air we can open the windows
+                        if _safe_to_open == True and _ext_temp < self._settings.getField('externalTemperatureMax') and _ext_temp > self._settings.getField('externalTemperatureMin') and _ext_hum > self._settings.getField('externalHumidityMin') and _ext_hum < self._settings.getField('externalHumidityMax'):
+                            #case in which the measuretype forecast is over threshold
+                            if self._predictFlag and self._raisedFlag:
                                 to_ret = {
                                     "alert":str(measure_type)+"is going to be critical",
                                     "action":"open the window to prevent it",
                                     "groupId": groupId
                                 }
+                            #case in which the actual measure value is over threshold
                             else:
                                 to_ret = {
                                     "alert":str(measure_type)+"is critical",
                                     "action":"open the window",
                                     "groupId": groupId
                                     }
+
                             logging.debug(to_ret)
+                        
+                        #the external conditions won't let us open the windows
                         else:
-                            if self._predictFlag == True:
+                            if self._predictFlag and self._raisedFlag:
                                 to_ret = {
-                                    "alert":str(measure_type)+" is going to be critical but external condition too",
+                                    "alert":str(measure_type)+" is going to be critical but external condition are bad",
                                     "action":"turn on the dehumidifier/open the internal door",
                                     "groupId": groupId  
                                 }
                             else:
                                 to_ret = {
-                                "alert":str(measure_type)+" critical but external condition too",
+                                "alert":str(measure_type)+" critical but external condition are bad",
                                 "action":"turn on the dehumidifier/open the internal door",
                                 "groupId": groupId
                                 }
-                            logging.debug(to_ret)
                         #logging.debug(r.json())
 
                         # TODO: send request to Telegram service for sending the message
@@ -206,6 +213,7 @@ class ControlStrategy(threading.Thread):
 
 
             self._raisedFlag = False
+            self._predictFlag = False
             self._cache.addToCache(groupId, serviceId, measure_type, field["v"], field["t"])
 
 

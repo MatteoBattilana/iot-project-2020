@@ -13,6 +13,9 @@ import json
 import logging
 from commons.logger import *
 
+#this function takes as first parameter a list of dictionaries <_dict_list> and compare them 
+#on the basis of its values corresponding to their keys excluding the first <param> ones
+#finally it returns the position <pos> in the list where those values are minimum
 def getMinPos(_dict_list, param):
     min_val = []
     min_val = list(_dict_list[0].values())
@@ -152,8 +155,8 @@ class ExternalWeatherApi():
         #min and max temperatures
         #and also morning, day, evening and night temperatures
         #--> i want to know tomorrow when it will be the best moment to open the windows
-        #based on the forecasted value of temperature and humidity
-        #and if possible also on the last week air pollution data
+        #based on the forecasted value of temperature,humidity and pollution
+        
         tomorrow_pollution = []
         today = datetime.datetime(datetime.date.today().year,datetime.date.today().month,datetime.date.today().day)
         tomorrow_start = today + timedelta(days=1)
@@ -313,6 +316,13 @@ if __name__=="__main__":
                 {
                     "type":"web",
                     "uri":"/forecastPollution",
+                    "version": 1,
+                    "parameter": [{"name":"lat", "unit":"float"}, {"name":"lon ", "unit":"float"}]
+                }
+                ,
+                {
+                    "type":"web",
+                    "uri":"/whenToOpenTomorrow",
                     "version": 1,
                     "parameter": [{"name":"lat", "unit":"float"}, {"name":"lon ", "unit":"float"}]
                 }

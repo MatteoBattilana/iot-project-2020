@@ -14,6 +14,6 @@
         "/iot-programming-2343/#"
     ],
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "ERROR",
+    "logVerbosity": "DEBUG",
     "serviceId": "CONTROL-STRATEGY-6"
 }
