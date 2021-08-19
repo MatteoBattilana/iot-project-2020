@@ -32,7 +32,7 @@ def on_chat_message(msg):
                     for i in t_m.commands():
                         bot.sendMessage(chat_id,i)
                 else:
-                    bot.sendMessage(chat_id,t_m.commands(params[0][1:]))
+                    bot.sendMessage(chat_id,t_m.commands(params[0]))
         #ok
         elif txt.startswith('/login'):
             try:
