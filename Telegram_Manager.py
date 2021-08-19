@@ -4,14 +4,14 @@ from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 import json
 
-commands=['login: for authentication \n /login username pssw',
-        'register: register to the service,\n /register username pssw',
-        'logout: \n /logout',
-        'check: to get values from the sensors\n /check',
-        'IdAdd: add groupId to your account\n /Idadd groupId',
-        'IdDel: remove groupId from your account\n /IdDel groupId',
-        'SenAdd: add sensor to a specific groupId\n /SenAdd groupId nameSens PIN',
-        'SenDel: remove sensor from specific groupId\n /SenDel groupId nameSens']
+commands=['/login: for authentication \n /login username pssw',
+        '/register: register to the service,\n /register username pssw',
+        '/logout: \n /logout',
+        '/check: to get values from the sensors\n /check',
+        '/IdAdd: add groupId to your account\n /Idadd groupId',
+        '/IdDel: remove groupId from your account\n /IdDel groupId',
+        '/SenAdd: add sensor to a specific groupId\n /SenAdd groupId nameSens PIN',
+        '/SenDel: remove sensor from specific groupId\n /SenDel groupId nameSens']
 
 class Telegram_Manager:
     # init method or constructor 
@@ -32,36 +32,64 @@ class Telegram_Manager:
                 break
         return id_obj
     
-    #ok
-    def commands(self,chat_id):
-        return commands
+    def commands(self,command=None):
+        if command==None:
+            return commands
+        else:
+            try:
+                for sentence in commands:
+                    if sentence.startswith(command):
+                        break
+                return sentence
+            except:
+                return 'Instruction is not supported'
+                
            
 
     #ok
-    def logout(self,name):
+    def logout(self,chat_id):
         for us in self.users['Users']:
-            if us['username'] == name:
+            if us['id'] == chat_id:
                 us['status']= 'off'
-        json.dump(self.users,open('users.json','w'))   
+        json.dump(self.users,open('users.json','w')) 
+        return 'U are off, see u soon'  
     #ok
     def status(self,name):
         for us in self.users["Users"]:
             if us['username']==name and us['status']== "on":
                 return True
         return False
-    #ok
+    
+    #ok check if the chat_id is already saved
+    def just_register(self,chatId):
+        exist=False
+        for u in self.users["Users"]:
+            if u["id"]==chatId: 
+                exist=True
+        return exist
+   
+    #ok register che user to 'database'
     def register(self,chat_id,value):
-        us={"id":chat_id,"username":value[0],"password":value[1],"status":"off","groupId":[]}
-        self.users["Users"].append(us)
-        json.dump(self.users,open('users.json','w'))  
-    #ok
-    def login(self,chat_id,name,pssw):
+        if(not self.just_register(chat_id)):
+            us={"id":chat_id,"username":value[0],"password":value[1],"status":"off","groupId":[]}
+            self.users["Users"].append(us)
+            json.dump(self.users,open('users.json','w'))
+            return ' registation is done successfully'
+        else:
+            return ' your iD is already use, please login'  
+    
+    #ok gets on the user,allows to use services
+    def login(self,chat_id,pssw):
+        auth=False
         for us in self.users['Users']:
-            if us['username'] == name and us['password']==pssw :
+            if us['id'] == chat_id and us['password']==pssw :
                 us['status']= 'on'
-                json.dump(self.users,open('users.json','w'))   
-                return True
-        return False
+                json.dump(self.users,open('users.json','w'))
+                auth=True
+        if auth: return 'are u in,welcome to service'
+        else: return 'pssw was incorrect'
+                
+    
     #ok
     def add_id(self,chat_id,id):
         for u in self.users["Users"]:
