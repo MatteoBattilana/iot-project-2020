@@ -1,1 +1,1 @@
-{"Users": []}
+{"Users": [{"id": 974624385, "username": "andrea_zarri", "password": "candelabro", "status": "on", "groupId": [{"groupId": "newgr", "Sensors": [{"Name": "newdev", "Pin": "pin1"}]}, {"groupId": "2ndGroupId", "Sensors": []}]}]}

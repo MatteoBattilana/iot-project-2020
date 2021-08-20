@@ -7,11 +7,11 @@ import json
 commands=['/login: for authentication \n /login username pssw',
         '/register: register to the service,\n /register username pssw',
         '/logout: \n /logout',
-        '/check: to get values from the sensors\n /check',
-        '/IdAdd: add groupId to your account\n /Idadd groupId',
-        '/IdDel: remove groupId from your account\n /IdDel groupId',
-        '/SenAdd: add sensor to a specific groupId\n /SenAdd groupId nameSens PIN',
-        '/SenDel: remove sensor from specific groupId\n /SenDel groupId nameSens']
+        '/check: to get values from the devices\n /check',
+        '/addGroupId: add a new groupId to your account\n /addGroupId <groupId>',
+        '/delGroupId: remove groupId from your account\n /delGroupId <groupId>',
+        '/addDevice: add device to a specific groupId\n /addDevice <groupId> <newDevice> <PIN>',
+        '/delDevice: remove a device from specific groupId\n /delDevice <groupId> <deviceToDel>']
 
 class Telegram_Manager:
     # init method or constructor 
@@ -52,7 +52,7 @@ class Telegram_Manager:
             if us['id'] == chat_id:
                 us['status']= 'off'
         json.dump(self.users,open('users.json','w')) 
-        return 'U are off, see u soon'  
+        return 'Logged out'  
     #ok
     def status(self,name):
         for us in self.users["Users"]:
@@ -74,9 +74,9 @@ class Telegram_Manager:
             us={"id":chat_id,"username":value[0],"password":value[1],"status":"off","groupId":[]}
             self.users["Users"].append(us)
             json.dump(self.users,open('users.json','w'))
-            return ' registation is done successfully'
+            return ' Registration is done successfully'
         else:
-            return ' your iD is already use, please login'  
+            return ' Your iD is already in use, please login'  
     
     #ok gets on the user,allows to use services
     def login(self,chat_id,pssw):
@@ -86,8 +86,10 @@ class Telegram_Manager:
                 us['status']= 'on'
                 json.dump(self.users,open('users.json','w'))
                 auth=True
-        if auth: return 'are u in,welcome to service'
-        else: return 'pssw was incorrect'
+        if auth:
+            return 'Logged in successfully, welcome to service'
+        else:
+            return 'Incorrect password'
                 
     
     #ok
