@@ -8,7 +8,7 @@ import time
 import datetime
 import json
 
-TOKEN="1916702576:AAEX4Wh-p13xxYl6aqEwiIkzQhBK-LZe2xk" #da sostituire
+TOKEN="" #da sostituire
 #-------------------
 # cancella l username e usa id 
 #-------------------------------------------------
