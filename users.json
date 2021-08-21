@@ -1,1 +1,1 @@
-{"Users": [{"id": 974624385, "username": "andrea_zarri", "password": "candelabro", "status": "on", "groupId": [{"groupId": "newgr", "Sensors": [{"Name": "newdev", "Pin": "pin1"}]}, {"groupId": "2ndGroupId", "Sensors": []}]}]}
+{"Users": [{"id": 974624385, "username": "andrea_zarri", "password": "candelabro", "status": "on", "groupId": [{"groupId": "newGroupId", "latitude": -10.386204, "longitude": -38.335747, "Devices": [{"Name": "newDevice", "Pin": "12"}]}], "currentId": ""}]}

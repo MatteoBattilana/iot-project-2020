@@ -11,12 +11,12 @@ commands=['/login: for authentication \n /login username pssw',
         '/addGroupId: add a new groupId to your account\n /addGroupId <groupId>',
         '/delGroupId: remove groupId from your account\n /delGroupId <groupId>',
         '/addDevice: add device to a specific groupId\n /addDevice <groupId> <newDevice> <PIN>',
-        '/delDevice: remove a device from specific groupId\n /delDevice <groupId> <deviceToDel>']
+        '/delete: remove a device from specific groupId or directly an entire groupId']
 
 class Telegram_Manager:
     # init method or constructor 
-    def __init__(self, name):
-        self.users=json.load(open(name))
+    def __init__(self, fileName):
+        self.users=json.load(open(fileName))
     
     #ok
     def build_keyboard(self,elements,category):
@@ -25,13 +25,6 @@ class Telegram_Manager:
             kbs = kbs + [InlineKeyboardButton(text=x, callback_data=category+' '+x)]
         return kbs
     
-    #ok
-    def find_id(self,elements,name):
-        for id_obj in elements:
-            if id_obj["groupId"]==name:
-                break
-        return id_obj
-    
     def commands(self,command=None):
         if command==None:
             return commands
@@ -39,26 +32,29 @@ class Telegram_Manager:
             try:
                 for sentence in commands:
                     if sentence.startswith(command):
-                        break
-                return sentence
+                       found=True
+                       break
+                if found:
+                    return sentence
+                else:
+                    raise Exception
             except:
                 return 'Instruction is not supported'
                 
-           
-
     #ok
     def logout(self,chat_id):
         for us in self.users['Users']:
             if us['id'] == chat_id:
                 us['status']= 'off'
-        json.dump(self.users,open('users.json','w')) 
+        json.dump(self.users,open('users.json','w'))
         return 'Logged out'  
     #ok
-    def status(self,name):
+    def status(self,chat_id):
+        exist=False
         for us in self.users["Users"]:
-            if us['username']==name and us['status']== "on":
-                return True
-        return False
+            if us['id']==chat_id and us['status']== "on":
+                exist=True
+        return exist
     
     #ok check if the chat_id is already saved
     def just_register(self,chatId):
@@ -71,7 +67,7 @@ class Telegram_Manager:
     #ok register che user to 'database'
     def register(self,chat_id,value):
         if(not self.just_register(chat_id)):
-            us={"id":chat_id,"username":value[0],"password":value[1],"status":"off","groupId":[]}
+            us={"id":chat_id,"username":value[0],"password":value[1],"status":"off","groupId":[],"currentId":""}
             self.users["Users"].append(us)
             json.dump(self.users,open('users.json','w'))
             return ' Registration is done successfully'
@@ -96,42 +92,46 @@ class Telegram_Manager:
     def add_id(self,chat_id,id):
         for u in self.users["Users"]:
             if u["id"]==chat_id:
-                vector=u["groupId"]
-                for i in id:
-                    new={"groupId":str(i),"Sensors":[]}
-                    vector.append(new)
-                u["groupId"]=vector
+                new={"groupId":id[0],"latitude":"","longitude":"","Devices":[]}
+                u["groupId"].append(new)
+                u["currentId"] = id[0]
                 break 
-        json.dump(self.users,open('users.json','w'))  
+        json.dump(self.users,open('users.json','w'))
+        return "GroupId inserted successfully"
     #ok
     def del_id(self,chat_id,id):
         for u in self.users["Users"]:
             if u["id"]==chat_id:
                 for u_gId in u["groupId"]:
-                    if u_gId["groupId"] in id: 
+                    if u_gId["groupId"] == id: #vettore 
                         u["groupId"].remove(u_gId)
-        json.dump(self.users,open('users.json','w'))    
+        json.dump(self.users,open('users.json','w'))  
 
     #ok
-    def add_sen(self,chat_id,id,sensor,pin):
+    def add_sen(self,chat_id,datas):
+        insert=False
         for u in self.users["Users"]:
-            if u["id"]==chat_id:      #trovo il mio profilo
+            if u["id"] == chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere 
-                    if g_id["groupId"]==id:
-                        vector=g_id["Sensors"]
-                        new={"Name":str(sensor),"Pin":pin}
-                        vector.append(new)
-                        g_id["Sensors"]=vector
+                    if g_id["groupId"] == datas[0]:
+                        new={"Name":str(datas[1]),"Pin":datas[2]}
+                        g_id["Devices"].append(new)
+                        insert=True
                         break  
         json.dump(self.users,open('users.json','w'))  
+        if insert:
+            return 'New device inserted correctly'
+        else:
+            return 'Specified groupId does not exist'
+        
     #ok
-    def del_sen(self,chat_id,id,sensor):
+    def del_sen(self,chat_id,datas):
         for u in self.users["Users"]:
             if u["id"]==chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere 
-                    if g_id["groupId"]==id:
-                        for x in g_id["Sensors"]:
-                            if x["Name"] in sensor: g_id["Sensors"].remove(x) 
+                    if g_id["groupId"]==datas[0]:
+                        for x in g_id["Devices"]:
+                            if x["Name"]==datas[1]: g_id["Devices"].remove(x) 
         
         json.dump(self.users,open('users.json','w'))
     #ok
@@ -149,6 +149,29 @@ class Telegram_Manager:
             if u["id"]==chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere 
                     if g_id["groupId"]==id:
-                        for sen in g_id["Sensors"]: id_list.append(sen["Name"])
+                        for sen in g_id["Devices"]: id_list.append(sen["Name"])
         return id_list
-                  
+        
+    #ok needs to save last coordinates sended
+    def coordinate(self,chat_id,pos):
+        for u in self.users["Users"]:
+            if u["id"]==chat_id:
+                id=u["currentId"] #ultimo  Id inserito 
+                for i in u["groupId"]: #tra tutti l id
+                    if i["groupId"] == id:
+                        i["latitude"]=pos["latitude"]
+                        i["longitude"]=pos["longitude"]
+                        u["currentId"]=""
+        json.dump(self.users,open('users.json','w'))
+    
+    def insertedId(self,chat_id):
+        inserted=False
+        for u in self.users["Users"]:
+            if u["id"]==chat_id and u["currentId"]=="":
+                inserted=True
+        return inserted
+
+    def currentId(self,chat_id):
+        for u in self.users["Users"]:
+            if u["id"]==chat_id: value=u["currentId"]
+        return value
