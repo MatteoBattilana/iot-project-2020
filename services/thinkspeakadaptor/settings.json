@@ -7,6 +7,6 @@
         "/iot-programming-2343/#"
     ],
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "ERROR",
-    "serviceId": "THINGSPEAK-ADAPTOR-4"
+    "logVerbosity": "DEBUG",
+    "serviceId": "THINGSPEAK-ADAPTOR-A1"
 }

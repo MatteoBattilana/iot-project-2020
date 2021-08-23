@@ -5,5 +5,5 @@
     "serviceName": "EXTERNAL-API",
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "DEBUG",
-    "serviceId": "EXTERNAL-API-2"
+    "serviceId": "EXTERNAL-API-A1"
 }

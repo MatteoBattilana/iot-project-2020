@@ -1,11 +1,12 @@
 {
     "pingTime": 60,
-    "sensorSamplingTime": 500,
+    "sensorSamplingTime": 15,
     "deviceName": "SIMULATED-DEVICE",
-    "groupId": "home1",
     "MQTTTopic": "/iot-programming-2343/",
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "ERROR",
-    "serviceId": "SIMULATED-DEVICE-2",
-    "devicePosition": "internal"
+    "logVerbosity": "DEBUG",
+    "serviceId": "SIMULATED-DEVICE-A2",
+    "devicePosition": "internal",
+    "pin": "1234",
+    "groupId": "HomePod"
 }

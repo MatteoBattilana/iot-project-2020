@@ -23,15 +23,11 @@ class WebSite():
             self._settings.getField('catalogAddress'),
             self._settings.getField('serviceName'),
             "SERVICE",
-            self._settings.getFieldOrDefault('serviceId', ''),
+            self._settings.getField('serviceId'),
             "WEBINTERFACE",
-            groupId = None, notifier = self)
+            groupId = None)
         logging.debug("Started")
         self._ping.start()
-
-    # Catalog new id callback
-    def onNewCatalogId(self, newId):
-        self._settings.updateField('serviceId', newId)
 
     def GET(self):
         return open("html/index.html")

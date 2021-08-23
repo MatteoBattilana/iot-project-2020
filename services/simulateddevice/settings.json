@@ -2,10 +2,11 @@
     "pingTime": 60,
     "sensorSamplingTime": 30,
     "deviceName": "SIMULATED-DEVICE",
-    "groupId": "home1",
     "MQTTTopic": "/iot-programming-2343/",
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "DEBUG",
-    "serviceId": "SIMULATED-DEVICE-1",
-    "devicePosition": "external"
+    "serviceId": "SIMULATED-DEVICE-A1",
+    "devicePosition": "external",
+    "pin": "1234",
+    "groupId": "TestZZZ"
 }
