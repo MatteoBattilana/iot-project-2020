@@ -8,7 +8,6 @@ import time
 import datetime
 import json
 
-state = {}
 
 TOKEN="1993057758:AAEns0oHrFhPbgqrnRUU21RM-sOC6jbrb9k" #da sostituire
 #-------------------
@@ -20,7 +19,7 @@ def on_chat_message(msg):
 
     if content_type == 'location':
         chat_id=msg['chat']['id']
-        if state[chat_id] == 'addGroupId_location':
+        if t_m.getState(chat_id) == 'addGroupId_location':
             print(msg['location'])
             t_m.coordinate(chat_id,msg['location'])
             bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
@@ -36,34 +35,34 @@ def on_chat_message(msg):
         print(params)
         par_len = len(params)
 
-        if not txt.startswith('/') and chat_id in state:
-            if state[chat_id] == 'login':
+        if not txt.startswith('/'):
+            if t_m.getState(chat_id) == 'login':
                 auth, message = t_m.login(chat_id,txt)
                 bot.sendMessage(chat_id,message)
                 if auth == True:
-                    state[chat_id] = 'start'
+                    t_m.setState(chat_id,'start')
                     bot.deleteMessage(telepot.message_identifier(msg))
                 else:
-                    state[chat_id] = 'login'
+                    t_m.setState(chat_id,'login')
 
-            elif state[chat_id] == 'register':
+            elif t_m.getState(chat_id) == 'register':
                 bot.sendMessage(chat_id,t_m.register(chat_id,txt))
                 bot.deleteMessage(telepot.message_identifier(msg))
-                state[chat_id] = 'start'
+                t_m.setState(chat_id,'start')
 
-            elif state[chat_id] == 'addGroupId_name':
+            elif t_m.getState(chat_id) == 'addGroupId_name':
                 if not txt in t_m.get_ids(chat_id):
                     bot.sendMessage(chat_id,t_m.add_id(chat_id,txt))
-                    state[chat_id] = 'addGroupId_location'
+                    t_m.setState(chat_id,'addGroupId_location')
                     bot.sendMessage(chat_id, "Please send now the location of the groupId")
                 else:
                     bot.sendMessage(chat_id,'The inserted groupId is already registered. Insert a new one')
 
-            elif state[chat_id] == 'addSensor':
+            elif t_m.getState(chat_id) == 'addSensor':
                 ## make request to device to check if pin is correct
                 if True:
                     bot.sendMessage(chat_id,t_m.add_sen(chat_id,params))
-                    state[chat_id] = 'start'
+                    t_m.setState(chat_id,'start')
 
             else:
                 bot.sendMessage(chat_id,"Command not supported")
@@ -74,7 +73,7 @@ def on_chat_message(msg):
 
 
         elif txt.startswith('/cancel'):
-            state[chat_id] = 'start'
+            t_m.setState(chat_id,'start')
             bot.sendMessage(chat_id,"Operation cancelled")
 
        #ok
@@ -91,7 +90,7 @@ def on_chat_message(msg):
                 bot.sendMessage(chat_id,t_m.commands(params[0]))
         #ok
         elif txt.startswith('/login'):
-            state[chat_id] = 'login'
+            t_m.setState(chat_id,'login')
             bot.sendMessage(chat_id,"Please insert the password of your account or cancel the login by typing /cancel")
              #try:
             #    bot.sendMessage(chat_id,t_m.login(chat_id,params[0]))
@@ -99,13 +98,14 @@ def on_chat_message(msg):
     #ok
         elif txt.startswith('/register'):
             if(not t_m.just_register(chat_id)):
-                state[chat_id] = 'register'
+                t_m.setState(chat_id,'register')
                 bot.sendMessage(chat_id, "Insert the password for your account.")
             else:
                 bot.sendMessage(chat_id,'Your password is already set, please use the login command')
         #ok
         elif txt.startswith('/logout'):
             bot.sendMessage(chat_id,t_m.logout(chat_id))
+            t_m.setState(chat_id,'start')
 
         elif not status:
             bot.sendMessage(chat_id,'Attention you are offline, please login')
@@ -120,7 +120,7 @@ def on_chat_message(msg):
                 bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
         elif txt.startswith('/addgroupid'):
-            state[chat_id] = 'addGroupId_name'
+            t_m.setState(chat_id,'addGroupId_name')
             bot.sendMessage(chat_id,"Please insert the name of the new groupId")
 
         elif txt.startswith('/adddevice'):
@@ -175,10 +175,10 @@ def on_callback_query(msg):
         if txt[0]=='addDevice':
             t_m.setCurrentId(chat_id,txt[1])
             if t_m.isLocationInserted(chat_id, txt[1]):
-                state[chat_id] = 'addSensor'
+                t_m.setState(chat_id,'addSensor')
                 bot.sendMessage(chat_id, 'Please insert the device in the following format: <id> <PIN>')
             else:
-                state[chat_id] = 'addGroupId_location'
+                t_m.setState(chat_id,'addGroupId_location')
                 bot.sendMessage(chat_id,'Attention: before doing other actions you have to send position of groupId {}'.format(t_m.currentId(chat_id)))
 
         elif txt[0]=='groupId':

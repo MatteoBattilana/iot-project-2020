@@ -75,7 +75,7 @@ class Telegram_Manager:
     #ok register che user to 'database'
     def register(self,chat_id,value):
         if(not self.just_register(chat_id)):
-            us={"id":chat_id,"password":value[0],"status":"on","groupId":[],"currentId":""}
+            us={"id":chat_id,"password":value[0],"status":"on","state":"start","groupId":[],"currentId":""}
             self.users["Users"].append(us)
             json.dump(self.users,open('users.json','w'))
             return ' Registration is done successfully'
@@ -189,3 +189,15 @@ class Telegram_Manager:
     def setCurrentId(self,chat_id,id):
         for u in self.users["Users"]:
             if u["id"]==chat_id: u["currentId"] = id
+
+    def getState(self,chat_id):
+        for us in self.users['Users']:
+            if us['id'] == chat_id and 'state' in us:
+                return us['state']
+        return 'start'
+
+    def setState(self,chat_id,state):
+        for us in self.users['Users']:
+            if us['id'] == chat_id:
+                us['state'] = state
+        json.dump(self.users,open('users.json','w'))
