@@ -1,4 +1,93 @@
 # iot-project-2020
+# Description of the infrastructure
+The entire infrastructure is based on a central service that is called Broker. It keeps a list of available services with their corresponding REST and MQTT endopoints in order to allows the other services to know which services are available. Within a time, that is called retationTime, each service must perform a ping operation that is nothing else than a notification to the catalog to say "I'm still alive". In this way, the record for that service will not be removed from the catalog.
+This is done by saving an additional information in the json of each service called lastUpdate that contains the time in which the last ping has been performed.
+
+Eache service is indentified by and id (SIMULATED-DEVICE-1) but it is defined also by two attributes:
+- TYPE: it can assume only two values: [SERVICE, DEVICE]
+- SUBTYPE: ideally it can be every type, depends on the alive services in the infrastructure, at the moment we have [EXTERNALWEATHERAPI, WEBINTERFACE, ...]
+- groupId: only the services with TYPE = DEVICE have this attribute. Since the infrastructure must be scalable and maybe in the future, this will be used by more than one user, the groupId attribute define to which location the device belong. For example, if we have two users: Marco and Matteo, the sensor that are inside Marco's house will have a different groupId. At the moment this has been implemented in the code and works correctly but no simulated sensors have been implemented. This is because this is not actually requested.
+
+This is an extract from a http://localhost:8080/catalog/getAll response request:
+
+```json
+{
+    "serviceName": "SIMULATED-DEVICE",
+    "serviceType": "DEVICE",
+    "serviceSubType": "RASPBERRY",
+    "groupId": "home1",
+    "devicePosition": "internal",
+    "serviceServiceList": [
+      {
+        "serviceType": "MQTT",
+        "endPoint": [
+          {
+            "topic": "/iot-programming-2343/",
+            "type": "temperature"
+          }
+        ]
+      },
+      {
+        "serviceType": "REST",
+        "serviceIP": "172.20.0.4",
+        "servicePort": 8080,
+        "endPoint": [
+          {
+            "type": "web",
+            "uri": "/",
+            "version": 1,
+            "parameter": [
+              
+            ]
+          },
+          {
+            "type": "configuration",
+            "uri": "/setPingTime",
+            "version": 1,
+            "parameter": [
+              {
+                "name": "pingTime",
+                "unit": "integer"
+              }
+            ]
+          },
+          {
+            "type": "configuration",
+            "uri": "/setGroupId",
+            "version": 1,
+            "parameter": [
+              {
+                "name": "groupId",
+                "unit": "string"
+              }
+            ]
+          },
+          {
+            "type": "action",
+            "uri": "/forceSensorSampling",
+            "version": 1,
+            "parameter": [
+              
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceId": "SIMULATED-DEVICE-2",
+    "lastUpdate": 1627895704.1240659
+  }
+```
+
+It's important to say that each service cannot directly communication each others since the ip of the service can change, but they must ask the catalog the ip/port and enpoints of a specific one.
+For example, if the sensor needs to perform a query about the externa weather condition, it must request to the catolog which is the ip and port for that desired service. So,
+1. http://catalog:8080/catalog/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI
+2. Check if the list is not empty
+3. Take the last one and perform the desire request
+
+At this point, one the catalog has been loaded, the new services will perform a ping to it in order to be registered in the catalog list of the active services. This is both for SERVICE and DEVICE. In order to simplify this, a class shared among all the services has been created and named `ping.py`. 
+
+
+
 ## Windows 10 setup
 * Download git: [Git install tutorial](https://phoenixnap.com/kb/how-to-install-git-windows)
 * Download and install docker: [Docker installer](https://hub.docker.com/editions/community/docker-ce-desktop-windows/)
@@ -103,3 +192,5 @@ Once you have done your work, open a pull request using the GitHub interface
   - get all MONTHLY TYPE statistics from GROUPID group: [http://localhost:8090/group/GROUPID/getAllStats?lapse=MONTHLY&type=TYPE](http://localhost:8090/group/home1/getAllStats?lapse=monthly&type=external)
 * EXTERNAL WEATHER API:
   - get the current weather status at latitude LAT and longitude LON: [http://localhost:8070/currentWeatherStatus?lat=LAT&lon=LON](http://localhost:8070/currentWeatherStatus?lat=45.06226619601743&lon=7.661825314722597)
+  - get the forecast weather status at latitude LAT and longitude LON for the next 60 minutes, 48 hours and 7 days: [http://localhost:8070/forecastWeatherStatus?lat=LAT&lon=LON](http://localhost:8070/forecastWeatherStatus?lat=45.06226619601743&lon=7.661825314722597)
+  - get the forecast weather status at latitude LAT and longitude LON about the next MINUTES minutes, HOURS hours and DAYS days: [http://localhost:8070/forecastWeatherStatus?lat=LAT&lon=LON&minutes=MINUTES&hours=HOURS&days=DAYS](http://localhost:8070/forecastWeatherStatus?lat=45.06226619601743&lon=7.661825314722597&minutes=30&hours=5&days=2)

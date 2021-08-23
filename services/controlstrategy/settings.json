@@ -1,10 +1,19 @@
 {
     "pingTime": 60,
+    "cacheRetationTimeInterval": 60,
+    "temperatureThreshold": 30,
+    "humidityThreshold": 70,
+    "co2Threshold": 600,
+    "externalTemperatureMin": 15,
+    "externalTemperatureMax": 25,
+    "externalHumidityMin": 0,
+    "externalHumidityMax": 50,
+    "polyFittingPredict": 30,
     "serviceName": "CONTROL-STRATEGY",
     "subscribeTopics": [
         "/iot-programming-2343/#"
     ],
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "ERROR",
+    "logVerbosity": "DEBUG",
     "serviceId": "CONTROL-STRATEGY-6"
 }

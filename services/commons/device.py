@@ -50,6 +50,12 @@ class Device(threading.Thread):
                         "uri": "/setGroupId",
                         "version": 1,
                         "parameter": [{"name": "groupId", "unit": "string"}]
+                    },
+                    {
+                        "type": "action",
+                        "uri": "/forceSensorSampling",
+                        "version": 1,
+                        "parameter": []
                     }
                 ]
             }
@@ -85,6 +91,24 @@ class Device(threading.Thread):
         self._run = False
         self.join()
 
+    def _publishSampledSensor(self):
+        simulatedValues = self._sensorReader.readSensors()
+
+        if simulatedValues != []:
+            readValues = {
+                'bn': self._settingsManager.getField('groupId')+"/"+self._deviceId,
+                'e': simulatedValues,
+                'sensor_position': self._devicePosition
+                }
+
+            logging.info("Publishing sensor values")
+            self._mqtt.publish(self._publishTopic + self._deviceId, readValues)
+            return readValues
+        else:
+            logging.info("Sensors not available")
+            return {}
+
+
     def run(self):
         logging.debug("Started")
         self._ping.start()
@@ -93,24 +117,13 @@ class Device(threading.Thread):
         while self._run:
             if self._isMQTTconnected and time.time() - lastTime > self._sensorSamplingTime:
                 #read sensors
-                if self._getRandomValues != {}:
-                    logging.info("Publishing sensor values")
-                    self._mqtt.publish(self._publishTopic + self._deviceId, self._getRandomValues())
-                    lastTime = time.time()
-                else:
-                    logging.error(f"Sensor reading is not possible")
+                self._publishSampledSensor()
+                lastTime = time.time()
+
+            time.sleep(1)
         logging.debug("Stopped sensor read")
 
-    def _getRandomValues(self):
-        simulatedValues = self._sensorReader.readSensors()
-        if simulatedValues != []:
-            return {
-                'bn': self._deviceId,
-                'e': simulatedValues,
-                'p': self._devicePosition
-                }
-        else:
-            return {}
+
 
 
     # Catalog new id callback
@@ -147,6 +160,9 @@ class Device(threading.Thread):
             self._ping.setGroupId(parameter['groupId'])
             self._settingsManager.updateField("groupId", parameter['groupId'])
             return json.dumps({"groupId": parameter['groupId']}, indent=4)
+        if uri[0] == "forceSensorSampling":
+            sent = self._publishSampledSensor()
+            return json.dumps({"status": 'ok', 'mqtt-payload': sent}, indent=4)
 
 
         cherrypy.response.status = 404
