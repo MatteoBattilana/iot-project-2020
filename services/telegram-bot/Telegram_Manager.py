@@ -69,13 +69,20 @@ class Telegram_Manager:
     def just_register(self,chatId):
         exist=False
         for u in self.users["users"]:
-            if u["id"]==chatId:
+            if u["id"]==chatId and u["password"]:
                 exist=True
         return exist
+
+    def delete_user(self,chatId):
+        for u in self.users["users"][:]:
+            if u["id"]==chatId:
+                print(str(u))
+                self.users["users"].remove(u)
 
     #ok register che user to 'database'
     def register(self,chat_id,value):
         if(not self.just_register(chat_id)):
+            self.delete_user(chat_id)
             us={"id":chat_id,"password":value[0],"status":"on","state":"start","groupId":[],"currentId":""}
             self.users["users"].append(us)
             json.dump(self.users,open('users.json','w'))
@@ -104,6 +111,7 @@ class Telegram_Manager:
                 new={"groupId":id,"latitude":"","longitude":"","devices":[]}
                 u["groupId"].append(new)
                 u["currentId"] = id
+                print("1 HERE: " + id)
                 break
         json.dump(self.users,open('users.json','w'))
         return id + " groupId inserted successfully"
@@ -116,12 +124,18 @@ class Telegram_Manager:
                         u["groupId"].remove(u_gId)
         json.dump(self.users,open('users.json','w'))
 
+    def getCurrentGroupId(self, chat_id):
+        for u in self.users["users"]:
+            if u["id"] == chat_id:
+                return u["currentId"]
+        return ""
     #ok
     def add_sen(self,chat_id,datas):
         insert=False
         for u in self.users["users"]:
             if u["id"] == chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
+                    print(g_id)
                     if g_id["groupId"] == u["currentId"]:
                         new={"name":str(datas[0]),"Pin":datas[1]}
                         g_id["devices"].append(new)
@@ -144,10 +158,10 @@ class Telegram_Manager:
 
         json.dump(self.users,open('users.json','w'))
     #ok
-    def get_ids(self,chat_id):
+    def get_ids(self,chat_id=None):
         id_list=[]
         for u in self.users["users"]:
-            if u["id"]==chat_id:      #trovo il mio profilo
+            if u["id"]==chat_id or not chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
                     id_list.append(g_id["groupId"])
         return id_list
@@ -162,21 +176,16 @@ class Telegram_Manager:
         return id_list
 
     #ok needs to save last coordinates sended
-    def coordinate(self,chat_id,pos,catalogAddress):
-        status = False
+    def coordinate(self,chat_id,pos):
         for u in self.users["users"]:
             if u["id"]==chat_id:
                 id=u["currentId"] #ultimo  Id inserito
                 for i in u["groupId"]: #tra tutti l id
                     if i["groupId"] == id:
-                        r = requests.get(catalogAddress + "/createGroupId?groupId=" + str(id) + "&latitude=" + str(pos["latitude"]) + "&longitude="+ str(pos["longitude"]))
-                        if r.status_code == 200:
-                            i["latitude"]=pos["latitude"]
-                            i["longitude"]=pos["longitude"]
-                            u["currentId"]=""
-                            status = True
+                        i["latitude"]=pos["latitude"]
+                        i["longitude"]=pos["longitude"]
+                        u["currentId"]=""
         json.dump(self.users,open('users.json','w'))
-        return status
 
     def isLocationInserted(self,chat_id, groupId):
         inserted=False
@@ -194,7 +203,8 @@ class Telegram_Manager:
 
     def setCurrentId(self,chat_id,id):
         for u in self.users["users"]:
-            if u["id"]==chat_id: u["currentId"] = id
+            if u["id"]==chat_id:
+                u["currentId"] = id
 
     def getState(self,chat_id):
         for us in self.users['users']:
@@ -203,7 +213,13 @@ class Telegram_Manager:
         return 'start'
 
     def setState(self,chat_id,state):
+        found = False
         for us in self.users['users']:
             if us['id'] == chat_id:
+                found = True
                 us['state'] = state
+        if not found:
+            us={"id":chat_id,"password":"","status":"off","state":state,"groupId":[],"currentId":""}
+            self.users["users"].append(us)
+
         json.dump(self.users,open('users.json','w'))

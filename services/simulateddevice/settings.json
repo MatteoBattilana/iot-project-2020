@@ -8,5 +8,5 @@
     "serviceId": "SIMULATED-DEVICE-A1",
     "devicePosition": "external",
     "pin": "1234",
-    "groupId": ""
+    "groupId": "MMM"
 }

@@ -73,11 +73,13 @@ class TelegramBot():
         if content_type == 'location':
             chat_id=msg['chat']['id']
             if self.t_m.getState(chat_id) == 'addGroupId_location':
-                print(msg['location'])
-                res = self.t_m.coordinate(chat_id,msg['location'],self._catalogAddress)
-                if res:
+                pos = msg['location']
+                r = requests.get(self._catalogAddress + "/updateGroupId?groupId=" + self.t_m.getCurrentGroupId(chat_id) + "&latitude=" + str(pos["latitude"]) + "&longitude="+ str(pos["longitude"]))
+                if r.status_code == 200:
+                    self.t_m.coordinate(chat_id,msg['location'])
                     self.bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
                 else:
+                    logging.error("Unable to set the location for groupId: " + str(r.json()))
                     self.bot.sendMessage(chat_id, "Unable to set the groupId location due to some server problems. Retry later")
             #variabile globale location che viene modificata, se None l /IdAdd dira inserisci prima posto con location, senno inserisco coordinate con add_id
 
@@ -102,23 +104,42 @@ class TelegramBot():
                         self.t_m.setState(chat_id,'login')
 
                 elif self.t_m.getState(chat_id) == 'register':
-                    self.bot.sendMessage(chat_id,self.t_m.register(chat_id,txt))
-                    self.bot.deleteMessage(telepot.message_identifier(msg))
-                    self.t_m.setState(chat_id,'start')
+                    if txt:
+                        self.bot.sendMessage(chat_id,self.t_m.register(chat_id,txt))
+                        # self.bot.deleteMessage(telepot.message_identifier(msg))
+                        self.t_m.setState(chat_id,'start')
 
                 elif self.t_m.getState(chat_id) == 'addGroupId_name':
-                    if not txt in self.t_m.get_ids(chat_id):
-                        self.bot.sendMessage(chat_id,self.t_m.add_id(chat_id,txt))
-                        self.t_m.setState(chat_id,'addGroupId_location')
-                        self.bot.sendMessage(chat_id, "Please send now the location of the groupId")
+                    if " " in txt:
+                        self.bot.sendMessage(chat_id,"Please insert a name without spaces")
+                    elif not txt in self.t_m.get_ids():
+                        r = requests.get(self._catalogAddress + "/createGroupId?groupId=" + txt)
+                        if r.status_code == 200:
+                            self.bot.sendMessage(chat_id,self.t_m.add_id(chat_id,txt))
+                            self.t_m.setState(chat_id,'addGroupId_location')
+                            self.bot.sendMessage(chat_id, "Please send now the location of the groupId")
+                        elif r.status_code == 409:
+                            self.bot.sendMessage(chat_id, "Unable to create the groupId because the name is already in use. Please use a different one.")
+                        else:
+                            logging.error("Unable to create the groupId: " + str(r.json()))
+                            self.bot.sendMessage(chat_id, "Unable to create the groupId due to some server problems. Retry later")
+
                     else:
                         self.bot.sendMessage(chat_id,'The inserted groupId is already registered. Insert a new one')
 
-                elif self.t_m.getState(chat_id) == 'addSensor':
+                elif self.t_m.getState(chat_id) == 'addDevice':
                     ## make request to device to check if pin is correct
-                    if True:
-                        self.bot.sendMessage(chat_id,self.t_m.add_sen(chat_id,params))
-                        self.t_m.setState(chat_id,'start')
+                    if par_len == 2:
+                        res = self.setDeviceGroupId(params[0], params[1], self.t_m.getCurrentGroupId(chat_id))
+                        if res == None:
+                            self.bot.sendMessage(chat_id, "Unable to find " + params[0] + "sensor, please check if it is correct")
+                        elif res:
+                            self.bot.sendMessage(chat_id,self.t_m.add_sen(chat_id,params))
+                            self.t_m.setState(chat_id,'start')
+                        else:
+                            self.bot.sendMessage(chat_id, "Unable to add sensor " + params[0] + " to the " + self.t_m.getCurrentGroupId(chat_id) + " groupId, check the pin and retry")
+                    else:
+                        self.bot.sendMessage(chat_id, "Please use the following format: <deviceId> <PIN>")
 
                 else:
                     self.bot.sendMessage(chat_id,"Command not supported")
@@ -130,14 +151,15 @@ class TelegramBot():
 
             elif txt.startswith('/cancel'):
                 self.t_m.setState(chat_id,'start')
-                self.bot.sendMessage(chat_id,"Operation cancelled")
+                self.bot.sendMessage(chat_id,"Operation cancelled \u26A0")
 
            #ok
             elif txt.startswith('/start'):
                 message="Welcome to iot service for monitoring air quality in you environments. Firstly you have to register to the service through the command /register and a password.\nTo see how to use this command please type /info to check all commands and their syntax.\n"
-                alert="Remind to SAVE YOUR PASSWORD in order to avoid losing it and don't be able to log to you profile"
+                alert="\u26A0 Remind to SAVE YOUR PASSWORD in order to avoid losing it and don't be able to log to you profile"
                 self.bot.sendMessage(chat_id,message)
                 self.bot.sendMessage(chat_id,alert)
+                self.t_m.create_temp_user(chat_id)
             #ok
             elif txt.startswith('/info'):
                 if len(params)==1:
@@ -204,12 +226,11 @@ class TelegramBot():
         result = True
         # loop over all the sensors and remove the groupId
         for device in self.t_m.get_sensors(chat_id,groupId):
-            result = result and deleteGroupIdDevice(device[1])
+            result = result and self.deleteGroupIdDevice(device)
 
         if result:
             r = requests.get(self._catalogAddress + "/deleteGroupId?groupId=" + groupId)
-            if r.status_code == 200:
-                return True
+            return True
 
         return False
 
@@ -218,6 +239,7 @@ class TelegramBot():
         logging.error(self._catalogAddress + "/searchById?serviceId=" + deviceId)
         if r.status_code != 200:
             logging.error("Unable to get information about service " + deviceId)
+            return False
 
         # now perform set of the groupId to the device
         for service in r.json()['serviceServiceList']:
@@ -228,6 +250,51 @@ class TelegramBot():
                 r = requests.get('http://' + ip + ":" + str(port) + "/deleteGroupId")
                 if r.status_code != 200:
                     logging.error("Unable to remove device " + deviceId)
+                    return False
+
+        return True
+
+    def getData(self, deviceId, measureType):
+        r = requests.get(self._catalogAddress + "/searchById?serviceId=" + deviceId)
+        logging.error(self._catalogAddress + "/searchById?serviceId=" + deviceId)
+        if r.status_code != 200:
+            logging.error("Unable to get information about service " + deviceId)
+            return {}
+
+        # now perform set of the groupId to the device
+        for service in r.json()['serviceServiceList']:
+            if 'serviceType' in service and service['serviceType'] == 'REST':
+                ip = service['serviceIP']
+                port = service['servicePort']
+                # perform set groupId
+                r = requests.get('http://' + ip + ":" + str(port) + "/getSensorValues")
+                if r.status_code != 200:
+                    logging.error("Unable to request data from device " + deviceId + ". Retry later.")
+                    return {}
+                else:
+                    for i in r.json():
+                        if i["n"] == measureType:
+                            return {"value": i["v"], "unit" : i["u"]}
+
+        return {}
+
+
+
+    def setDeviceGroupId(self, deviceId, pin, groupId):
+        r = requests.get(self._catalogAddress + "/searchById?serviceId=" + deviceId)
+        if r.status_code != 200:
+            logging.error("Unable to get information about service " + deviceId)
+            return None
+
+        # now perform set of the groupId to the device
+        for service in r.json()['serviceServiceList']:
+            if 'serviceType' in service and service['serviceType'] == 'REST':
+                ip = service['serviceIP']
+                port = service['servicePort']
+                # perform set groupId
+                r = requests.get('http://' + ip + ":" + str(port) + "/setGroupId?groupId=" + str(groupId) + "&pin="+str(pin))
+                if r.status_code != 200:
+                    logging.error("Unable to add device " + deviceId)
                     return False
 
         return True
@@ -265,7 +332,7 @@ class TelegramBot():
             if txt[0]=='addDevice':
                 self.t_m.setCurrentId(chat_id,txt[1])
                 if self.t_m.isLocationInserted(chat_id, txt[1]):
-                    self.t_m.setState(chat_id,'addSensor')
+                    self.t_m.setState(chat_id,'addDevice')
                     self.bot.sendMessage(chat_id, 'Please insert the device in the following format: <id> <PIN>')
                 else:
                     self.t_m.setState(chat_id,'addGroupId_location')
@@ -288,28 +355,43 @@ class TelegramBot():
             #one selected what do u want,choose with characteristic u want
             elif (txt[1]=='datas' or txt[1]=='thingspeak'): #contorta ma funziona,query=(id_sensore cosaVoglio)
                 txt.reverse()
-                kbs=self.t_m.build_keyboard(['temperature','CO2','humidity'],txt[0]+' '+txt[1])
+                kbs=self.t_m.build_keyboard(['temperature','co2','humidity'],txt[0]+' '+txt[1])
                 keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
                 self.bot.sendMessage(chat_id,"What do you want?",reply_markup=keyboard)
 
             #one decided al the path, returns what user wants
             elif txt[2]=='temperature':
                 if txt[0]=='datas':
-                    self.bot.sendMessage(chat_id,text="You selected temperature of %s" %txt[1])
+                    self.bot.sendMessage(chat_id, text="Reading temperature from sensor. Please wait")
+                    value = self.getData(txt[1], txt[2])
+                    if value:
+                        self.bot.sendMessage(chat_id,text="The current temperature is: " + value["value"])
+                    else:
+                        self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali
                 else:
                 #qui richiesta get per richiedere il grafico a thigspeak
                     self.bot.sendPhoto(chat_id,'https://cdn.getyourguide.com/img/location/5a0838201565b.jpeg/92.jpg')#mandare foto
                     self.bot.sendMessage(chat_id,text="temperature graph from %s \n" %txt[1])
-            elif txt[2]=='CO2':
+            elif txt[2]=='co2':
                 if txt[0]=='datas':
-                    self.bot.sendMessage(chat_id,text="You selected CO2 of %s\n" %txt[1])
+                    self.bot.sendMessage(chat_id, text="Reading co2 from sensor. Please wait")
+                    value = self.getData(txt[1], txt[2])
+                    if value:
+                        self.bot.sendMessage(chat_id,text="The current co2 is: " + value["value"] + " " + value["unit"])
+                    else:
+                        self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 else:
                     self.bot.sendPhoto(chat_id,'https://www.milanretreats.com/wp-content/uploads/2020/01/milanretreats_img_slide.jpg')
-                    self.bot.sendMessage(chat_id,text="CO2 graph from %s \n" %txt[1])
+                    self.bot.sendMessage(chat_id,text="co2 graph from %s \n" %txt[1])
             elif txt[2]=='humidity':
                 if txt[0]=='datas':
-                    self.bot.sendMessage(chat_id,text="You selected humidity of %s" %txt[1])
+                    self.bot.sendMessage(chat_id, text="Reading humidity from sensor. Please wait")
+                    value = self.getData(txt[1], txt[2])
+                    if value:
+                        self.bot.sendMessage(chat_id,text="The current humidity is: " + value["value"] + "%")
+                    else:
+                        self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali
                 else:
                 #qui richiesta get per richiedere il grafico a thigspeak

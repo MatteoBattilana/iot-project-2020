@@ -100,13 +100,27 @@ class RESTManagerService(threading.Thread):
                     return json.dumps({"error":{"status": 409, "message": "GroupId already in use"}}, indent=4)
 
             ret = {
-                "groupId": params['groupId'],
-                "latitude": params['latitude'],
-                "longitude": params['longitude']
+                "groupId": params['groupId']
             }
             self._groupIds.append(ret)
             json.dump(self._groupIds,open('groups.json','w'))
             return json.dumps(ret, indent=4)
+        elif uri[0] == 'updateGroupId':
+            # create groupId and set the location
+            found = None
+            for groupId in self._groupIds:
+                if params['groupId'] == groupId['groupId']:
+                    groupId["latitude"] = params["latitude"]
+                    groupId["longitude"] = params["longitude"]
+                    found = groupId
+
+
+            if not found:
+                cherrypy.response.status = 404
+                return json.dumps({"error":{"status": 404, "message": "GroupId not found"}}, indent=4)
+
+            json.dump(self._groupIds,open('groups.json','w'))
+            return json.dumps(found, indent=4)
         elif uri[0] == 'deleteGroupId':
             # delete groupId and its location
             found = False
