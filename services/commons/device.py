@@ -52,6 +52,12 @@ class Device(threading.Thread):
                         "parameter": [{"name": "groupId", "unit": "string"}, {"name": "pin", "unit": "string"}]
                     },
                     {
+                        "type": "configuration",
+                        "uri": "/deleteGroupId",
+                        "version": 1,
+                        "parameter": []
+                    },
+                    {
                         "type": "action",
                         "uri": "/forceSensorSampling",
                         "version": 1,
@@ -154,6 +160,11 @@ class Device(threading.Thread):
             else:
                 cherrypy.response.status = 401
                 return json.dumps({"status": 'error'}, indent=4)
+        if uri[0] == "deleteGroupId":
+            groupId = ''
+            self._ping.setGroupId(groupId)
+            self._settingsManager.updateField("groupId", groupId)
+            return json.dumps({"groupId": groupId}, indent=4)
 
         cherrypy.response.status = 404
         return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)

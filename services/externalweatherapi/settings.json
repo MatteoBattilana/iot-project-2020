@@ -4,6 +4,6 @@
     "minRainVolume":10,
     "serviceName": "EXTERNAL-API",
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "DEBUG",
+    "logVerbosity": "ERROR",
     "serviceId": "EXTERNAL-API-A1"
 }

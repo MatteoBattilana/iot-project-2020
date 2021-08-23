@@ -22,7 +22,8 @@ class RESTManagerService(threading.Thread):
 
     def __init__(self, brokerList, retantionTimeout):
         threading.Thread.__init__(self)
-        # configuuring the service manager, that is usedo to manage the service list available in the 
+        self._groupIds = json.load(open("groups.json", "r+"))
+        # configuuring the service manager, that is usedo to manage the service list available in the
         # infrastructure
         self._serv = ServiceManager(retantionTimeout)
         # Set as broker the first mqtt broker url that works from the list
@@ -65,7 +66,7 @@ class RESTManagerService(threading.Thread):
             return json.dumps({"message": "Catalog API endpoint"}, indent=4)
         elif uri[0] == 'getBroker':
             # REST endpoint, accessible at /catalog/getBroker
-            # Used to return as REST the selected MQTT broker 
+            # Used to return as REST the selected MQTT broker
             if not self._broker:
                 cherrypy.response.status = 503
                 return json.dumps({"error":{"status": 503, "message": "No MQTT server available"}}, indent=4)
@@ -91,10 +92,40 @@ class RESTManagerService(threading.Thread):
             # REST endpoint, accessible at /catalog/searchByServiceSubType
             # Used to return the list of all services that have the desired sub type
             return json.dumps(self._serv.searchByServiceSubType(params['serviceSubType']), indent=4)
+        elif uri[0] == 'createGroupId':
+            # create groupId and set the location
+            for groupId in self._groupIds:
+                if params['groupId'] == groupId['groupId']:
+                    cherrypy.response.status = 409
+                    return json.dumps({"error":{"status": 409, "message": "GroupId already in use"}}, indent=4)
+
+            ret = {
+                "groupId": params['groupId'],
+                "latitude": params['latitude'],
+                "longitude": params['longitude']
+            }
+            self._groupIds.append(ret)
+            json.dump(self._groupIds,open('groups.json','w'))
+            return json.dumps(ret, indent=4)
+        elif uri[0] == 'deleteGroupId':
+            # delete groupId and its location
+            found = False
+            for groupId in self._groupIds[:]:
+                if params['groupId'] == groupId['groupId']:
+                    found = True
+                    self._groupIds.remove(groupId)
+
+            if not found:
+                cherrypy.response.status = 404
+                return json.dumps({"error":{"status": 404, "message": "GroupId not found"}}, indent=4)
+            else:
+                json.dump(self._groupIds,open('groups.json','w'))
+                return json.dumps(self._groupIds, indent=4)
+
         elif uri[0] == 'getAllGroupId':
             # REST endpoint, accessible at /catalog/getAllGroupId
-            # Used to return all the group ids in the infrastructure, 
-            return json.dumps(self._serv.searchAllGroupId(), indent=4)
+            # Used to return all the group ids in the infrastructure,
+            return json.dumps(self._groupIds, indent=4)
         elif uri[0] == 'getAll':
             # REST endpoint, accessible at /catalog/getAll
             # Used to return the list of all DEVICE and SERVICE
@@ -111,7 +142,7 @@ class RESTManagerService(threading.Thread):
             return json.dumps({"error":{"status": 404, "message": "Invalid request"}}, indent=4)
 
 
-    # Used to handle the REST POST request, like th ping 
+    # Used to handle the REST POST request, like th ping
     def POST(self, *uri):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         body = json.loads(cherrypy.request.body.read())

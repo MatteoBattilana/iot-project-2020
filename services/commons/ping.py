@@ -48,9 +48,9 @@ class Ping(threading.Thread):
         self._pingTime = pingTime
 
     def setGroupId(self, groupId):
-        if groupId:
-            logging.debug("GroupId set to " + groupId)
-            json["groupId"] = groupId
+        logging.debug("GroupId set to " + groupId)
+        json["groupId"] = groupId
+        self.sendPing()
 
 
     def sendPing(self):

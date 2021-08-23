@@ -18,7 +18,6 @@ import datetime
 import json
 import os
 import logging
-import requests
 from commons.logger import *
 from commons.netutils import *
 from commons.settingsmanager import *
@@ -27,9 +26,9 @@ commands=['- /login: for authentication',
         '- /register: register to the service',
         '- /logout: logout from the current session',
         '- /check: to get values from the devices',
-        '- /addGroupId: add a new groupId to your account',
-        '- /delGroupId: remove groupId from your account',
-        '- /addDevice: add device to a specific groupId',
+        '- /addgroupid: add a new groupId to your account',
+        '- /delgroupid: remove groupId from your account',
+        '- /adddevice: add device to a specific groupId',
         '- /cancel: cancel the current operation']
 
 class TelegramBot():
@@ -75,8 +74,11 @@ class TelegramBot():
             chat_id=msg['chat']['id']
             if self.t_m.getState(chat_id) == 'addGroupId_location':
                 print(msg['location'])
-                self.t_m.coordinate(chat_id,msg['location'])
-                self.bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
+                res = self.t_m.coordinate(chat_id,msg['location'],self._catalogAddress)
+                if res:
+                    self.bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
+                else:
+                    self.bot.sendMessage(chat_id, "Unable to set the groupId location due to some server problems. Retry later")
             #variabile globale location che viene modificata, se None l /IdAdd dira inserisci prima posto con location, senno inserisco coordinate con add_id
 
 
@@ -198,6 +200,38 @@ class TelegramBot():
     def sendAllCommands(self,chat_id):
         self.bot.sendMessage(chat_id,"List of all available commands:\n\n" + "\n".join(self.t_m.commands()))
 
+    def deleteGroupId(self, chat_id, groupId):
+        result = True
+        # loop over all the sensors and remove the groupId
+        for device in self.t_m.get_sensors(chat_id,groupId):
+            result = result and deleteGroupIdDevice(device[1])
+
+        if result:
+            r = requests.get(self._catalogAddress + "/deleteGroupId?groupId=" + groupId)
+            if r.status_code == 200:
+                return True
+
+        return False
+
+    def deleteGroupIdDevice(self, deviceId):
+        r = requests.get(self._catalogAddress + "/searchById?serviceId=" + deviceId)
+        logging.error(self._catalogAddress + "/searchById?serviceId=" + deviceId)
+        if r.status_code != 200:
+            logging.error("Unable to get information about service " + deviceId)
+
+        # now perform set of the groupId to the device
+        for service in r.json()['serviceServiceList']:
+            if 'serviceType' in service and service['serviceType'] == 'REST':
+                ip = service['serviceIP']
+                port = service['servicePort']
+                # perform set groupId
+                r = requests.get('http://' + ip + ":" + str(port) + "/deleteGroupId")
+                if r.status_code != 200:
+                    logging.error("Unable to remove device " + deviceId)
+                    return False
+
+        return True
+
     def on_callback_query(self,msg):
         query_id, chat_id, query_data = telepot.glance(msg, flavor='callback_query')
         txt=query_data.split()
@@ -213,12 +247,19 @@ class TelegramBot():
                     else:
                         self.bot.sendMessage(chat_id,'No device available')
                 elif txt[2]=='deleteGroupId':
-                    print(txt[2])
-                    self.t_m.del_id(chat_id,txt[1])
-                    self.bot.sendMessage(chat_id,'groupId {} cancelled'.format(txt[1]))
+                    if self.deleteGroupId(chat_id,txt[1]):
+                        print(txt[2])
+                        self.t_m.del_id(chat_id,txt[1])
+                        self.bot.sendMessage(chat_id,'GroupId {} cancelled'.format(txt[1]))
+                    else:
+                        self.bot.sendMessage(chat_id,'Unable to delete GroupId {} due to some server error, please retry later'.format(txt[1]))
+
                 else: # elimino sensore
-                    self.t_m.del_sen(chat_id,txt[1:])
-                    self.bot.sendMessage(chat_id,'Device {} of groupId {} cancelled'.format(txt[2],txt[1]))
+                    if self.deleteGroupIdDevice(txt[2]):
+                        self.t_m.del_sen(chat_id,txt[1:])
+                        self.bot.sendMessage(chat_id,'Device {} of GoupId {} cancelled'.format(txt[2],txt[1]))
+                    else:
+                        self.bot.sendMessage(chat_id,'Unable to delete device {} from GroupId {} due to some server error, please retry later'.format(txt[2],txt[1]))
 
         else:
             if txt[0]=='addDevice':

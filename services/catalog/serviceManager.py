@@ -45,14 +45,6 @@ class ServiceManager():
                 ret.append(serv)
         return ret
 
-    def searchAllGroupId(self):
-        ret = []
-        for serv in self._list:
-            if 'groupId' in serv and serv['groupId'] not in ret:
-                ret.append(serv['groupId'])
-        return ret
-
-
     def searchByGroupId(self, id):
         ret = []
         for serv in self._list:
@@ -85,4 +77,4 @@ class ServiceManager():
                 logging.debug("Updated service service with id: " + str(service['serviceId']))
                 return service
         else:
-            return {} 
+            return {}
