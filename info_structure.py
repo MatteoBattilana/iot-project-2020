@@ -10,7 +10,7 @@ import json
 
 state = {}
 
-TOKEN="1937373836:AAGx0Bp1aaKL8up1ETYiRBFECy-Ifk3ycZ0" #da sostituire
+TOKEN="1993057758:AAEns0oHrFhPbgqrnRUU21RM-sOC6jbrb9k" #da sostituire
 #-------------------
 # cancella l username e usa id
 #-------------------------------------------------
@@ -20,7 +20,7 @@ def on_chat_message(msg):
 
     if content_type == 'location':
         chat_id=msg['chat']['id']
-        if state[chat_id] == 'addGroupId_location' or not t_m.insertedId(chat_id):
+        if state[chat_id] == 'addGroupId_location':
             print(msg['location'])
             t_m.coordinate(chat_id,msg['location'])
             bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
@@ -31,12 +31,12 @@ def on_chat_message(msg):
         chat_id=msg['chat']['id'] #chat_id identification
         name=msg["from"]["username"] #account name
         txt=msg['text'] #message sent
-        params = txt.split()[1:]
+        params = txt.split()
         status = t_m.status(chat_id)
         print(params)
         par_len = len(params)
 
-        if not txt.startswith('/'):
+        if not txt.startswith('/') and chat_id in state:
             if state[chat_id] == 'login':
                 auth, message = t_m.login(chat_id,txt)
                 bot.sendMessage(chat_id,message)
@@ -59,11 +59,15 @@ def on_chat_message(msg):
                 else:
                     bot.sendMessage(chat_id,'The inserted groupId is already registered. Insert a new one')
 
+            elif state[chat_id] == 'addSensor':
+                ## make request to device to check if pin is correct
+                if True:
+                    bot.sendMessage(chat_id,t_m.add_sen(chat_id,params))
+                    state[chat_id] = 'start'
+
             else:
                 bot.sendMessage(chat_id,"Command not supported")
-
-
-
+                sendAllCommands(chat_id)
 
 
 
@@ -82,9 +86,7 @@ def on_chat_message(msg):
         #ok
         elif txt.startswith('/info'):
             if len(params)==0:
-                bot.sendMessage(chat_id, "List of all available commands with the description and the format:")
-                for i in t_m.commands():
-                    bot.sendMessage(chat_id,i)
+                sendAllCommands(chat_id)
             else:
                 bot.sendMessage(chat_id,t_m.commands(params[0]))
         #ok
@@ -117,33 +119,21 @@ def on_chat_message(msg):
             else:
                 bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
-        elif not t_m.insertedId(chat_id):
-            state[chat_id] = 'addGroupId_location[' + t_m.currentId(chat_id) + ']'
-            bot.sendMessage(chat_id,'Attention: before doing other actions you have to send position of groupId {}'.format(t_m.currentId(chat_id)))
-
-        elif txt.startswith('/addGroupId'):
+        elif txt.startswith('/addgroupid'):
             state[chat_id] = 'addGroupId_name'
             bot.sendMessage(chat_id,"Please insert the name of the new groupId")
 
-            #try:
-            #    if par_len != 1:
-            #        raise Exception
-            #    elif not params[0] in t_m.get_ids(chat_id):
-            #        bot.sendMessage(chat_id,t_m.add_id(chat_id,params))
-            #    else:
-            #        bot.sendMessage(chat_id,f"GroupId is already present.")
-            #except:
-            #    bot.sendMessage(chat_id,"/addGroupId <newGroupId>")
+        elif txt.startswith('/adddevice'):
+            groupIds=t_m.get_ids(chat_id)
+            if len(groupIds) > 0:
+                kbs=t_m.build_keyboard(groupIds,'addDevice')
+                keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
+                bot.sendMessage(chat_id,"Which groupId do you want to add a sensor?",reply_markup=keyboard)
+            else:
+                bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
-        elif txt.startswith('/addDevice'):
-            try:
-                if par_len != 3:
-                    raise Exception
-                bot.sendMessage(chat_id,t_m.add_sen(chat_id,params))
-            except:
-                bot.sendMessage(chat_id,t_m.commands('/addDevice'))
 
-        elif txt.startswith('/deleteGroupId'):
+        elif txt.startswith('/delgroupid'):
             groupIds=t_m.get_ids(chat_id)
             if len(groupIds) > 0:
                 kbs=t_m.build_keyboard(groupIds,'delete')
@@ -152,21 +142,12 @@ def on_chat_message(msg):
             else:
                 bot.sendMessage(chat_id,'No groupId in your account')
 
-        #elif txt.startswith('/delDevice'):
-        #    try:
-        #        t_m.del_sen(chat_id,params[0],params[1:])
-        #    except:
-        #        bot.sendMessage(chat_id,"/delDevice <groupId> <deviceToDel>")
-
-        #elif txt.startswith('/delGroupId'):
-        #     try:
-        #        t_m.del_id(chat_id,params[1])
-        #     except:
-        #         bot.sendMessage(chat_id,"/delGroupId <groupId>")
-
         else:
             bot.sendMessage(chat_id,"Command not supported")
+            sendAllCommands(chat_id)
 
+def sendAllCommands(chat_id):
+    bot.sendMessage(chat_id,"List of all available commands:\n\n" + "\n".join(t_m.commands()))
 
 def on_callback_query(msg):
     query_id, chat_id, query_data = telepot.glance(msg, flavor='callback_query')
@@ -191,7 +172,16 @@ def on_callback_query(msg):
                 bot.sendMessage(chat_id,'Device {} of groupId {} cancelled'.format(txt[2],txt[1]))
 
     else:
-        if txt[0]=='groupId':
+        if txt[0]=='addDevice':
+            t_m.setCurrentId(chat_id,txt[1])
+            if t_m.isLocationInserted(chat_id, txt[1]):
+                state[chat_id] = 'addSensor'
+                bot.sendMessage(chat_id, 'Please insert the device in the following format: <id> <PIN>')
+            else:
+                state[chat_id] = 'addGroupId_location'
+                bot.sendMessage(chat_id,'Attention: before doing other actions you have to send position of groupId {}'.format(t_m.currentId(chat_id)))
+
+        elif txt[0]=='groupId':
             id_sensor=t_m.get_sensors(chat_id,txt[1])
             if len(id_sensor) > 0:
                 kbs=t_m.build_keyboard(id_sensor,'devices')
@@ -199,6 +189,7 @@ def on_callback_query(msg):
                 bot.sendMessage(chat_id,"Which device?",reply_markup=keyboard)
             else:
                 bot.sendMessage(chat_id,'No device available for this groupId')
+
         # for the selected device is ask if u want datas o thingspeak
         elif txt[0]=='devices':
             kbs=t_m.build_keyboard(['datas','thingspeak'],txt[1])

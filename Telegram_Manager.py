@@ -3,15 +3,23 @@ from telepot.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
 import json
+# login - Authenticate the user
+# register - Register to the service
+# logout - Logout from the current session
+# check - Get values from the devices
+# addGroupId - Add a new groupId to your account
+# delGroupId - Remove groupId from your account
+# addDevice - Add device to a specific groupId
+# cancel - Cancel the current operation
 
-commands=['/login: for authentication \n- /login <password>',
-        '/register: register to the service,\n- /register <password>',
-        '/logout: \n- /logout',
-        '/check: to get values from the devices\n- /check',
-        '/addGroupId: add a new groupId to your account\n- /addGroupId <groupId>',
-        '/delGroupId: remove groupId from your account\n- /delGroupId <groupId>',
-        '/addDevice: add device to a specific groupId\n- /addDevice <groupId> <newDevice> <PIN>',
-        '/cancel: cancel the current operation\n- \cancel']
+commands=['- /login: for authentication',
+        '- /register: register to the service',
+        '- /logout: logout from the current session',
+        '- /check: to get values from the devices',
+        '- /addGroupId: add a new groupId to your account',
+        '- /delGroupId: remove groupId from your account',
+        '- /addDevice: add device to a specific groupId',
+        '- /cancel: cancel the current operation']
 
 class Telegram_Manager:
     # init method or constructor
@@ -67,7 +75,7 @@ class Telegram_Manager:
     #ok register che user to 'database'
     def register(self,chat_id,value):
         if(not self.just_register(chat_id)):
-            us={"id":chat_id,"password":value[0],"status":"off","groupId":[],"currentId":""}
+            us={"id":chat_id,"password":value[0],"status":"on","groupId":[],"currentId":""}
             self.users["Users"].append(us)
             json.dump(self.users,open('users.json','w'))
             return ' Registration is done successfully'
@@ -113,8 +121,8 @@ class Telegram_Manager:
         for u in self.users["Users"]:
             if u["id"] == chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
-                    if g_id["groupId"] == datas[0]:
-                        new={"Name":str(datas[1]),"Pin":datas[2]}
+                    if g_id["groupId"] == u["currentId"]:
+                        new={"Name":str(datas[0]),"Pin":datas[1]}
                         g_id["Devices"].append(new)
                         insert=True
                         break
@@ -164,14 +172,20 @@ class Telegram_Manager:
                         u["currentId"]=""
         json.dump(self.users,open('users.json','w'))
 
-    def insertedId(self,chat_id):
+    def isLocationInserted(self,chat_id, groupId):
         inserted=False
         for u in self.users["Users"]:
-            if u["id"]==chat_id and u["currentId"]=="":
-                inserted=True
+            if u["id"]==chat_id:
+                for gr_id in u["groupId"]:
+                    if gr_id["groupId"] == groupId and gr_id["latitude"] != "":
+                        inserted=True
         return inserted
 
     def currentId(self,chat_id):
         for u in self.users["Users"]:
             if u["id"]==chat_id: value=u["currentId"]
         return value
+
+    def setCurrentId(self,chat_id,id):
+        for u in self.users["Users"]:
+            if u["id"]==chat_id: u["currentId"] = id
