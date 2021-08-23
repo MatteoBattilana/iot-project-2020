@@ -48,10 +48,9 @@ class TelegramBot():
             self._settings.getField('catalogAddress'),
             self._settings.getField('serviceName'),
             "SERVICE",
-            self._settings.getFieldOrDefault('serviceId', ''),
+            self._settings.getField('serviceId'),
             "TELEGRAM-BOT",
-            groupId = None,
-            notifier = self)
+            groupId = None)
         logging.debug("Started")
         self._ping.start()
 
