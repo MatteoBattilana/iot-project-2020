@@ -157,6 +157,14 @@ class Telegram_Manager:
                             if x["name"]==datas[1]: g_id["devices"].remove(x)
 
         json.dump(self.users,open('users.json','w'))
+
+    def getChatId(self,groupId):
+        for i in self.users["users"]:
+            for gr in i["groupId"]:
+                if gr["groupId"] == groupId:
+                    return i["id"]
+        return None
+
     #ok
     def get_ids(self,chat_id=None):
         id_list=[]

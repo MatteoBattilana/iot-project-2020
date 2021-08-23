@@ -140,6 +140,15 @@ class RESTManagerService(threading.Thread):
             # REST endpoint, accessible at /catalog/getAllGroupId
             # Used to return all the group ids in the infrastructure,
             return json.dumps(self._groupIds, indent=4)
+        elif uri[0] == 'getGroupId':
+            # REST endpoint, accessible at /catalog/getAllGroupId
+            # Used to return the group id in the infrastructure,
+            for i in self._groupIds:
+                if i["groupId"] == params["groupId"]:
+                    return json.dumps(i, indent=4)
+
+            cherrypy.response.status = 404
+            return json.dumps({"error":{"status": 404, "message": "GroupId not found"}}, indent=4)
         elif uri[0] == 'getAll':
             # REST endpoint, accessible at /catalog/getAll
             # Used to return the list of all DEVICE and SERVICE

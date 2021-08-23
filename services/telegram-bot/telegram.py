@@ -68,6 +68,22 @@ class TelegramBot():
             cherrypy.response.status = 503
             return json.dumps({"error":{"status": 503, "message": "OPENWETHERMAPAPIKEY not set"}}, indent=4)
 
+    def POST(self, *uri):
+        cherrypy.response.headers['Content-Type'] = 'application/json'
+        body = json.loads(cherrypy.request.body.read())
+        if len(uri) == 1:
+            logging.info("Requested POST with uri " + str(uri))
+            if uri[0] == 'sendAlert':
+                # send message via telegram
+                chatId = self.t_m.getChatId(body["groupId"])
+                if chatId:
+                    self.bot.sendMessage(chatId, text= "ALERT\nMessage: "+ body["alert"] + "\nSuggested action: " + body["action"])
+                    ret = body
+        else:
+            cherrypy.response.status = 404
+            ret = {"error":{"status": 404, "message": "Missing uri"}}
+        return json.dumps(ret, indent=4)
+
     def on_chat_message(self,msg):
         content_type, chat_type, chat_id = telepot.glance(msg)
         if content_type == 'location':

@@ -4,7 +4,7 @@
     "deviceName": "SIMULATED-DEVICE",
     "MQTTTopic": "/iot-programming-2343/",
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "ERROR",
+    "logVerbosity": "DEBUG",
     "serviceId": "SIMULATED-DEVICE-A1",
     "devicePosition": "external",
     "pin": "1234",
