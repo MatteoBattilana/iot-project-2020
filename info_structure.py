@@ -2,11 +2,13 @@ import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 from Telegram_Manager import Telegram_Manager
-
+import re
 from pprint import pprint
 import time
 import datetime
 import json
+
+state = {}
 
 TOKEN="1937373836:AAGx0Bp1aaKL8up1ETYiRBFECy-Ifk3ycZ0" #da sostituire
 #-------------------
@@ -14,7 +16,18 @@ TOKEN="1937373836:AAGx0Bp1aaKL8up1ETYiRBFECy-Ifk3ycZ0" #da sostituire
 #-------------------------------------------------
 def on_chat_message(msg):
     content_type, chat_type, chat_id = telepot.glance(msg)
-    if content_type=='text':
+
+
+    if content_type == 'location':
+        chat_id=msg['chat']['id']
+        if state[chat_id] == 'addGroupId_location' or not t_m.insertedId(chat_id):
+            print(msg['location'])
+            t_m.coordinate(chat_id,msg['location'])
+            bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
+        #variabile globale location che viene modificata, se None l /IdAdd dira inserisci prima posto con location, senno inserisco coordinate con add_id
+
+
+    elif content_type=='text':
         chat_id=msg['chat']['id'] #chat_id identification
         name=msg["from"]["username"] #account name
         txt=msg['text'] #message sent
@@ -23,8 +36,45 @@ def on_chat_message(msg):
         print(params)
         par_len = len(params)
 
+        if not txt.startswith('/'):
+            if state[chat_id] == 'login':
+                auth, message = t_m.login(chat_id,txt)
+                bot.sendMessage(chat_id,message)
+                if auth == True:
+                    state[chat_id] = 'start'
+                    bot.deleteMessage(telepot.message_identifier(msg))
+                else:
+                    state[chat_id] = 'login'
+
+            elif state[chat_id] == 'register':
+                bot.sendMessage(chat_id,t_m.register(chat_id,txt))
+                bot.deleteMessage(telepot.message_identifier(msg))
+                state[chat_id] = 'start'
+
+            elif state[chat_id] == 'addGroupId_name':
+                if not txt in t_m.get_ids(chat_id):
+                    bot.sendMessage(chat_id,t_m.add_id(chat_id,txt))
+                    state[chat_id] = 'addGroupId_location'
+                    bot.sendMessage(chat_id, "Please send now the location of the groupId")
+                else:
+                    bot.sendMessage(chat_id,'The inserted groupId is already registered. Insert a new one')
+
+            else:
+                bot.sendMessage(chat_id,"Command not supported")
+
+
+
+
+
+
+
+
+        elif txt.startswith('/cancel'):
+            state[chat_id] = 'start'
+            bot.sendMessage(chat_id,"Operation cancelled")
+
        #ok
-        if txt.startswith('/start'):
+        elif txt.startswith('/start'):
             message="Welcome to iot service for monitoring air quality in you environments. Firstly you have to register to the service through the command /register and a password.\nTo see how to use this command please type /info to check all commands and their syntax.\n"
             alert="Remind to SAVE YOUR PASSWORD in order to avoid losing it and don't be able to log to you profile"
             bot.sendMessage(chat_id,message)
@@ -39,21 +89,18 @@ def on_chat_message(msg):
                 bot.sendMessage(chat_id,t_m.commands(params[0]))
         #ok
         elif txt.startswith('/login'):
-            try:
-                if par_len != 1:
-                    raise Exception
-                bot.sendMessage(chat_id,t_m.login(chat_id,params[0]))
-                bot.deleteMessage(telepot.message_identifier(msg)) #deletes the message once registered
-            except:
-                bot.sendMessage(chat_id,"Wrong command format. Use /login <password>")
-        #ok
+            state[chat_id] = 'login'
+            bot.sendMessage(chat_id,"Please insert the password of your account or cancel the login by typing /cancel")
+             #try:
+            #    bot.sendMessage(chat_id,t_m.login(chat_id,params[0]))
+            #    bot.deleteMessage(telepot.message_identifier(msg)) #deletes the message once registered
+    #ok
         elif txt.startswith('/register'):
-            try:
-                if par_len > 2:
-                    raise Exception
-                bot.sendMessage(chat_id,t_m.register(chat_id,params))
-            except:
-                bot.sendMessage(chat_id,"Wrong command format. Use /register <password>")
+            if(not t_m.just_register(chat_id)):
+                state[chat_id] = 'register'
+                bot.sendMessage(chat_id, "Insert the password for your account.")
+            else:
+                bot.sendMessage(chat_id,'Your password is already set, please use the login command')
         #ok
         elif txt.startswith('/logout'):
             bot.sendMessage(chat_id,t_m.logout(chat_id))
@@ -71,18 +118,13 @@ def on_chat_message(msg):
                 bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
         elif not t_m.insertedId(chat_id):
+            state[chat_id] = 'addGroupId_location[' + t_m.currentId(chat_id) + ']'
             bot.sendMessage(chat_id,'Attention: before doing other actions you have to send position of groupId {}'.format(t_m.currentId(chat_id)))
 
         elif txt.startswith('/addGroupId'):
-            try:
-                if par_len!=1:
-                    raise Exception
-                elif not params[0] in t_m.get_ids(chat_id):
-                    bot.sendMessage(chat_id,t_m.add_id(chat_id,params))
-                else:
-                    bot.sendMessage(chat_id,'groupId is already registered')
-            except:
-                bot.sendMessage(chat_id,t_m.commands('/addGroupId'))
+            state[chat_id] = 'addGroupId_name'
+            bot.sendMessage(chat_id,"Please insert the name of the new groupId")
+
             #try:
             #    if par_len != 1:
             #        raise Exception
@@ -124,12 +166,6 @@ def on_chat_message(msg):
 
         else:
             bot.sendMessage(chat_id,"Command not supported")
-
-    #capire come integrarlo
-    if content_type == 'location':
-      print(msg['location'])
-      t_m.coordinate(chat_id,msg['location'])
-    #variabile globale location che viene modificata, se None l /IdAdd dira inserisci prima posto con location, senno inserisco coordinate con add_id
 
 
 def on_callback_query(msg):

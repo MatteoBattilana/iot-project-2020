@@ -10,7 +10,8 @@ commands=['/login: for authentication \n- /login <password>',
         '/check: to get values from the devices\n- /check',
         '/addGroupId: add a new groupId to your account\n- /addGroupId <groupId>',
         '/delGroupId: remove groupId from your account\n- /delGroupId <groupId>',
-        '/addDevice: add device to a specific groupId\n- /addDevice <groupId> <newDevice> <PIN>']
+        '/addDevice: add device to a specific groupId\n- /addDevice <groupId> <newDevice> <PIN>',
+        '/cancel: cancel the current operation\n- \cancel']
 
 class Telegram_Manager:
     # init method or constructor
@@ -71,7 +72,7 @@ class Telegram_Manager:
             json.dump(self.users,open('users.json','w'))
             return ' Registration is done successfully'
         else:
-            return ' Your iD is already in use, please login'
+            return 'Your password is already set, please the login command'
 
     #ok gets on the user,allows to use services
     def login(self,chat_id,pssw):
@@ -82,21 +83,21 @@ class Telegram_Manager:
                 json.dump(self.users,open('users.json','w'))
                 auth=True
         if auth:
-            return 'Logged in successfully, welcome to service. You can now use all available commands'
+            return auth,'Logged in successfully, welcome to service. You can now use all available commands'
         else:
-            return 'Incorrect password, please insert the correct one'
+            return auth,'Incorrect password, please insert the correct one'
 
 
     #ok
     def add_id(self,chat_id,id):
         for u in self.users["Users"]:
             if u["id"]==chat_id:
-                new={"groupId":id[0],"latitude":"","longitude":"","Devices":[]}
+                new={"groupId":id,"latitude":"","longitude":"","Devices":[]}
                 u["groupId"].append(new)
-                u["currentId"] = id[0]
+                u["currentId"] = id
                 break
         json.dump(self.users,open('users.json','w'))
-        return "GroupId inserted successfully"
+        return id + " groupId inserted successfully"
     #ok
     def del_id(self,chat_id,id):
         for u in self.users["Users"]:
