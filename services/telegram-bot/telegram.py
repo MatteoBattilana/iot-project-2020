@@ -350,7 +350,7 @@ class TelegramBot():
                     ip = service['serviceIP']
                     port = service['servicePort']
                     # perform set groupId
-                    url = 'http://' + ip + ":" + str(port) + "/channel/" + sensor + "/measureType/" + measureType + "/getChart?results=100"
+                    url = 'http://' + ip + ":" + str(port) + "/channel/" + sensor + "/measureType/" + measureType + "/getChart?days=1"
                     try:
                         r = requests.get(url)
                         if r.status_code != 200:
@@ -421,7 +421,7 @@ class TelegramBot():
                 txt.reverse()
                 kbs=self.t_m.build_keyboard(['temperature','co2','humidity'],txt[0]+' '+txt[1])
                 keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
-                self.bot.sendMessage(chat_id,"What do you want from ThingSpeak?",reply_markup=keyboard)
+                self.bot.sendMessage(chat_id,"What do you want?",reply_markup=keyboard)
 
             #one decided al the path, returns what user wants
             elif txt[2]=='temperature':

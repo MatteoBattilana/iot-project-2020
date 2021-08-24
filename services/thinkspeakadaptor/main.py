@@ -23,6 +23,7 @@ from cherrypy.lib import file_generator
 from io import BytesIO
 import matplotlib
 matplotlib.use('Agg')
+import matplotlib.dates as dates
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
@@ -418,6 +419,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
         except Exception:
             logging.debug(f"GET request to read data from ThingSpeak went wrong")
+
     def readDaysData(self, channelName, field_id = -1, days = 1):
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
@@ -617,16 +619,21 @@ class ThinkSpeakAdaptor(threading.Thread):
     def plot(self, image, results, measureType, fieldNumber):
         if results and 'feeds' in results:
             y = []
+            x = []
             for feed in results['feeds']:
                 y.append(float(feed["field"+fieldNumber]))
+                x.append(datetime.datetime.strptime(feed["created_at"],"%Y-%m-%dT%H:%M:%SZ"))
             plt.clf()
+            print(str(x))
             plt.gca().yaxis.set_major_locator(ticker.LinearLocator(7))
-            plt.plot(y)
+            plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
+            plt.gcf().autofmt_xdate()
+            plt.plot(x,y)
             plt.ylabel(measureType)
 
             font1 = {'size':20}
             plt.title(measureType, fontdict = font1)
-            plt.xlabel('Sample #')
+            plt.xlabel('Time')
             plt.savefig(image, format='png')
 
 
@@ -692,10 +699,10 @@ class ThinkSpeakAdaptor(threading.Thread):
                     measureType = uri[3]
                     fieldNumber = self.getFieldNumber(channelName, measureType)
                     if fieldNumber != None:
-                        if uri[4] == "getChart" and 'results' in params:
+                        if uri[4] == "getChart" and 'days' in params:
                             # generate graph
                             cherrypy.response.headers['Content-Type'] = "image/png"
-                            graph = self.generateGraph(self.readResultsData(channelName, fieldNumber, results=params['results']), measureType, fieldNumber)
+                            graph = self.generateGraph(self.readDaysData(channelName, fieldNumber, days=params['days']), measureType, fieldNumber)
                             return graph
                         elif uri[4] == "getResultsData" and 'results' in params:
                             return json.dumps(self.readResultsData(channelName, fieldNumber, results=params['results']), indent=3)
