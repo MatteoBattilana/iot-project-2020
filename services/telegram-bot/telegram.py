@@ -71,7 +71,10 @@ class TelegramBot():
     def POST(self, *uri):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         body = json.loads(cherrypy.request.body.read())
-        if len(uri) == 1:
+
+        if len(uri) == 0:
+            return json.dumps({"message": "External weather API endpoint"}, indent=4)
+        elif len(uri) == 1:
             logging.info("Requested POST with uri " + str(uri))
             if uri[0] == 'sendAlert':
                 # send message via telegram
@@ -79,8 +82,15 @@ class TelegramBot():
                 if chatId:
                     self.bot.sendMessage(chatId, text= "ALERT\nMessage: "+ body["alert"] + "\nSuggested action: " + body["action"])
                     ret = body
+                else:
+                    cherrypy.response.status = 503
+                    logging.error("Missing groupId and chat_id Telegram reference")
+                    ret = {"error":{"status": 404, "message": "Missing groupId and chat_id Telegram reference"}}
+
+            else:
+                cherrypy.response.status = 404
+                ret = {"error":{"status": 404, "message": "Missing uri"}}
         else:
-            cherrypy.response.status = 404
             ret = {"error":{"status": 404, "message": "Missing uri"}}
         return json.dumps(ret, indent=4)
 
@@ -223,7 +233,7 @@ class TelegramBot():
                 else:
                     self.bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
-            elif txt.startswith('/delgroupid'):
+            elif txt.startswith('/delete'):
                 groupIds=self.t_m.get_ids(chat_id)
                 if len(groupIds) > 0:
                     kbs=self.t_m.build_keyboard(groupIds,'delete')
@@ -378,8 +388,9 @@ class TelegramBot():
             #one decided al the path, returns what user wants
             elif txt[2]=='temperature':
                 if txt[0]=='datas':
-                    self.bot.sendMessage(chat_id, text="Reading temperature from sensor. Please wait")
+                    reading = self.bot.sendMessage(chat_id, text="Reading temperature from sensor. Please wait")
                     value = self.getData(txt[1], txt[2])
+                    self.bot.deleteMessage(telepot.message_identifier(reading))
                     if value:
                         self.bot.sendMessage(chat_id,text="The current temperature is: " + value["value"])
                     else:
@@ -391,8 +402,9 @@ class TelegramBot():
                     self.bot.sendMessage(chat_id,text="temperature graph from %s \n" %txt[1])
             elif txt[2]=='co2':
                 if txt[0]=='datas':
-                    self.bot.sendMessage(chat_id, text="Reading co2 from sensor. Please wait")
+                    reading = self.bot.sendMessage(chat_id, text="Reading co2 from sensor. Please wait")
                     value = self.getData(txt[1], txt[2])
+                    self.bot.deleteMessage(telepot.message_identifier(reading))
                     if value:
                         self.bot.sendMessage(chat_id,text="The current co2 is: " + value["value"] + " " + value["unit"])
                     else:
@@ -402,8 +414,9 @@ class TelegramBot():
                     self.bot.sendMessage(chat_id,text="co2 graph from %s \n" %txt[1])
             elif txt[2]=='humidity':
                 if txt[0]=='datas':
-                    self.bot.sendMessage(chat_id, text="Reading humidity from sensor. Please wait")
+                    reading = self.bot.sendMessage(chat_id, text="Reading humidity from sensor. Please wait")
                     value = self.getData(txt[1], txt[2])
+                    self.bot.deleteMessage(telepot.message_identifier(reading))
                     if value:
                         self.bot.sendMessage(chat_id,text="The current humidity is: " + value["value"] + "%")
                     else:

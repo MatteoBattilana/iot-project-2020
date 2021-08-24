@@ -8,9 +8,9 @@ import json
 # register - Register to the service
 # logout - Logout from the current session
 # check - Get values from the devices
-# addGroupId - Add a new groupId to your account
-# delGroupId - Remove groupId from your account
-# addDevice - Add device to a specific groupId
+# addgroupid - Add a new groupId to your account
+# adddevice - Add device to a specific groupId
+# delete - Remove a device from specific groupId or directly an entire groupId
 # cancel - Cancel the current operation
 
 commands=['- /login: for authentication',
@@ -18,8 +18,8 @@ commands=['- /login: for authentication',
         '- /logout: logout from the current session',
         '- /check: to get values from the devices',
         '- /addgroupid: add a new groupId to your account',
-        '- /delgroupid: remove groupId from your account',
         '- /adddevice: add device to a specific groupId',
+        '- /delete: remove a device from specific groupId or directly an entire groupId',
         '- /cancel: cancel the current operation']
 
 class Telegram_Manager:
@@ -111,7 +111,6 @@ class Telegram_Manager:
                 new={"groupId":id,"latitude":"","longitude":"","devices":[]}
                 u["groupId"].append(new)
                 u["currentId"] = id
-                print("1 HERE: " + id)
                 break
         json.dump(self.users,open('users.json','w'))
         return id + " groupId inserted successfully"

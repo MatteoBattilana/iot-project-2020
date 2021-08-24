@@ -7,6 +7,5 @@
     "logVerbosity": "ERROR",
     "serviceId": "SIMULATED-DEVICE-A2",
     "devicePosition": "internal",
-    "pin": "1234",
-    "groupId": "HomePod"
+    "pin": "1234"
 }

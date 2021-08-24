@@ -80,7 +80,7 @@ class ControlStrategy(threading.Thread):
 
     def sendTelegramMessage(self, to_ret):
         # I wait 5 minute before sending a new notificaton
-        if True:#to_ret['groupId'] not in self._lastSentAlert or time.time() - self._lastSentAlert[to_ret['groupId']] > 5*60:
+        if to_ret['groupId'] not in self._lastSentAlert or time.time() - self._lastSentAlert[to_ret['groupId']] > 5*60:
             uri = str(self._catalogAddress)+"/searchByServiceSubType?serviceSubType=TELEGRAM-BOT"
             try:
                 r = requests.get(uri)
@@ -102,6 +102,9 @@ class ControlStrategy(threading.Thread):
                 logging.debug(f"GET request exception Error: {e}")
 
             self._lastSentAlert[to_ret['groupId']] = time.time()
+        else:
+            logging.warning("Skipped to avoid flooding")
+
 
 
     #MQTT callbacks
