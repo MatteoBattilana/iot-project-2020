@@ -436,7 +436,9 @@ class TelegramBot():
                 #qui dovro mettere la richiesta get per accedere ai dati reali
                 else:
                     #qui richiesta get per richiedere il grafico a thigspeak
+                    reading = self.bot.sendMessage(chat_id, "Generating chart for temperature from ThingSpeak. Please wait")
                     image = self.getGraph(txt[1],"temperature")
+                    self.bot.deleteMessage(telepot.message_identifier(reading))
                     if image:
                         self.bot.sendPhoto(chat_id,image) #mandare foto
                         self.bot.sendMessage(chat_id,text="temperature graph from %s \n" %txt[1])
@@ -452,7 +454,9 @@ class TelegramBot():
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 else:
+                    reading = self.bot.sendMessage(chat_id, "Generating chart for co2 from ThingSpeak. Please wait")
                     image = self.getGraph(txt[1],"co2")
+                    self.bot.deleteMessage(telepot.message_identifier(reading))
                     if image:
                         self.bot.sendPhoto(chat_id,image) #mandare foto
                         self.bot.sendMessage(chat_id,text="co2 graph from %s \n" %txt[1])
@@ -469,8 +473,9 @@ class TelegramBot():
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali
                 else:
-                #qui richiesta get per richiedere il grafico a thigspeak
+                    reading = self.bot.sendMessage(chat_id, "Generating chart for humidity from ThingSpeak. Please wait")
                     image = self.getGraph(txt[1],"humidity")
+                    self.bot.deleteMessage(telepot.message_identifier(reading))
                     if image:
                         self.bot.sendPhoto(chat_id,image) #mandare foto
                         self.bot.sendMessage(chat_id,text="humidity graph from %s \n" %txt[1])
