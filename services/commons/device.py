@@ -65,7 +65,7 @@ class Device(threading.Thread):
                     },
                     {
                         "type": "action",
-                        "uri": "/getSensorValue",
+                        "uri": "/getSensorValues",
                         "version": 1,
                         "parameter": []
                     }

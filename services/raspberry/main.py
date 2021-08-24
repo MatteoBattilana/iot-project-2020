@@ -63,7 +63,7 @@ class SensorReader():
                 hr.append(h)
             if t is not None:
                 tr.append(t)
-        
+
         if len(hr) > 0 and humidity is None:
             humidity = sum(hr) / len(hr)
         if len(tr) > 0 and temperature is None:

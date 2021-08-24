@@ -100,11 +100,15 @@ class TelegramBot():
             chat_id=msg['chat']['id']
             if self.t_m.getState(chat_id) == 'addGroupId_location':
                 pos = msg['location']
-                r = requests.get(self._catalogAddress + "/updateGroupId?groupId=" + self.t_m.getCurrentGroupId(chat_id) + "&latitude=" + str(pos["latitude"]) + "&longitude="+ str(pos["longitude"]))
-                if r.status_code == 200:
-                    self.t_m.coordinate(chat_id,msg['location'])
-                    self.bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
-                else:
+                try:
+                    r = requests.get(self._catalogAddress + "/updateGroupId?groupId=" + self.t_m.getCurrentGroupId(chat_id) + "&latitude=" + str(pos["latitude"]) + "&longitude="+ str(pos["longitude"]))
+                    if r.status_code == 200:
+                        self.t_m.coordinate(chat_id,msg['location'])
+                        self.bot.sendMessage(chat_id, "Location correctly set!\nYou can now add devices by using the correct command")
+                    else:
+                        logging.error("Unable to set the location for groupId: " + str(r.json()))
+                        self.bot.sendMessage(chat_id, "Unable to set the groupId location due to some server problems. Retry later")
+                except:
                     logging.error("Unable to set the location for groupId: " + str(r.json()))
                     self.bot.sendMessage(chat_id, "Unable to set the groupId location due to some server problems. Retry later")
             #variabile globale location che viene modificata, se None l /IdAdd dira inserisci prima posto con location, senno inserisco coordinate con add_id
@@ -293,14 +297,18 @@ class TelegramBot():
                 ip = service['serviceIP']
                 port = service['servicePort']
                 # perform set groupId
-                r = requests.get('http://' + ip + ":" + str(port) + "/getSensorValues")
-                if r.status_code != 200:
-                    logging.error("Unable to request data from device " + deviceId + ". Retry later.")
-                    return {}
-                else:
-                    for i in r.json():
-                        if i["n"] == measureType:
-                            return {"value": i["v"], "unit" : i["u"]}
+                try:
+                    r = requests.get('http://' + ip + ":" + str(port) + "/getSensorValues")
+                    if r.status_code != 200:
+                        logging.error("Unable to request data from device " + deviceId + ". Retry later.")
+                        return {}
+                    else:
+                        for i in r.json():
+                            if i["n"] == measureType:
+                                return {"value": i["v"], "unit" : i["u"]}
+                except:
+                    logging.error("Unable to request data from device " + deviceId + ". Retry later!")
+
 
         return {}
 
@@ -318,9 +326,12 @@ class TelegramBot():
                 ip = service['serviceIP']
                 port = service['servicePort']
                 # perform set groupId
-                r = requests.get('http://' + ip + ":" + str(port) + "/setGroupId?groupId=" + str(groupId) + "&pin="+str(pin))
-                if r.status_code != 200:
-                    logging.error("Unable to add device " + deviceId)
+                try:
+                    r = requests.get('http://' + ip + ":" + str(port) + "/setGroupId?groupId=" + str(groupId) + "&pin="+str(pin))
+                    if r.status_code != 200:
+                        logging.error("Unable to add device " + deviceId)
+                        return False
+                except:
                     return False
 
         return True
@@ -392,7 +403,7 @@ class TelegramBot():
                     value = self.getData(txt[1], txt[2])
                     self.bot.deleteMessage(telepot.message_identifier(reading))
                     if value:
-                        self.bot.sendMessage(chat_id,text="The current temperature is: " + value["value"])
+                        self.bot.sendMessage(chat_id,text="The current temperature is: " + str(value["value"]) + "°")
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali
@@ -406,7 +417,7 @@ class TelegramBot():
                     value = self.getData(txt[1], txt[2])
                     self.bot.deleteMessage(telepot.message_identifier(reading))
                     if value:
-                        self.bot.sendMessage(chat_id,text="The current co2 is: " + value["value"] + " " + value["unit"])
+                        self.bot.sendMessage(chat_id,text="The current co2 is: " + str(value["value"]) + " " + value["unit"])
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 else:
@@ -418,7 +429,7 @@ class TelegramBot():
                     value = self.getData(txt[1], txt[2])
                     self.bot.deleteMessage(telepot.message_identifier(reading))
                     if value:
-                        self.bot.sendMessage(chat_id,text="The current humidity is: " + value["value"] + "%")
+                        self.bot.sendMessage(chat_id,text="The current humidity is: " + str(value["value"]) + "%")
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali

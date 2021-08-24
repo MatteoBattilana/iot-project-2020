@@ -12,6 +12,7 @@ import json
 # adddevice - Add device to a specific groupId
 # delete - Remove a device from specific groupId or directly an entire groupId
 # cancel - Cancel the current operation
+# info - Command list
 
 commands=['- /login: for authentication',
         '- /register: register to the service',
