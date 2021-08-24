@@ -4,7 +4,7 @@ import sys, os
 import requests
 sys.path.insert(0, os.path.abspath('..'))
 from commons.ping import *
-
+from io import BytesIO
 import telepot
 from telepot.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
@@ -336,6 +336,33 @@ class TelegramBot():
 
         return True
 
+    def getGraph(self, sensor, measureType):
+        r = requests.get(self._catalogAddress + "/searchByServiceSubType?serviceSubType=THINGSPEAK")
+        if r.status_code != 200 or len(r.json()) == 0:
+            logging.error("Unable to get information about THINGSPEAK service")
+            return None
+
+        # now perform set of the groupId to the device
+        image = None
+        for device in r.json():
+            for service in device['serviceServiceList']:
+                if 'serviceType' in service and service['serviceType'] == 'REST':
+                    ip = service['serviceIP']
+                    port = service['servicePort']
+                    # perform set groupId
+                    url = 'http://' + ip + ":" + str(port) + "/channel/" + sensor + "/measureType/" + measureType + "/getChart?results=100"
+                    try:
+                        r = requests.get(url)
+                        if r.status_code != 200:
+                            logging.error("Unable to download image " + url + " " + r.status_code)
+
+                        output = BytesIO(r.content)
+                        image = ('image.png', output)
+                    except:
+                        logging.error("Unable to download image 1 " + url)
+
+        return image
+
     def on_callback_query(self,msg):
         query_id, chat_id, query_data = telepot.glance(msg, flavor='callback_query')
         txt=query_data.split()
@@ -394,7 +421,7 @@ class TelegramBot():
                 txt.reverse()
                 kbs=self.t_m.build_keyboard(['temperature','co2','humidity'],txt[0]+' '+txt[1])
                 keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
-                self.bot.sendMessage(chat_id,"What do you want?",reply_markup=keyboard)
+                self.bot.sendMessage(chat_id,"What do you want from ThingSpeak?",reply_markup=keyboard)
 
             #one decided al the path, returns what user wants
             elif txt[2]=='temperature':
@@ -408,9 +435,13 @@ class TelegramBot():
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali
                 else:
-                #qui richiesta get per richiedere il grafico a thigspeak
-                    self.bot.sendPhoto(chat_id,'https://cdn.getyourguide.com/img/location/5a0838201565b.jpeg/92.jpg')#mandare foto
-                    self.bot.sendMessage(chat_id,text="temperature graph from %s \n" %txt[1])
+                    #qui richiesta get per richiedere il grafico a thigspeak
+                    image = self.getGraph(txt[1],"temperature")
+                    if image:
+                        self.bot.sendPhoto(chat_id,image) #mandare foto
+                        self.bot.sendMessage(chat_id,text="temperature graph from %s \n" %txt[1])
+                    else:
+                        self.bot.sendMessage(chat_id, text="Unable to get the chart from thingspeak. Retry later")
             elif txt[2]=='co2':
                 if txt[0]=='datas':
                     reading = self.bot.sendMessage(chat_id, text="Reading co2 from sensor. Please wait")
@@ -421,8 +452,12 @@ class TelegramBot():
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 else:
-                    self.bot.sendPhoto(chat_id,'https://www.milanretreats.com/wp-content/uploads/2020/01/milanretreats_img_slide.jpg')
-                    self.bot.sendMessage(chat_id,text="co2 graph from %s \n" %txt[1])
+                    image = self.getGraph(txt[1],"co2")
+                    if image:
+                        self.bot.sendPhoto(chat_id,image) #mandare foto
+                        self.bot.sendMessage(chat_id,text="co2 graph from %s \n" %txt[1])
+                    else:
+                        self.bot.sendMessage(chat_id, text="Unable to get the chart from thingspeak. Retry later")
             elif txt[2]=='humidity':
                 if txt[0]=='datas':
                     reading = self.bot.sendMessage(chat_id, text="Reading humidity from sensor. Please wait")
@@ -435,8 +470,13 @@ class TelegramBot():
                 #qui dovro mettere la richiesta get per accedere ai dati reali
                 else:
                 #qui richiesta get per richiedere il grafico a thigspeak
-                    self.bot.sendPhoto(chat_id,'https://images.lacucinaitaliana.it/wp-content/uploads/2018/05/18183720/roma-primavera-1600x800.jpg')#mandare foto
-                    self.bot.sendMessage(chat_id,text="humidity graph from %s \n" %txt[1])
+                    image = self.getGraph(txt[1],"humidity")
+                    if image:
+                        self.bot.sendPhoto(chat_id,image) #mandare foto
+                        self.bot.sendMessage(chat_id,text="humidity graph from %s \n" %txt[1])
+                    else:
+                        self.bot.sendMessage(chat_id, text="Unable to get the chart from thingspeak. Retry later")
+
 
 
 

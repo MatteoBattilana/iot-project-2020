@@ -18,6 +18,13 @@ from datetime import timedelta
 import cherrypy
 import logging
 from commons.logger import *
+from cherrypy.lib import file_generator
+
+from io import BytesIO
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 def changeDatetimeFormat(_datetime):
     year=str(_datetime.year)
@@ -447,7 +454,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         if r.status_code == 200:
             for channel in r.json():
                 ret.append(self.readResultsData(channel["serviceId"], results=results))
-        return ret    
+        return ret
 
     def readMinutesData(self, channelName, field_id = -1, minutes = 1440):
         channelID=self.getChannelID(channelName)
@@ -559,7 +566,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                                 }
                             )
                         return return_stats
-            
+
                     else:
                         #return daily stats only about single measureType
                         for i, field in enumerate(fields):
@@ -580,13 +587,13 @@ class ThinkSpeakAdaptor(threading.Thread):
                                 logging.error("measureType not existing")
         else:
             logging.error(f"GroupId {groupId} not found")
-            
+
     #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
     def computeAverage(self, dataset):
         sum = 0.0
         for i,data in enumerate(dataset):
             sum = sum + (data)
-        return float(sum/len(dataset))            
+        return float(sum/len(dataset))
     def computeStdDev(self, dataset):
         interm = 0.0
         avg = self.computeAverage(dataset)
@@ -601,7 +608,28 @@ class ThinkSpeakAdaptor(threading.Thread):
     def computeMedian(self, dataset):
         return numpy.median(dataset)
 
-        
+    def generateGraph(self, results, measureType, fieldNumber):
+        img = BytesIO()
+        self.plot(img, results, measureType, fieldNumber)
+        img.seek(0)
+        return cherrypy.lib.static.serve_fileobj(img, content_type="png", name="image.png")
+
+    def plot(self, image, results, measureType, fieldNumber):
+        if results and 'feeds' in results:
+            y = []
+            for feed in results['feeds']:
+                y.append(float(feed["field"+fieldNumber]))
+            plt.clf()
+            plt.gca().yaxis.set_major_locator(ticker.LinearLocator(7))
+            plt.plot(y)
+            plt.ylabel(measureType)
+
+            font1 = {'size':20}
+            plt.title(measureType, fontdict = font1)
+            plt.xlabel('Sample #')
+            plt.savefig(image, format='png')
+
+
     def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         #uri format
@@ -664,7 +692,12 @@ class ThinkSpeakAdaptor(threading.Thread):
                     measureType = uri[3]
                     fieldNumber = self.getFieldNumber(channelName, measureType)
                     if fieldNumber != None:
-                        if uri[4] == "getResultsData" and 'results' in params:
+                        if uri[4] == "getChart" and 'results' in params:
+                            # generate graph
+                            cherrypy.response.headers['Content-Type'] = "image/png"
+                            graph = self.generateGraph(self.readResultsData(channelName, fieldNumber, results=params['results']), measureType, fieldNumber)
+                            return graph
+                        elif uri[4] == "getResultsData" and 'results' in params:
                             return json.dumps(self.readResultsData(channelName, fieldNumber, results=params['results']), indent=3)
                         elif uri[4] == "getDaysData" and 'days' in params:
                             return json.dumps(self.readDaysData(channelName, fieldNumber, days=params['days']), indent=3)
@@ -751,6 +784,13 @@ if __name__=="__main__":
                     {
                         "type": "web",
                         "uri": "/channel/<channelName>/measureType/<measureType>/getResultsData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getChart",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "results", "unit": "integer"}]
