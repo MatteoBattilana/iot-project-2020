@@ -148,7 +148,7 @@ class TelegramBot():
                         if r.status_code == 200:
                             self.bot.sendMessage(chat_id,self.t_m.add_id(chat_id,txt))
                             self.t_m.setState(chat_id,'addGroupId_location')
-                            self.bot.sendMessage(chat_id, "Please send now the location of the groupId")
+                            self.bot.sendMessage(chat_id, "Please send now the location of the groupId. The location will be used to give more precisely suggestion in order to increase the air quality")
                         elif r.status_code == 409:
                             self.bot.sendMessage(chat_id, "Unable to create the groupId because the name is already in use. Please use a different one.")
                         else:
@@ -274,7 +274,6 @@ class TelegramBot():
 
     def deleteGroupIdDevice(self, deviceId):
         r = requests.get(self._catalogAddress + "/searchById?serviceId=" + deviceId)
-        logging.error(self._catalogAddress + "/searchById?serviceId=" + deviceId)
         if r.status_code != 200:
             logging.error("Unable to get information about service " + deviceId)
             return False
@@ -286,11 +285,11 @@ class TelegramBot():
                 port = service['servicePort']
                 # perform set groupId
                 r = requests.get('http://' + ip + ":" + str(port) + "/deleteGroupId")
-                if r.status_code != 200:
-                    logging.error("Unable to remove device " + deviceId)
-                    return False
+                if r.status_code == 200:
+                    return True
 
-        return True
+        logging.error("Unable to remove device " + deviceId)
+        return False
 
     def getData(self, deviceId, measureType):
         r = requests.get(self._catalogAddress + "/searchById?serviceId=" + deviceId)
@@ -371,6 +370,33 @@ class TelegramBot():
 
         return image
 
+    def getStatistics(self, groupId, measureType, period):
+        r = requests.get(self._catalogAddress + "/searchByServiceSubType?serviceSubType=THINGSPEAK")
+        if r.status_code != 200 or len(r.json()) == 0:
+            logging.error("Unable to get information about THINGSPEAK service")
+            return "Unable to get statistics for " + measureType + ". Retry later"
+
+        # now perform set of the groupId to the device
+        response = "Unable to get statistics for " + measureType + ". Retry later"
+        for device in r.json():
+            for service in device['serviceServiceList']:
+                if 'serviceType' in service and service['serviceType'] == 'REST':
+                    ip = service['serviceIP']
+                    port = service['servicePort']
+                    # perform set groupId
+                    url = 'http://' + ip + ":" + str(port) + "/group/" + groupId + "/getStats?measureType=" + measureType + "&lapse="+period
+                    try:
+                        r = requests.get(url)
+                        if r.status_code == 200:
+                            body = r.json()
+                            response = "Statistics for: {}\nAverage: {:0.2f}\nStandard deviation: {:0.2f}\nMin: {:0.2f}\nMax: {:0.2f}".format(measureType, body["average"], body["standard_deviation"], body["minimum"], body["maximum"])
+                        else:
+                            logging.error("Unable to get statistics " + url + " " + r.status_code)
+                    except Exception as e:
+                        logging.error("Unable to get statistics " + url + " " + str(e))
+
+        return response
+
     def on_callback_query(self,msg):
         query_id, chat_id, query_data = telepot.glance(msg, flavor='callback_query')
         txt=query_data.split()
@@ -413,15 +439,29 @@ class TelegramBot():
             elif txt[0]=='groupId':
                 id_sensor=self.t_m.get_sensors(chat_id,txt[1])
                 if len(id_sensor) > 0:
-                    kbs=self.t_m.build_keyboard(id_sensor,'devices')
+                    kbs=self.t_m.build_keyboard(id_sensor + ["statistics"],'devices' + ' ' + txt[1])
                     keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])#questo modo di scrivere mi fa fare in colonna, in riga insieme lista
-                    self.bot.sendMessage(chat_id,"Which device?",reply_markup=keyboard)
+                    self.bot.sendMessage(chat_id,"Which device or statistics?",reply_markup=keyboard)
                 else:
                     self.bot.sendMessage(chat_id,'No device available for this groupId')
 
+
+            elif len(txt)==3 and txt[2]=='statistics':
+                kbs=self.t_m.build_keyboard(['temperature','humidity','co2'],txt[0]+' '+txt[1]+' '+txt[2])
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
+                self.bot.sendMessage(chat_id,"What statistic do you want?",reply_markup=keyboard)
+
+            elif len(txt)==4 and txt[2]=='statistics':
+                kbs=self.t_m.build_keyboard(['daily','weekly','monthly'],txt[0]+' '+txt[1]+' '+txt[2]+' '+txt[3])
+                keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
+                self.bot.sendMessage(chat_id,"Which interval?",reply_markup=keyboard)
+
+            elif len(txt)==5 and txt[2]=='statistics':
+                self.bot.sendMessage(chat_id,self.getStatistics(txt[1] + "_" + str(chat_id), txt[3], txt[4]))
+
             # for the selected device is ask if u want datas o thingspeak
             elif txt[0]=='devices':
-                kbs=self.t_m.build_keyboard(['datas','thingspeak'],txt[1])
+                kbs=self.t_m.build_keyboard(['datas','thingspeak'],txt[2])
                 keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
                 self.bot.sendMessage(chat_id,"What do you want: actual datas or thingspeak?",reply_markup=keyboard)
             #one selected what do u want,choose with characteristic u want
@@ -432,6 +472,7 @@ class TelegramBot():
                 self.bot.sendMessage(chat_id,"What do you want?",reply_markup=keyboard)
 
             #one decided al the path, returns what user wants
+
             elif txt[2]=='temperature':
                 if txt[0]=='datas':
                     reading = self.bot.sendMessage(chat_id, text="Reading temperature from sensor. Please wait")
@@ -442,7 +483,7 @@ class TelegramBot():
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali
-                else:
+                elif txt[0]=='thingspeak':
                     #qui richiesta get per richiedere il grafico a thigspeak
                     reading = self.bot.sendMessage(chat_id, "Generating chart for temperature from ThingSpeak. Please wait")
                     image = self.getGraph(txt[1],"temperature")
@@ -461,7 +502,7 @@ class TelegramBot():
                         self.bot.sendMessage(chat_id,text="The current co2 is: " + str(value["value"]) + " " + value["unit"])
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
-                else:
+                elif txt[0]=='thingspeak':
                     reading = self.bot.sendMessage(chat_id, "Generating chart for co2 from ThingSpeak. Please wait")
                     image = self.getGraph(txt[1],"co2")
                     self.bot.deleteMessage(telepot.message_identifier(reading))
@@ -470,6 +511,7 @@ class TelegramBot():
                         self.bot.sendMessage(chat_id,text="co2 graph from %s \n" %txt[1])
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get the chart from thingspeak. Retry later")
+
             elif txt[2]=='humidity':
                 if txt[0]=='datas':
                     reading = self.bot.sendMessage(chat_id, text="Reading humidity from sensor. Please wait")
@@ -480,7 +522,7 @@ class TelegramBot():
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get current sensor value. Retry later")
                 #qui dovro mettere la richiesta get per accedere ai dati reali
-                else:
+                elif txt[0]=='thingspeak':
                     reading = self.bot.sendMessage(chat_id, "Generating chart for humidity from ThingSpeak. Please wait")
                     image = self.getGraph(txt[1],"humidity")
                     self.bot.deleteMessage(telepot.message_identifier(reading))
@@ -489,7 +531,6 @@ class TelegramBot():
                         self.bot.sendMessage(chat_id,text="humidity graph from %s \n" %txt[1])
                     else:
                         self.bot.sendMessage(chat_id, text="Unable to get the chart from thingspeak. Retry later")
-
 
 
 

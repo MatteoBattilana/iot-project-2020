@@ -161,7 +161,7 @@ class Telegram_Manager:
         for u in self.users["users"]:
             if u["id"]==chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
-                    if g_id["groupId"]==datas[0]:
+                    if g_id["groupId"]==datas[0] + "_" + str(chat_id):
                         for x in g_id["devices"]:
                             if x["name"]==datas[1]: g_id["devices"].remove(x)
 

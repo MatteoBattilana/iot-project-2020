@@ -624,7 +624,6 @@ class ThinkSpeakAdaptor(threading.Thread):
                 y.append(float(feed["field"+fieldNumber]))
                 x.append(datetime.datetime.strptime(feed["created_at"],"%Y-%m-%dT%H:%M:%SZ"))
             plt.clf()
-            print(str(x))
             plt.gca().yaxis.set_major_locator(ticker.LinearLocator(7))
             plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
             plt.gcf().autofmt_xdate()
