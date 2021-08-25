@@ -109,9 +109,9 @@ class Telegram_Manager:
     def add_id(self,chat_id,id):
         for u in self.users["users"]:
             if u["id"]==chat_id:
-                new={"groupId":id,"latitude":"","longitude":"","devices":[]}
+                new={"groupId":id+"_"+str(chat_id),"name":id,"latitude":"","longitude":"","devices":[]}
                 u["groupId"].append(new)
-                u["currentId"] = id
+                u["currentId"] = id+"_"+str(chat_id)
                 break
         json.dump(self.users,open('users.json','w'))
         return id + " groupId inserted successfully"
@@ -120,7 +120,7 @@ class Telegram_Manager:
         for u in self.users["users"]:
             if u["id"]==chat_id:
                 for u_gId in u["groupId"]:
-                    if u_gId["groupId"] == id: #vettore
+                    if u_gId["groupId"] == id + "_" + str(chat_id): #vettore
                         u["groupId"].remove(u_gId)
         json.dump(self.users,open('users.json','w'))
 
@@ -128,6 +128,15 @@ class Telegram_Manager:
         for u in self.users["users"]:
             if u["id"] == chat_id:
                 return u["currentId"]
+        return ""
+
+    def getCurrentGroupIdName(self, chat_id):
+        for u in self.users["users"]:
+            if u["id"] == chat_id:
+                cId = u["currentId"]
+                for group in u["groupId"]:
+                    if group["groupId"] == cId:
+                        return group["name"]
         return ""
     #ok
     def add_sen(self,chat_id,datas):
@@ -152,7 +161,7 @@ class Telegram_Manager:
         for u in self.users["users"]:
             if u["id"]==chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
-                    if g_id["groupId"]==datas[0]:
+                    if g_id["groupId"]==datas[0] + "_" + str(chat_id):
                         for x in g_id["devices"]:
                             if x["name"]==datas[1]: g_id["devices"].remove(x)
 
@@ -173,13 +182,21 @@ class Telegram_Manager:
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
                     id_list.append(g_id["groupId"])
         return id_list
+
+    def get_ids_name(self,chat_id=None):
+        id_list=[]
+        for u in self.users["users"]:
+            if u["id"]==chat_id or not chat_id:      #trovo il mio profilo
+                for g_id in u["groupId"]:  #cerco il id dove aggiungere
+                    id_list.append(g_id["name"])
+        return id_list
     #ok
     def get_sensors(self,chat_id,id):
         id_list=[]
         for u in self.users["users"]:
             if u["id"]==chat_id:      #trovo il mio profilo
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
-                    if g_id["groupId"]==id:
+                    if g_id["groupId"]==id+"_"+str(chat_id):
                         for sen in g_id["devices"]: id_list.append(sen["name"])
         return id_list
 
@@ -200,7 +217,7 @@ class Telegram_Manager:
         for u in self.users["users"]:
             if u["id"]==chat_id:
                 for gr_id in u["groupId"]:
-                    if gr_id["groupId"] == groupId and gr_id["latitude"] != "":
+                    if gr_id["groupId"] == groupId + "_" + str(chat_id) and gr_id["latitude"] != "":
                         inserted=True
         return inserted
 
@@ -212,7 +229,7 @@ class Telegram_Manager:
     def setCurrentId(self,chat_id,id):
         for u in self.users["users"]:
             if u["id"]==chat_id:
-                u["currentId"] = id
+                u["currentId"] = id + "_" + str(chat_id)
 
     def getState(self,chat_id):
         for us in self.users['users']:
