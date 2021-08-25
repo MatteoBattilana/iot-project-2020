@@ -142,8 +142,9 @@ class TelegramBot():
                 elif self.t_m.getState(chat_id) == 'addGroupId_name':
                     if " " in txt:
                         self.bot.sendMessage(chat_id,"Please insert a name without spaces")
-                    elif not txt in self.t_m.get_ids():
-                        r = requests.get(self._catalogAddress + "/createGroupId?groupId=" + txt)
+                    elif not txt in self.t_m.get_ids_name():
+                        grId = txt + "_" + str(chat_id)
+                        r = requests.get(self._catalogAddress + "/createGroupId?groupId=" + grId)
                         if r.status_code == 200:
                             self.bot.sendMessage(chat_id,self.t_m.add_id(chat_id,txt))
                             self.t_m.setState(chat_id,'addGroupId_location')
@@ -167,7 +168,7 @@ class TelegramBot():
                             self.bot.sendMessage(chat_id,self.t_m.add_sen(chat_id,params))
                             self.t_m.setState(chat_id,'start')
                         else:
-                            self.bot.sendMessage(chat_id, "Unable to add sensor " + params[0] + " to the " + self.t_m.getCurrentGroupId(chat_id) + " groupId, check the pin and retry")
+                            self.bot.sendMessage(chat_id, "Unable to add sensor " + params[0] + " to the " + self.t_m.getCurrentGroupIdName(chat_id) + " groupId, check the pin and retry")
                     else:
                         self.bot.sendMessage(chat_id, "Please use the following format: <deviceId> <PIN>")
 
@@ -198,8 +199,12 @@ class TelegramBot():
                     self.bot.sendMessage(chat_id,self.t_m.commands(params[0]))
             #ok
             elif txt.startswith('/login'):
-                self.t_m.setState(chat_id,'login')
-                self.bot.sendMessage(chat_id,"Please insert the password of your account or cancel the login by typing /cancel")
+                if(self.t_m.just_register(chat_id)):
+                    self.t_m.setState(chat_id,'login')
+                    self.bot.sendMessage(chat_id,"Please insert the password of your account or cancel the login by typing /cancel")
+                else:
+                    self.bot.sendMessage(chat_id,"Password not set, please use the /register command")
+
         #ok
             elif txt.startswith('/register'):
                 if(not self.t_m.just_register(chat_id)):
@@ -216,7 +221,7 @@ class TelegramBot():
                 self.bot.sendMessage(chat_id,'Attention you are offline, please login')
 
             elif txt.startswith('/check'):
-                groupIds=self.t_m.get_ids(chat_id)
+                groupIds=self.t_m.get_ids_name(chat_id)
                 if len(groupIds) > 0:
                     kbs=self.t_m.build_keyboard(groupIds,'groupId')
                     keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
@@ -229,7 +234,7 @@ class TelegramBot():
                 self.bot.sendMessage(chat_id,"Please insert the name of the new groupId")
 
             elif txt.startswith('/adddevice'):
-                groupIds=self.t_m.get_ids(chat_id)
+                groupIds=self.t_m.get_ids_name(chat_id)
                 if len(groupIds) > 0:
                     kbs=self.t_m.build_keyboard(groupIds,'addDevice')
                     keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
@@ -238,7 +243,7 @@ class TelegramBot():
                     self.bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
             elif txt.startswith('/delete'):
-                groupIds=self.t_m.get_ids(chat_id)
+                groupIds=self.t_m.get_ids_name(chat_id)
                 if len(groupIds) > 0:
                     kbs=self.t_m.build_keyboard(groupIds,'delete')
                     keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
@@ -246,8 +251,11 @@ class TelegramBot():
                 else:
                     self.bot.sendMessage(chat_id,'No groupId in your account')
 
+                self.t_m.setState(chat_id,'start')
+
             else:
                 self.bot.sendMessage(chat_id,"Command not supported")
+                self.sendAllCommands(chat_id)
 
     def sendAllCommands(self,chat_id):
         self.bot.sendMessage(chat_id,"List of all available commands:\n\n" + "\n".join(self.t_m.commands()))
@@ -259,7 +267,7 @@ class TelegramBot():
             result = result and self.deleteGroupIdDevice(device)
 
         if result:
-            r = requests.get(self._catalogAddress + "/deleteGroupId?groupId=" + groupId)
+            r = requests.get(self._catalogAddress + "/deleteGroupId?groupId=" + groupId + "_" + str(chat_id))
             return True
 
         return False
@@ -400,7 +408,7 @@ class TelegramBot():
                     self.bot.sendMessage(chat_id, 'Please insert the device in the following format: <id> <PIN>')
                 else:
                     self.t_m.setState(chat_id,'addGroupId_location')
-                    self.bot.sendMessage(chat_id,'Attention: before doing other actions you have to send position of groupId {}'.format(self.t_m.currentId(chat_id)))
+                    self.bot.sendMessage(chat_id,'Attention: before doing other actions you have to send position of groupId {}'.format(self.t_m.getCurrentGroupIdName(chat_id)))
 
             elif txt[0]=='groupId':
                 id_sensor=self.t_m.get_sensors(chat_id,txt[1])
