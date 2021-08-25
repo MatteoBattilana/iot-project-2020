@@ -3,5 +3,5 @@
     "serviceName": "WEB-INTERFACE",
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "ERROR",
-    "serviceId": "WEB-INTERFACE-2"
+    "serviceId": "WEB-INTERFACE-A1"
 }

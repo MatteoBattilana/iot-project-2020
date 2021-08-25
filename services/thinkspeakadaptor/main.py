@@ -18,6 +18,14 @@ from datetime import timedelta
 import cherrypy
 import logging
 from commons.logger import *
+from cherrypy.lib import file_generator
+
+from io import BytesIO
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.dates as dates
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 
 def changeDatetimeFormat(_datetime):
     year=str(_datetime.year)
@@ -58,6 +66,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._channels = []                                 # it don't have to wait to fetch
         self._channels = self.getChannelList()
         self.cache=ThingSpeakBulkUpdater(int(self._settings.getField('bulkLimit')))
+        self._serviceId = self._settings.getField('serviceId')
         self.updateBulkTime=int(self._settings.getField('bulkRate'))
         self._ping = Ping(
             int(self._settings.getField('pingTime')),
@@ -65,19 +74,19 @@ class ThinkSpeakAdaptor(threading.Thread):
             self._settings.getField('catalogAddress'),
             self._settings.getField('serviceName'),
             "SERVICE",
-            self._settings.getFieldOrDefault('serviceId', ''),
+            self._settings.getField('serviceId'),
             "THINGSPEAK",
-            groupId = None,
-            notifier = self)
-        self._ping.start()
+            groupId = None)
         self._run=True
-
-        if self._settings.getFieldOrDefault('serviceId', ''):
-            self.onNewCatalogId(self._settings.getField('serviceId'))
-
 
     def run(self):
         logging.debug("Started")
+        self._ping.start()
+
+        self._mqtt = MQTTRetry(self._serviceId, self, self._catalogAddress)
+        self._mqtt.subscribe(self._subscribeList)
+        self._mqtt.start()
+
         lastTime = 0
         while self._run:
             if time.time() - lastTime > self.updateBulkTime:
@@ -85,6 +94,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                 lastTime = time.time()
             time.sleep(1)
         logging.debug("Stopped ThingSpeak")
+
     def stop(self):
         self._ping.stop()
         if self._isMQTTconnected and self._mqtt is not None:
@@ -92,15 +102,6 @@ class ThinkSpeakAdaptor(threading.Thread):
         self._run=False
         self.join()
 
-    # Catalog new id callback
-    def onNewCatalogId(self, newId):
-        self._settings.updateField('serviceId', newId)
-        if self._mqtt is not None:
-            self._mqtt.stop()
-
-        self._mqtt = MQTTRetry(newId, self, self._catalogAddress)
-        self._mqtt.subscribe(self._subscribeList)
-        self._mqtt.start()
 
     #MQTT callbacks
     def onMQTTConnected(self):
@@ -418,6 +419,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             #print(f"[THINGSPEAKADAPTOR][INFO] Response = {r.json()}")
         except Exception:
             logging.debug(f"GET request to read data from ThingSpeak went wrong")
+
     def readDaysData(self, channelName, field_id = -1, days = 1):
         channelID=self.getChannelID(channelName)
         read_api_key=self.getChannelApiKey(channelName, False)
@@ -439,7 +441,6 @@ class ThinkSpeakAdaptor(threading.Thread):
         r = requests.get(self._catalogAddress + "/searchByGroupId?groupId=" + groupId)
         if r.status_code == 200:
             for channel in r.json():
-                print("ASD")
                 if "devicePosition" in channel and channel["devicePosition"] == type:
                     #if measureType == None:
                     ret.append(self.readMinutesData(channel["serviceId"], minutes=minutes))
@@ -455,7 +456,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         if r.status_code == 200:
             for channel in r.json():
                 ret.append(self.readResultsData(channel["serviceId"], results=results))
-        return ret    
+        return ret
 
     def readMinutesData(self, channelName, field_id = -1, minutes = 1440):
         channelID=self.getChannelID(channelName)
@@ -567,7 +568,7 @@ class ThinkSpeakAdaptor(threading.Thread):
                                 }
                             )
                         return return_stats
-            
+
                     else:
                         #return daily stats only about single measureType
                         for i, field in enumerate(fields):
@@ -588,13 +589,13 @@ class ThinkSpeakAdaptor(threading.Thread):
                                 logging.error("measureType not existing")
         else:
             logging.error(f"GroupId {groupId} not found")
-            
+
     #simple functions to compute average, std deviation, median and to find min,max over a set of datapoints
     def computeAverage(self, dataset):
         sum = 0.0
         for i,data in enumerate(dataset):
             sum = sum + (data)
-        return float(sum/len(dataset))            
+        return float(sum/len(dataset))
     def computeStdDev(self, dataset):
         interm = 0.0
         avg = self.computeAverage(dataset)
@@ -609,7 +610,33 @@ class ThinkSpeakAdaptor(threading.Thread):
     def computeMedian(self, dataset):
         return numpy.median(dataset)
 
-        
+    def generateGraph(self, results, measureType, fieldNumber):
+        img = BytesIO()
+        self.plot(img, results, measureType, fieldNumber)
+        img.seek(0)
+        return cherrypy.lib.static.serve_fileobj(img, content_type="png", name="image.png")
+
+    def plot(self, image, results, measureType, fieldNumber):
+        if results and 'feeds' in results:
+            y = []
+            x = []
+            for feed in results['feeds']:
+                y.append(float(feed["field"+fieldNumber]))
+                x.append(datetime.datetime.strptime(feed["created_at"],"%Y-%m-%dT%H:%M:%SZ"))
+            plt.clf()
+            print(str(x))
+            plt.gca().yaxis.set_major_locator(ticker.LinearLocator(7))
+            plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))
+            plt.gcf().autofmt_xdate()
+            plt.plot(x,y)
+            plt.ylabel(measureType)
+
+            font1 = {'size':20}
+            plt.title(measureType, fontdict = font1)
+            plt.xlabel('Time')
+            plt.savefig(image, format='png')
+
+
     def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         #uri format
@@ -672,7 +699,12 @@ class ThinkSpeakAdaptor(threading.Thread):
                     measureType = uri[3]
                     fieldNumber = self.getFieldNumber(channelName, measureType)
                     if fieldNumber != None:
-                        if uri[4] == "getResultsData" and 'results' in params:
+                        if uri[4] == "getChart" and 'days' in params:
+                            # generate graph
+                            cherrypy.response.headers['Content-Type'] = "image/png"
+                            graph = self.generateGraph(self.readDaysData(channelName, fieldNumber, days=params['days']), measureType, fieldNumber)
+                            return graph
+                        elif uri[4] == "getResultsData" and 'results' in params:
                             return json.dumps(self.readResultsData(channelName, fieldNumber, results=params['results']), indent=3)
                         elif uri[4] == "getDaysData" and 'days' in params:
                             return json.dumps(self.readDaysData(channelName, fieldNumber, days=params['days']), indent=3)
@@ -759,6 +791,13 @@ if __name__=="__main__":
                     {
                         "type": "web",
                         "uri": "/channel/<channelName>/measureType/<measureType>/getResultsData",
+                        "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
+                        "version": 1,
+                        "parameter": [{"name": "results", "unit": "integer"}]
+                    },
+                    {
+                        "type": "web",
+                        "uri": "/channel/<channelName>/measureType/<measureType>/getChart",
                         "uri_parameters":[{"name":"channelName","unit":"string"},{"name":"measureType", "unit":"string"}],
                         "version": 1,
                         "parameter": [{"name": "results", "unit": "integer"}]

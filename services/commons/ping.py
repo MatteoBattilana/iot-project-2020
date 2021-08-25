@@ -11,20 +11,19 @@ json = {}
 
 # Module for managing the ping to the catalog
 class Ping(threading.Thread):
-    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, initalServiceId, serviceSubType = None, groupId = None, devicePosition = None, notifier = None):
+    def __init__(self, pingTime, serviceServiceList, catalogAddress, serviceName, serviceType, serviceId, serviceSubType = None, groupId = None, devicePosition = None):
         threading.Thread.__init__(self)
         self._pingTime = pingTime
-        self._serviceID = initalServiceId
         self._catalogAddress = catalogAddress
-        self._notifier = notifier
         self._run = True
+        json["serviceId"] = serviceId
         json["serviceName"] = serviceName
         json["serviceType"] = serviceType
-        if serviceSubType is not None:
+        if serviceSubType:
             json["serviceSubType"] = serviceSubType
-        if groupId is not None:
+        if groupId:
             json["groupId"] = groupId
-        if devicePosition is not None:
+        if devicePosition:
             json["devicePosition"] = devicePosition
         json["serviceServiceList"] = serviceServiceList
 
@@ -49,25 +48,18 @@ class Ping(threading.Thread):
         self._pingTime = pingTime
 
     def setGroupId(self, groupId):
-        logging.debug("GroupId set to " + groupId + " s")
+        logging.debug("GroupId set to " + groupId)
         json["groupId"] = groupId
+        self.sendPing()
 
 
     def sendPing(self):
         postBody = copy.copy(json)
-        if self._serviceID:
-            # If the id is available, I send it. In the case my sessions is expired
-            # a new one is given
-            postBody["serviceId"] = self._serviceID
 
         try:
             r = requests.post(self._catalogAddress + "/ping", json = postBody)
             logging.debug("Sent ping to the catalog " + self._catalogAddress + "/ping")
-            if r.status_code == 200:
-                if r.json()['serviceId'] != self._serviceID and self._notifier is not None:
-                    self._notifier.onNewCatalogId(r.json()['serviceId'])        #callback for new id
-                self._serviceID = r.json()['serviceId']
-            else:
+            if r.status_code != 200:
                 logging.error("Unable to register service to the catalog: " + r.json())
         except Exception as e:
-            logging.error("Unable to register service to the catalog 1: " + str(e))
+            logging.error("Unable to register service to the catalog : " + str(e))

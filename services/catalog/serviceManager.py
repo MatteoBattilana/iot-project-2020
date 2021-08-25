@@ -45,14 +45,6 @@ class ServiceManager():
                 ret.append(serv)
         return ret
 
-    def searchAllGroupId(self):
-        ret = []
-        for serv in self._list:
-            if 'groupId' in serv and serv['groupId'] not in ret:
-                ret.append(serv['groupId'])
-        return ret
-
-
     def searchByGroupId(self, id):
         ret = []
         for serv in self._list:
@@ -64,39 +56,25 @@ class ServiceManager():
     def getAll(self):
         return self._list
 
-    def _insertServiceByServiceId(self, service, serviceId):
-        self._lock.acquire()
-        service['serviceId'] = serviceId
-        service['lastUpdate'] = time.time()
-        if (len(serviceId.split('-')) == 2):
-            self._currentIndex = max(int(serviceId.split('-')[1]), self._currentIndex) + 1
-        else:
-            self._currentIndex = self._currentIndex + 1
-        self._list.append(service)
-        self._lock.release()
-        logging.debug("Added service new service: " + str(service['serviceId']))
-        return service
-
-    # Internal function to insert a service
-    def _insertService(self, service):
-        return self._insertServiceByServiceId(service, service["serviceName"] + "-" + str(self._currentIndex))
-
     def addService(self, service):
-        # If the service is not in the list, it is simply added
-        if "serviceId" not in service and "serviceName" in service:
-            return self._insertService(service)
+        if "serviceId" in service:
+            if self.searchById(service["serviceId"]) == {}:
+                self._lock.acquire()
+                service['lastUpdate'] = time.time()
+                self._list.append(service)
+                self._lock.release()
+                logging.debug("Added service new service: " + str(service['serviceId']))
+                return service
+            else:
+                # Otherwise I update its information by keeping its id
+                self._lock.acquire()
+                for idx, serv in enumerate(self._list):
+                    if serv['serviceId'] == service["serviceId"]:
+                        service['lastUpdate'] = time.time()
+                        self._list[idx] = service
+                self._lock.release()
 
-        if self.searchById(service["serviceId"]) == {}:
-            self._insertServiceByServiceId(service, service["serviceId"])
+                logging.debug("Updated service service with id: " + str(service['serviceId']))
+                return service
         else:
-            # Otherwaise I update its information by keeping its id
-            self._lock.acquire()
-            for idx, serv in enumerate(self._list):
-                if serv['serviceId'] == service["serviceId"]:
-                    service['lastUpdate'] = time.time()
-                    service['serviceId'] = service["serviceId"]
-                    self._list[idx] = service
-            self._lock.release()
-
-        logging.debug("Updated service service with id: " + str(service['serviceId']))
-        return service
+            return {}

@@ -15,5 +15,5 @@
     ],
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "DEBUG",
-    "serviceId": "CONTROL-STRATEGY-6"
+    "serviceId": "CONTROL-STRATEGY-A1"
 }

@@ -8,6 +8,10 @@
         {
           "uri": "test.mosquitto.org",
           "port": 1883
+        },
+        {
+          "uri": "broker.emqx.io",
+          "port": 1883
         }
       ],
   "logVerbosity": "WARNING"

@@ -77,6 +77,7 @@ class MQTTRetry(threading.Thread):
                self._paho_mqtt.loop_start()
             else:
                logging.error("No MQTT broker available")
+               self._isMQTTTryingConnecting = False
         except Exception as e:
             self._isMQTTTryingConnecting = False
             logging.error("General error while connecting to the MQTT broker " + str(e))
