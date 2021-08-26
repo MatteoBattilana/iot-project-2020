@@ -136,25 +136,9 @@ services:
     ports:
       - "8088:8080"             # accessible using the 8080 port
 
-  node-red:
-    container_name: node-red
-    image: nodered/node-red:latest
-    user: root:root             # necessary, otherwise we get 'access denied'
-    entrypoint: /data/entrypoint.sh
-    depends_on:
-      catalog:
-        condition: service_healthy
-    environment:
-      - TZ=Europe/Amsterdam
-    ports:
-      - "80:1880"
-    networks:
-      net1:
-    volumes:
-      - ./node-red:/data
+
 
 volumes:
-  node-red:
   simulateddevice:
   simulateddevice2:
   externalweatherapi:

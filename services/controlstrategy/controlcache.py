@@ -51,7 +51,8 @@ class ControlCache():
                         thingspeak_adaptor_port = service["servicePort"]
         except Exception as e:
             logging.debug(f"Exception Error: {e}")
-
+        
+        #TO CHANGE BECAUSE IF THE REQUEST WENT WRONG thingspeak_adaptor_ip is not assigned
         baseUri = "http://"+str(thingspeak_adaptor_ip)+":"+str(thingspeak_adaptor_port)
 
         # fetch last hour
