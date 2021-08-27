@@ -99,7 +99,7 @@ class ControlStrategy(threading.Thread):
                                 logging.error("Unable to send alert via Telegram : " + str(e))
 
             except Exception as e:
-                logging.debug(f"GET request exception Error: {e}")
+                logging.error(f"GET request exception Error: {e}")
 
             self._lastSentAlert[to_ret['groupId']] = time.time()
         else:
@@ -134,14 +134,13 @@ class ControlStrategy(threading.Thread):
 
         #search if the groupId in question has an internal and an external device
         uri = self._catalogAddress+"/searchByGroupId?groupId="+groupId
-        logging.debug(f"URI = {uri}")
         try:
             r = requests.get(uri)
             if r.status_code == 200:
                 for element in r.json():
                     if element["devicePosition"] == "external":
                         externalFlag = True
-                        externalServiceId = ""
+                        externalServiceId = element["serviceId"]
         except Exception as e:
             logging.error("Exception {e}")
         
@@ -149,33 +148,25 @@ class ControlStrategy(threading.Thread):
         if self._cache.findGroupServiceIdCache(groupId, serviceId) == False:
             self._cache.createCache(groupId, serviceId, _type)
 
-        # logging.debug(f"{self._cache.getServiceCache(groupId, serviceId)}")
-        if _type == "internal":
-            for field in payload["e"]:
-                measure_type = field["n"]
-                actual_value = float(field["v"])
-                key = str(measure_type)+"Threshold"
-                threshold = float(self._settings.getField(key))
+        #logging.debug(f"{self._cache.getServiceCache(groupId, serviceId, _type)}")
+        for field in payload["e"]:
+            measure_type = field["n"]
+            actual_value = float(field["v"])
+            key = str(measure_type)+"Threshold"
+            threshold = float(self._settings.getField(key))
 
-                past_data = self._cache.getLastResults(groupId, serviceId, measure_type)
-                if past_data != []:
+            past_data = self._cache.getLastResults(groupId, serviceId, _type, measure_type)
+            if past_data != []:
 
-                    #list with last value/values (in order to state the real behavior of the system)
-                    past_values = []
-                    for data in past_data:
-                        past_values.append(data['value'])
+                #list with last value/values (in order to state the real behavior of the system)
+                past_values = []
+                for data in past_data:
+                    past_values.append(data['value'])
 
-                    #in case the actual value is > threshold and even the last two values had passed it -> NOTIFICATION
+                if _type == "internal":
+                #in case the actual value is > threshold and even the last two values had passed it -> NOTIFICATION
                     if actual_value > threshold and all(float(val) > threshold for val in past_values[-2:]):
                         self._raisedFlag = True
-                        logging.debug(f"Attention: {measure_type} passed critical value for three consecutive times. Actual value = {actual_value}, last two values = {past_values[-2:]}")
-                        to_ret = {
-                            "alert":f"Attention: {measure_type} passed critical value for three consecutive times. Actual value = {actual_value}, last two values = {past_values[-2:]}",
-                            "action":"",
-                            "groupId": groupId
-                        }
-                        # Send notification to TELEGRAM
-                        self.sendTelegramMessage(to_ret)
 
                     else:
                         #list with last 5 values
@@ -184,26 +175,29 @@ class ControlStrategy(threading.Thread):
                         for data in past_data:
                             to_interp.append(float(data['value']))
                             time_values.append(data['timestamp'])
-                        #logging.debug(f"last_four={to_interp}")
-                        #logging.debug(f"time={time_values}")
 
                         #in case the last values (included the actual one) are under threshold, but the polynomial interpolation tells us it is going to pass the threshold -> NOTIFICATION
-                        if len(time_values) > 1 and all(x < threshold for x in past_values):
+                        if len(time_values) > 1 and all(float(x) < threshold for x in past_values):
                             predicted = self.polyFitting(to_interp, time_values, 2, int(self._settings.getField("polyFittingPredict")) )
                             if (float(predicted) > threshold):
                                 self._raisedFlag = True
                                 self._predictFlag = True
-                                logging.debug(f"Attention: {measure_type} is going to pass critical value. Actual value = {actual_value}, last two values = {past_values[-2:]} and predicted value = {predicted}")
+                                #logging.debug(f"Attention: {measure_type} is going to pass critical value. Actual value = {actual_value}, last two values = {past_values[-2:]} and predicted value = {predicted}")
 
-                if self._raisedFlag == True:
-                    #case in which there is the external device -> before contacting externalweatherapi demand temp/hum of external device
-                    if externalFlag == True:
-                        #here i want to ask to the cache the last value of temperature and humidity of the corresponding external device
-
+                    #if some measure is critical and need to be notificated to telegram 
+                    if self._raisedFlag == True:
+                        to_ret = {
+                            "alert":str(measure_type)+"is critical (critical value crossed three consecutive times)",
+                            "action":"",
+                            "furtherInfo":"",
+                            "groupId":""
+                        }
+                        if self._predictFlag:
+                            to_ret["alert"] = str(measure_type) + "is going to be critical"
                         
-                    #case in which there is no external device -> contact directly the externalweatherapi
-                    else:
+                        #to send a notification to telegram we have to know the external conditions (temp,hum,pollution) in every case [TAKEN FROM EXTERNALWEATHERAPI]
                         uri = str(self._catalogAddress)+"/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI"
+                        #get request in order to take the externalweatherapi address
                         try:
                             r = requests.get(uri)
                             if r.status_code == 200:
@@ -212,9 +206,7 @@ class ControlStrategy(threading.Thread):
                                         ext_weather_api_ip = service["serviceIP"]
                                         ext_weather_api_port = service["servicePort"]
                         except Exception as e:
-                            logging.debug(f"GET request exception Error: {e}")
-                        lat = 45.06
-                        lon = 7.66
+                            logging.error(f"GET request exception Error: {e}")
                         # Load the location information at the startup when a new cache is added
                         uri = str(self._catalogAddress)+"/getGroupId?groupId="+groupId
                         try:
@@ -222,60 +214,69 @@ class ControlStrategy(threading.Thread):
                             if r.status_code == 200 and "latitude" in r.json() and "longitude" in r.json():
                                 lat = r.json()["latitude"]
                                 lon = r.json()["longitude"]
-
-                         except Exception as e:
-                            logging.debug(f"GET request exception Error: {e}")
+                        except Exception as e:
+                            logging.error(f"GET request exception Error: {e}")
 
                         api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/currentWeatherStatus?lat="+str(lat)+"&lon="+str(lon)
-
+                        #GET request to obtain infos from externalweatherapi
                         try:
                             r = requests.get(api_uri)
                             if r.status_code == 200:
                                 _ext_temp = r.json()["temperature"]
                                 _ext_hum = r.json()["humidity"]
                                 _safe_to_open = r.json()["safeOpenWindow"]
+                        except Exception as e:
+                            logging.error(f"GET request exception Error: {e}")
+                        api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/forecastWeatherStatus?lat="+str(lat)+"&lon="+str(lon)
+                        try:
+                            r = requests.get(api_uri)
+                            if r.status_code == 200:
+                                #here i get the forecast informations about the weather and pollution
+                                pass
+                        except Exception as e:
+                            logging.error(f"GET request exception error: {e}")
 
-                                #here we have the control if it's safetopen and the external temperature and humidity are good enough
-                                if _safe_to_open == True and _ext_temp < self._settings.getField('externalTemperatureMax') and _ext_temp > self._settings.getField('externalTemperatureMax') and _ext_hum > self._settings.getField('externalHumidityMin') and _ext_hum < self._settings.getField('externalHumidityMax'):
-                                    if self._predictFlag == True:
-                                        to_ret = {
-                                            "alert":str(measure_type)+"is going to be critical",
-                                            "action":"open the window to prevent it",
-                                            "groupId": groupId
-                                        }
-                                    else:
-                                        to_ret = {
-                                            "alert":str(measure_type)+"is critical",
-                                            "action":"open the window",
-                                            "groupId": groupId
-                                            }
-                                    logging.debug(to_ret)
+                        #case in which there is the external device -> rather than contacting externalweatherapi demand temp/hum of the external device
+                        if externalFlag == True:
+                            #here i want to ask to the cache the last value of temperature and humidity of the corresponding external device
+                            last_ext_temps = self._cache.getLastResults(groupId,externalServiceId,"external","temperature")
+                            last_ext_hums = self._cache.getLastResults(groupId,externalServiceId,"external","humidity")
+                            last_ext_temp = int(last_ext_temps.pop()['value'])
+                            last_ext_hum = int(last_ext_hums.pop()['value'])
+                            #check if external conditions from external device are good enough to open the window
+                            if last_ext_temp < self._settings.getField('externalTemperatureMax') and last_ext_temp > self._settings.getField('externalTemperatureMax') and last_ext_hum > self._settings.getField('externalHumidityMin') and last_ext_hum < self._settings.getField('externalHumidityMax'):
+                                #tell the user to open the window ONLY if the parameter _safeOpenWindow is OK
+                                if _safe_to_open:
+                                    #external conditions are good AND it's safeToOpen the window -> tell the user to open the window 
+                                    to_ret["action"] = "open the window"
                                 else:
-                                    if self._predictFlag == True:
-                                        to_ret = {
-                                            "alert":str(measure_type)+" is going to be critical but external condition too",
-                                            "action":"turn on the dehumidifier/open the internal door",
-                                            "groupId": groupId
-                                        }
-                                    else:
-                                        to_ret = {
-                                        "alert":str(measure_type)+" critical but external condition too",
-                                        "action":"turn on the dehumidifier/open the internal door",
-                                        "groupId": groupId
-                                        }
-                                    logging.debug(to_ret)
-                        #logging.debug(r.json())
+                                    #external conditions are good BUT it's not safe to open the windows (pollution/wind)
+                                    to_ret["action"] = "open the internal door/turn on the dehumidifier"
+                                    to_ret["furtherInfo"] = ""
 
-                        # Send request to Telegram service for sending the message
+                            #the external conditions obtained from the external device are NOT GOOD -> contact the externalweatherapi to know if in the near future it will change
+                            else:
+                                #from the externalweatherapi infos we can discover when it will be possible to open the window
+                                to_ret["action"] = "open the internal door/turn on the dehumidifier"
+                                #TO IMPLEMENT
+                                to_ret["furtherInfo"] = "it will be possible to open the window at {}"
+
+                        #case in which there is NO external device -> USE directly the externalweatherapi infos
+                        else:
+                            #here we control if it's safetopen and if the external temperature and humidity are good
+                            if _safe_to_open == True and _ext_temp < self._settings.getField('externalTemperatureMax') and _ext_temp > self._settings.getField('externalTemperatureMax') and _ext_hum > self._settings.getField('externalHumidityMin') and _ext_hum < self._settings.getField('externalHumidityMax'):
+                                to_ret["action"] = "open the window"
+                            else:
+                                to_ret["action"] = "open the internal door/turn on the dehumidifier"
+
+                        #Send NOTIFICATION to Telegram service
                         self.sendTelegramMessage(to_ret)
 
-                    except Exception as e:
-                        logging.debug(f"GET request exception: {e}")
+                        self._raisedFlag = False
+                        self._predictFlag = False
 
-
-                self._raisedFlag = False
-                self._cache.addToCache(groupId, serviceId, measure_type, field["v"], field["t"])
-
+            self._cache.addToCache(groupId, serviceId, measure_type, _type, field["v"], field["t"])
+            
 
 
 

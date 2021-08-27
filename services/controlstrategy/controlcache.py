@@ -32,6 +32,7 @@ class ControlCache():
         }
         new_cache = {
             "serviceId":serviceId,
+            "devicePos":_type,
             "temperature":[],
             "humidity":[],
             "co2":[]
@@ -81,13 +82,13 @@ class ControlCache():
         self._cache.append(new_groupId)
         self.lock.release()
     
-    def addToCache(self, groupId, serviceId, measuretype, data, timestamp):
+    def addToCache(self, groupId, serviceId, measuretype, devPos, data, timestamp):
         self.lock.acquire()
     
         for group_id in self._cache:
             if group_id["groupId"] == groupId:
                 for cache in group_id["serviceIds"]:
-                    if cache["serviceId"] == serviceId:
+                    if cache["serviceId"] == serviceId and cache["devicePos"] == devPos:
                         to_append = {
                             "value":data,
                             "timestamp":timestamp
@@ -129,22 +130,31 @@ class ControlCache():
                     if cache["serviceId"] == serviceId:
                         return True
         return False
-    def getLastResults(self, groupId, serviceId, measuretype):
+    def getLastResults(self, groupId, serviceId, devPos, measuretype):
         to_return = []
         _timestamp = datetime.timestamp(datetime.now())
         for group_id in self._cache:
             for cache in group_id["serviceIds"]:
-                if cache["serviceId"] == serviceId and len(cache[measuretype]) != 0:
+                if cache["serviceId"] == serviceId and cache["devicePos"] == devPos and len(cache[measuretype]) != 0:
                     for data in cache[measuretype]:
                         value = data
                         to_return.append(value)
                 
         return to_return
-    def getServiceCache(self, groupId, serviceId):
+    def getServiceCache(self, groupId, serviceId, devPos):
         for group_id in self._cache:
             for cache in group_id["serviceIds"]:
-                if cache["serviceId"] == serviceId:
+                if cache["serviceId"] == serviceId and cache["devicePos"] == devPos:
                     return cache
         return -1
+        
+    #function which tells me if in the cache regarding a certain groupid there is an external device
+    def hasExternalDevice(self, groupId):
+        gotExtDevs = False
+        for group_id in self._cache:
+            for cache in group_id["serviceIds"]:
+                if cache["devicePos"] == "external":
+                    gotExtDevs = True
+        return gotExtDevs
     def getCompleteCache(self):
         return self._cache
