@@ -129,21 +129,7 @@ class ControlStrategy(threading.Thread):
         _type = payload["sensor_position"]
 
         #flag set to False if a certain groupId has only an internal device while it is set to True if has also an external one
-        externalFlag = False
-        externalServiceId = ""
-
-        #search if the groupId in question has an internal and an external device
-        uri = self._catalogAddress+"/searchByGroupId?groupId="+groupId
-        try:
-            r = requests.get(uri)
-            if r.status_code == 200:
-                for element in r.json():
-                    if element["devicePosition"] == "external":
-                        externalFlag = True
-                        externalServiceId = element["serviceId"]
-        except Exception as e:
-            logging.error("Exception {e}")
-        
+        externalFlag, externalServiceId = hasExternalDevice(groupId)
 
         if self._cache.findGroupServiceIdCache(groupId, serviceId) == False:
             self._cache.createCache(groupId, serviceId, _type)
@@ -165,7 +151,7 @@ class ControlStrategy(threading.Thread):
 
                 if _type == "internal":
                 #in case the actual value is > threshold and even the last two values had passed it -> NOTIFICATION
-                    if actual_value > threshold and all(float(val) > threshold for val in past_values[-2:]):
+                    if actual_value > threshold and all(float(val) > threshold for val in past_values[-2:]) and len(past_values[-2:]) > 2:
                         self._raisedFlag = True
 
                     else:
@@ -184,17 +170,17 @@ class ControlStrategy(threading.Thread):
                                 self._predictFlag = True
                                 #logging.debug(f"Attention: {measure_type} is going to pass critical value. Actual value = {actual_value}, last two values = {past_values[-2:]} and predicted value = {predicted}")
 
-                    #if some measure is critical and need to be notificated to telegram 
+                    #if some measure is critical and need to be notificated to telegram
                     if self._raisedFlag == True:
                         to_ret = {
-                            "alert":str(measure_type)+"is critical (critical value crossed three consecutive times)",
+                            "alert":str(measure_type)+" is critical (critical value crossed three consecutive times)",
                             "action":"",
                             "furtherInfo":"",
                             "groupId":""
                         }
                         if self._predictFlag:
-                            to_ret["alert"] = str(measure_type) + "is going to be critical"
-                        
+                            to_ret["alert"] = str(measure_type) + " is going to be critical"
+
                         #to send a notification to telegram we have to know the external conditions (temp,hum,pollution) in every case [TAKEN FROM EXTERNALWEATHERAPI]
                         uri = str(self._catalogAddress)+"/searchByServiceSubType?serviceSubType=EXTERNALWEATHERAPI"
                         #get request in order to take the externalweatherapi address
@@ -217,24 +203,25 @@ class ControlStrategy(threading.Thread):
                         except Exception as e:
                             logging.error(f"GET request exception Error: {e}")
 
-                        api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/currentWeatherStatus?lat="+str(lat)+"&lon="+str(lon)
-                        #GET request to obtain infos from externalweatherapi
-                        try:
-                            r = requests.get(api_uri)
-                            if r.status_code == 200:
-                                _ext_temp = r.json()["temperature"]
-                                _ext_hum = r.json()["humidity"]
-                                _safe_to_open = r.json()["safeOpenWindow"]
-                        except Exception as e:
-                            logging.error(f"GET request exception Error: {e}")
-                        api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/forecastWeatherStatus?lat="+str(lat)+"&lon="+str(lon)
-                        try:
-                            r = requests.get(api_uri)
-                            if r.status_code == 200:
-                                #here i get the forecast informations about the weather and pollution
-                                pass
-                        except Exception as e:
-                            logging.error(f"GET request exception error: {e}")
+                        if ext_weather_api_ip and lat:
+                            api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/currentWeatherStatus?lat="+str(lat)+"&lon="+str(lon)
+                            #GET request to obtain infos from externalweatherapi
+                            try:
+                                r = requests.get(api_uri)
+                                if r.status_code == 200:
+                                    _ext_temp = r.json()["temperature"]
+                                    _ext_hum = r.json()["humidity"]
+                                    _safe_to_open = r.json()["safeOpenWindow"]
+                            except Exception as e:
+                                logging.error(f"GET request exception Error: {e}")
+                            api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/forecastWeatherStatus?lat="+str(lat)+"&lon="+str(lon)
+                            try:
+                                r = requests.get(api_uri)
+                                if r.status_code == 200:
+                                    #here i get the forecast informations about the weather and pollution
+                                    pass
+                            except Exception as e:
+                                logging.error(f"GET request exception error: {e}")
 
                         #case in which there is the external device -> rather than contacting externalweatherapi demand temp/hum of the external device
                         if externalFlag == True:
@@ -247,7 +234,7 @@ class ControlStrategy(threading.Thread):
                             if last_ext_temp < self._settings.getField('externalTemperatureMax') and last_ext_temp > self._settings.getField('externalTemperatureMax') and last_ext_hum > self._settings.getField('externalHumidityMin') and last_ext_hum < self._settings.getField('externalHumidityMax'):
                                 #tell the user to open the window ONLY if the parameter _safeOpenWindow is OK
                                 if _safe_to_open:
-                                    #external conditions are good AND it's safeToOpen the window -> tell the user to open the window 
+                                    #external conditions are good AND it's safeToOpen the window -> tell the user to open the window
                                     to_ret["action"] = "open the window"
                                 else:
                                     #external conditions are good BUT it's not safe to open the windows (pollution/wind)
@@ -262,7 +249,7 @@ class ControlStrategy(threading.Thread):
                                 to_ret["furtherInfo"] = "it will be possible to open the window at {}"
 
                         #case in which there is NO external device -> USE directly the externalweatherapi infos
-                        else:
+                    elif _ext_temp and _ext_hum and _safe_to_open:
                             #here we control if it's safetopen and if the external temperature and humidity are good
                             if _safe_to_open == True and _ext_temp < self._settings.getField('externalTemperatureMax') and _ext_temp > self._settings.getField('externalTemperatureMax') and _ext_hum > self._settings.getField('externalHumidityMin') and _ext_hum < self._settings.getField('externalHumidityMax'):
                                 to_ret["action"] = "open the window"
@@ -276,7 +263,7 @@ class ControlStrategy(threading.Thread):
                         self._predictFlag = False
 
             self._cache.addToCache(groupId, serviceId, measure_type, _type, field["v"], field["t"])
-            
+
 
 
 
