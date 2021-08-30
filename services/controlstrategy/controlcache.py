@@ -32,15 +32,16 @@ class ControlCache():
         }
         new_cache = {
             "serviceId":serviceId,
+            "devicePos":_type,
             "temperature":[],
             "humidity":[],
             "co2":[]
         }
-        
+
         fields = []
 
         self.lock.acquire()
-       
+
         uri = str(self._catalogAddress)+"/searchByServiceSubType?serviceSubType=THINGSPEAK"
         try:
             r = requests.get(uri)
@@ -52,41 +53,42 @@ class ControlCache():
         except Exception as e:
             logging.debug(f"Exception Error: {e}")
 
-        baseUri = "http://"+str(thingspeak_adaptor_ip)+":"+str(thingspeak_adaptor_port)
+        if thingspeak_adaptor_ip:
+            baseUri = "http://"+str(thingspeak_adaptor_ip)+":"+str(thingspeak_adaptor_port)
 
-        # fetch last hour
-        uri = baseUri+"/channel/"+serviceId+"/feeds/getMinutesData?minutes=" + str(self._time_interval)
+            # fetch last hour
+            uri = baseUri+"/channel/"+serviceId+"/feeds/getMinutesData?minutes=" + str(self._time_interval)
 
-        try:
-            r = requests.get(uri)
-            if r.status_code == 200:
-                for i in range(1,8):
-                    if "field"+str(i) in r.json()["channel"]:
-                        #in fields: field (position) i -> measuretype
-                        fields.append(r.json()["channel"]["field"+str(i)])
-                for feed in r.json()["feeds"]:
-                    for i,field in enumerate(fields):
-                        datetime_obj = datetime.strptime(feed["created_at"], "%Y-%m-%dT%H:%M:%SZ")
-                        to_append = {
-                            "value":feed["field"+str(i+1)],
-                            "timestamp":datetime.timestamp(datetime_obj)
-                        }
-                        new_cache[str(field)].append(to_append)
-                
-        except Exception as e:
-            logging.error(f"Request Error {e} for uri={uri}")
+            try:
+                r = requests.get(uri)
+                if r.status_code == 200:
+                    for i in range(1,8):
+                        if "field"+str(i) in r.json()["channel"]:
+                            #in fields: field (position) i -> measuretype
+                            fields.append(r.json()["channel"]["field"+str(i)])
+                    for feed in r.json()["feeds"]:
+                        for i,field in enumerate(fields):
+                            datetime_obj = datetime.strptime(feed["created_at"], "%Y-%m-%dT%H:%M:%SZ")
+                            to_append = {
+                                "value":feed["field"+str(i+1)],
+                                "timestamp":datetime.timestamp(datetime_obj)
+                            }
+                            new_cache[str(field)].append(to_append)
+
+            except Exception as e:
+                logging.error(f"Request Error {e} for uri={uri}")
 
         new_groupId["serviceIds"].append(new_cache)
         self._cache.append(new_groupId)
         self.lock.release()
-    
-    def addToCache(self, groupId, serviceId, measuretype, data, timestamp):
+
+    def addToCache(self, groupId, serviceId, measuretype, devPos, data, timestamp):
         self.lock.acquire()
-    
+
         for group_id in self._cache:
             if group_id["groupId"] == groupId:
                 for cache in group_id["serviceIds"]:
-                    if cache["serviceId"] == serviceId:
+                    if cache["serviceId"] == serviceId and cache["devicePos"] == devPos:
                         to_append = {
                             "value":data,
                             "timestamp":timestamp
@@ -111,16 +113,16 @@ class ControlCache():
                     last_co2 = cache["co2"][-1]["timestamp"]
                     if (last_co2-first_co2)/60 > self._time_interval:
                         self.popCache(group_id["groupId"], cache["serviceId"], "co2")
-        
+
         self.lock.release()
 
-    def popCache(self, groupId, serviceId, measuretype):       
+    def popCache(self, groupId, serviceId, measuretype):
 
         for group_id in self._cache:
             for cache in group_id["serviceIds"]:
                 if cache["serviceId"] == serviceId:
                     cache[str(measuretype)].pop(0)
-            
+
     def findGroupServiceIdCache(self, groupId, serviceId):
         for group_id in self._cache:
             if group_id["groupId"] == groupId:
@@ -128,22 +130,31 @@ class ControlCache():
                     if cache["serviceId"] == serviceId:
                         return True
         return False
-    def getLastResults(self, groupId, serviceId, measuretype):
+    def getLastResults(self, groupId, serviceId, devPos, measuretype):
         to_return = []
         _timestamp = datetime.timestamp(datetime.now())
         for group_id in self._cache:
             for cache in group_id["serviceIds"]:
-                if cache["serviceId"] == serviceId and len(cache[measuretype]) != 0:
+                if cache["serviceId"] == serviceId and cache["devicePos"] == devPos and len(cache[measuretype]) != 0:
                     for data in cache[measuretype]:
                         value = data
                         to_return.append(value)
-                
+
         return to_return
-    def getServiceCache(self, groupId, serviceId):
+    def getServiceCache(self, groupId, serviceId, devPos):
         for group_id in self._cache:
             for cache in group_id["serviceIds"]:
-                if cache["serviceId"] == serviceId:
+                if cache["serviceId"] == serviceId and cache["devicePos"] == devPos:
                     return cache
         return -1
+
+    #function which tells me if in the cache regarding a certain groupid there is an external device
+    def hasExternalDevice(self, groupId):
+        for group_id in self._cache:
+            for cache in group_id["serviceIds"]:
+                if cache["devicePos"] == "external":
+                    return True, cache["serviceId"]
+        return False, None
+
     def getCompleteCache(self):
         return self._cache

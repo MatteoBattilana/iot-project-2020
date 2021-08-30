@@ -2,6 +2,6 @@
     "pingTime": 60,
     "serviceName": "TELEGRAM-BOT",
     "catalogAddress": "http://catalog:8080/catalog",
-    "logVerbosity": "DEBUG",
+    "logVerbosity": "ERROR",
     "serviceId": "TELEGRAM-BOT-7"
 }

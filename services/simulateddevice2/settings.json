@@ -7,5 +7,6 @@
     "logVerbosity": "ERROR",
     "serviceId": "SIMULATED-DEVICE-A2",
     "devicePosition": "internal",
-    "pin": "1234"
+    "pin": "1234",
+    "groupId": "MatteoHome"
 }
