@@ -189,7 +189,6 @@ class TelegramBot():
                 alert="\u26A0 Remind to SAVE YOUR PASSWORD in order to avoid losing it and don't be able to log to you profile"
                 self.bot.sendMessage(chat_id,message)
                 self.bot.sendMessage(chat_id,alert)
-                self.t_m.create_temp_user(chat_id)
             #ok
             elif txt.startswith('/info'):
                 if len(params)==1:

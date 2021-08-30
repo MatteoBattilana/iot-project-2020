@@ -129,7 +129,7 @@ class ControlStrategy(threading.Thread):
         _type = payload["sensor_position"]
 
         #flag set to False if a certain groupId has only an internal device while it is set to True if has also an external one
-        externalFlag, externalServiceId = hasExternalDevice(groupId)
+        externalFlag, externalServiceId = self._cache.hasExternalDevice(groupId)
 
         if self._cache.findGroupServiceIdCache(groupId, serviceId) == False:
             self._cache.createCache(groupId, serviceId, _type)
@@ -228,8 +228,8 @@ class ControlStrategy(threading.Thread):
                             #here i want to ask to the cache the last value of temperature and humidity of the corresponding external device
                             last_ext_temps = self._cache.getLastResults(groupId,externalServiceId,"external","temperature")
                             last_ext_hums = self._cache.getLastResults(groupId,externalServiceId,"external","humidity")
-                            last_ext_temp = int(last_ext_temps.pop()['value'])
-                            last_ext_hum = int(last_ext_hums.pop()['value'])
+                            last_ext_temp = float(last_ext_temps.pop()['value'])
+                            last_ext_hum = float(last_ext_hums.pop()['value'])
                             #check if external conditions from external device are good enough to open the window
                             if last_ext_temp < self._settings.getField('externalTemperatureMax') and last_ext_temp > self._settings.getField('externalTemperatureMax') and last_ext_hum > self._settings.getField('externalHumidityMin') and last_ext_hum < self._settings.getField('externalHumidityMax'):
                                 #tell the user to open the window ONLY if the parameter _safeOpenWindow is OK
@@ -249,7 +249,7 @@ class ControlStrategy(threading.Thread):
                                 to_ret["furtherInfo"] = "it will be possible to open the window at {}"
 
                         #case in which there is NO external device -> USE directly the externalweatherapi infos
-                    elif _ext_temp and _ext_hum and _safe_to_open:
+                        elif _ext_temp and _ext_hum and _safe_to_open:
                             #here we control if it's safetopen and if the external temperature and humidity are good
                             if _safe_to_open == True and _ext_temp < self._settings.getField('externalTemperatureMax') and _ext_temp > self._settings.getField('externalTemperatureMax') and _ext_hum > self._settings.getField('externalHumidityMin') and _ext_hum < self._settings.getField('externalHumidityMax'):
                                 to_ret["action"] = "open the window"

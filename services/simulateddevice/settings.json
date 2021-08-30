@@ -5,13 +5,8 @@
     "MQTTTopic": "/iot-programming-2343/",
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "ERROR",
-<<<<<<< HEAD
     "serviceId": "SIMULATED-DEVICE-A1",
     "devicePosition": "external",
     "pin": "1234",
-    "groupId": "MatteoHome"
-=======
-    "serviceId": "SIMULATED-DEVICE-1",
-    "devicePosition": "external"
->>>>>>> origin/oldbranch
+    "groupId": ""
 }
