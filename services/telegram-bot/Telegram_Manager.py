@@ -2,7 +2,6 @@
 from telepot.loop import MessageLoop
 from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
 
-import requests
 import json
 # login - Authenticate the user
 # register - Register to the service
@@ -84,7 +83,7 @@ class Telegram_Manager:
     def register(self,chat_id,value):
         if(not self.just_register(chat_id)):
             self.delete_user(chat_id)
-            us={"id":chat_id,"password":value[0],"status":"on","state":"start","groupId":[],"currentId":""}
+            us={"id":chat_id,"password":value[0],"status":"on","state":"start","groupId":[],"currentId":"","currentDeviceId":""}
             self.users["users"].append(us)
             json.dump(self.users,open('users.json','w'))
             return ' Registration is done successfully'
@@ -130,6 +129,12 @@ class Telegram_Manager:
                 return u["currentId"]
         return ""
 
+    def getCurrentDeviceId(self, chat_id):
+        for u in self.users["users"]:
+            if u["id"] == chat_id and "currentDeviceId" in u:
+                return u["currentDeviceId"]
+        return ""
+
     def getCurrentGroupIdName(self, chat_id):
         for u in self.users["users"]:
             if u["id"] == chat_id:
@@ -138,6 +143,27 @@ class Telegram_Manager:
                     if group["groupId"] == cId:
                         return group["name"]
         return ""
+
+    def isDeviceAlreadyPresent(self, deviceId):
+        for u in self.users["users"]:
+            for g_id in u["groupId"]:  #cerco il id dove aggiungere
+                for dev in g_id["devices"]:
+                    if dev["name"] == deviceId:
+                        return True
+
+        return False
+
+
+    def setDevicePosition(self, chat_id, deviceId, position):
+        for u in self.users["users"]:
+            if u["id"] == chat_id:      #trovo il mio profilo
+                for g_id in u["groupId"]:  #cerco il id dove aggiungere
+                    for dev in g_id["devices"]:
+                        if dev["name"] == deviceId:
+                            dev["position"] = position
+                            break
+        json.dump(self.users,open('users.json','w'))
+
     #ok
     def add_sen(self,chat_id,datas):
         insert=False
@@ -146,7 +172,7 @@ class Telegram_Manager:
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
                     print(g_id)
                     if g_id["groupId"] == u["currentId"]:
-                        new={"name":str(datas[0]),"Pin":datas[1]}
+                        new={"name":str(datas[0]),"pin":datas[1],"position":""}
                         g_id["devices"].append(new)
                         insert=True
                         break
@@ -163,7 +189,10 @@ class Telegram_Manager:
                 for g_id in u["groupId"]:  #cerco il id dove aggiungere
                     if g_id["groupId"]==datas[0] + "_" + str(chat_id):
                         for x in g_id["devices"]:
-                            if x["name"]==datas[1]: g_id["devices"].remove(x)
+                            if x["name"]==datas[1]:
+                                g_id["devices"].remove(x)
+                                if u["currentDeviceId"] == datas[1]:
+                                    u["currentDeviceId"] = ""
 
         json.dump(self.users,open('users.json','w'))
 
@@ -231,6 +260,11 @@ class Telegram_Manager:
             if u["id"]==chat_id:
                 u["currentId"] = id + "_" + str(chat_id)
 
+    def setCurrentDeviceId(self,chat_id,id):
+        for u in self.users["users"]:
+            if u["id"]==chat_id:
+                u["currentDeviceId"] = id
+
     def getState(self,chat_id):
         for us in self.users['users']:
             if us['id'] == chat_id and 'state' in us:
@@ -244,7 +278,7 @@ class Telegram_Manager:
                 found = True
                 us['state'] = state
         if not found:
-            us={"id":chat_id,"password":"","status":"off","state":state,"groupId":[],"currentId":""}
+            us={"id":chat_id,"password":"","status":"off","state":state,"groupId":[],"currentId":"","currentDeviceId":""}
             self.users["users"].append(us)
 
         json.dump(self.users,open('users.json','w'))

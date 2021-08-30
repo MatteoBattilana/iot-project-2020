@@ -6,7 +6,7 @@
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "ERROR",
     "serviceId": "SIMULATED-DEVICE-A1",
-    "devicePosition": "external",
+    "devicePosition": "internal",
     "pin": "1234",
     "groupId": ""
 }

@@ -58,6 +58,12 @@ class Device(threading.Thread):
                         "parameter": []
                     },
                     {
+                        "type": "configuration",
+                        "uri": "/setPosition",
+                        "version": 1,
+                        "parameter": [{"name": "position", "unit": "string"}]
+                    },
+                    {
                         "type": "action",
                         "uri": "/forceSensorSampling",
                         "version": 1,
@@ -171,6 +177,16 @@ class Device(threading.Thread):
             self._ping.setGroupId(groupId)
             self._settingsManager.updateField("groupId", groupId)
             return json.dumps({"groupId": groupId}, indent=4)
+        if uri[0] == "setPosition":
+            position = parameter['position']
+            if "internal" in position or "external" in position:
+                self._ping.setPosition(position)
+                self._devicePosition = position
+                self._settingsManager.updateField("devicePosition", position)
+                return json.dumps({"devicePosition": position}, indent=4)
+            else:
+                cherrypy.response.status = 401
+                return json.dumps({"status": 'error', 'message': 'Wrong position'}, indent=4)
         if uri[0] == "getSensorValues":
             return json.dumps(self._sensorReader.readSensors(), indent=4)
 

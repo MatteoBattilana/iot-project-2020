@@ -7,7 +7,7 @@ from commons.ping import *
 from io import BytesIO
 import telepot
 from telepot.loop import MessageLoop
-from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton
+from telepot.namedtuple import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, KeyboardButton, ReplyKeyboardRemove
 from Telegram_Manager import Telegram_Manager
 
 from enum import Enum
@@ -161,22 +161,38 @@ class TelegramBot():
                 elif self.t_m.getState(chat_id) == 'addDevice':
                     ## make request to device to check if pin is correct
                     if par_len == 2:
-                        res = self.setDeviceGroupId(params[0], params[1], self.t_m.getCurrentGroupId(chat_id))
-                        if res == None:
-                            self.bot.sendMessage(chat_id, "Unable to find " + params[0] + "sensor, please check if it is correct")
-                        elif res:
-                            self.bot.sendMessage(chat_id,self.t_m.add_sen(chat_id,params))
-                            self.t_m.setState(chat_id,'start')
+                        if not self.t_m.isDeviceAlreadyPresent(params[0]):
+                            res = self.setDeviceGroupId(params[0], params[1], self.t_m.getCurrentGroupId(chat_id))
+                            if res == None:
+                                self.bot.sendMessage(chat_id, "Unable to find " + params[0] + " device, please check if it is correct")
+                            elif res:
+                                self.bot.sendMessage(chat_id,self.t_m.add_sen(chat_id,params))
+                                self.t_m.setCurrentDeviceId(chat_id, params[0])
+                                self.t_m.setState(chat_id,'device_position')
+                                keyboard = ReplyKeyboardMarkup(keyboard=[['Internal', 'External']])
+                                self.bot.sendMessage(chat_id, 'Is the device positioned internally or externally with the respect to your room?', reply_markup=keyboard)
+                            else:
+                                self.bot.sendMessage(chat_id, "Unable to add sensor " + params[0] + " to the " + self.t_m.getCurrentGroupIdName(chat_id) + " groupId, check the pin and retry")
                         else:
-                            self.bot.sendMessage(chat_id, "Unable to add sensor " + params[0] + " to the " + self.t_m.getCurrentGroupIdName(chat_id) + " groupId, check the pin and retry")
+                            self.bot.sendMessage(chat_id, "Device already added, please select a different one or remove it from the other account")
                     else:
                         self.bot.sendMessage(chat_id, "Please use the following format: <deviceId> <PIN>")
 
+                elif self.t_m.getState(chat_id) == 'device_position':
+                    if txt == 'Internal' or txt == 'External':
+                        deviceId = self.t_m.getCurrentDeviceId(chat_id)
+                        if self.setDevicePosition(deviceId, txt.lower()):
+                            self.t_m.setDevicePosition(chat_id, deviceId, txt.lower())
+                            self.t_m.setCurrentDeviceId(chat_id, "")
+                            self.t_m.setState(chat_id,'start')
+                            self.bot.sendMessage(chat_id, deviceId + " correctly configured!", reply_markup=ReplyKeyboardRemove())
+                        else:
+                            self.bot.sendMessage(chat_id, "Unable to configure device position. Please retry later")
+                    else:
+                        self.bot.sendMessage(chat_id, "Wrong position, use only Internal or External")
                 else:
                     self.bot.sendMessage(chat_id,"Command not supported")
                     self.sendAllCommands(chat_id)
-
-
 
 
 
@@ -220,26 +236,28 @@ class TelegramBot():
                 self.bot.sendMessage(chat_id,'Attention you are offline, please login')
 
             elif txt.startswith('/check'):
-                groupIds=self.t_m.get_ids_name(chat_id)
-                if len(groupIds) > 0:
-                    kbs=self.t_m.build_keyboard(groupIds,'groupId')
-                    keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
-                    self.bot.sendMessage(chat_id,"Which groupId do you want to check?",reply_markup=keyboard)
-                else:
-                    self.bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
+                if not self.isDevicePositionNotSet(chat_id):
+                    groupIds=self.t_m.get_ids_name(chat_id)
+                    if len(groupIds) > 0:
+                        kbs=self.t_m.build_keyboard(groupIds,'groupId')
+                        keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
+                        self.bot.sendMessage(chat_id,"Which groupId do you want to check?",reply_markup=keyboard)
+                    else:
+                        self.bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
             elif txt.startswith('/addgroupid'):
                 self.t_m.setState(chat_id,'addGroupId_name')
                 self.bot.sendMessage(chat_id,"Please insert the name of the new groupId")
 
             elif txt.startswith('/adddevice'):
-                groupIds=self.t_m.get_ids_name(chat_id)
-                if len(groupIds) > 0:
-                    kbs=self.t_m.build_keyboard(groupIds,'addDevice')
-                    keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
-                    self.bot.sendMessage(chat_id,"Which groupId do you want to add a sensor?",reply_markup=keyboard)
-                else:
-                    self.bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
+                if not self.isDevicePositionNotSet(chat_id):
+                    groupIds=self.t_m.get_ids_name(chat_id)
+                    if len(groupIds) > 0:
+                        kbs=self.t_m.build_keyboard(groupIds,'addDevice')
+                        keyboard = keyboard = InlineKeyboardMarkup(inline_keyboard=[[x] for x in kbs])
+                        self.bot.sendMessage(chat_id,"Which groupId do you want to add a sensor?",reply_markup=keyboard)
+                    else:
+                        self.bot.sendMessage(chat_id,"No groupId in your account, please insert one.")
 
             elif txt.startswith('/delete'):
                 groupIds=self.t_m.get_ids_name(chat_id)
@@ -256,6 +274,16 @@ class TelegramBot():
                 self.bot.sendMessage(chat_id,"Command not supported")
                 self.sendAllCommands(chat_id)
 
+    def isDevicePositionNotSet(self, chat_id):
+        missingPositionDevice = self.t_m.getCurrentDeviceId(chat_id)
+        if missingPositionDevice:
+            self.bot.sendMessage(chat_id, missingPositionDevice + ' is missing the position.')
+            self.t_m.setState(chat_id,'device_position')
+            keyboard = ReplyKeyboardMarkup(keyboard=[['Internal', 'External']])
+            self.bot.sendMessage(chat_id, 'Is the device positioned internally or externally with the respect to your room?', reply_markup=keyboard)
+            return True
+        return False
+
     def sendAllCommands(self,chat_id):
         self.bot.sendMessage(chat_id,"List of all available commands:\n\n" + "\n".join(self.t_m.commands()))
 
@@ -269,6 +297,25 @@ class TelegramBot():
             r = requests.get(self._catalogAddress + "/deleteGroupId?groupId=" + groupId + "_" + str(chat_id))
             return True
 
+        return False
+
+    def setDevicePosition(self, deviceId, position):
+        r = requests.get(self._catalogAddress + "/searchById?serviceId=" + deviceId)
+        if r.status_code != 200:
+            logging.error("Unable to get information about service " + deviceId)
+            return False
+
+        # now perform set of the groupId to the device
+        for service in r.json()['serviceServiceList']:
+            if 'serviceType' in service and service['serviceType'] == 'REST':
+                ip = service['serviceIP']
+                port = service['servicePort']
+                # perform set groupId
+                r = requests.get('http://' + ip + ":" + str(port) + "/setPosition?position="+position)
+                if r.status_code == 200:
+                    return True
+
+        logging.error("Unable to set device position " + deviceId)
         return False
 
     def deleteGroupIdDevice(self, deviceId):

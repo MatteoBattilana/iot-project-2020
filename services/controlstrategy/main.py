@@ -151,7 +151,8 @@ class ControlStrategy(threading.Thread):
 
                 if _type == "internal":
                 #in case the actual value is > threshold and even the last two values had passed it -> NOTIFICATION
-                    if actual_value > threshold and all(float(val) > threshold for val in past_values[-2:]) and len(past_values[-2:]) > 2:
+                    if actual_value > threshold and all(float(val) > threshold for val in past_values[-2:]) and len(past_values[-2:]) > 1:
+                        logging.info(str(actual_value) + " list previous " + str(past_values[-2:]) + " threshold: " + str(threshold))
                         self._raisedFlag = True
 
                     else:
@@ -176,7 +177,7 @@ class ControlStrategy(threading.Thread):
                             "alert":str(measure_type)+" is critical (critical value crossed three consecutive times)",
                             "action":"",
                             "furtherInfo":"",
-                            "groupId":""
+                            "groupId": groupId
                         }
                         if self._predictFlag:
                             to_ret["alert"] = str(measure_type) + " is going to be critical"
