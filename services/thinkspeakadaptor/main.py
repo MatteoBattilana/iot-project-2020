@@ -428,6 +428,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
         else:
             uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
+        loggin.debug(uri)
         try:
             r = requests.get(uri)
             logging.debug(f"GET request with the following uri: {uri}")
@@ -621,7 +622,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             y = []
             x = []
             for feed in results['feeds']:
-                y.append(float(feed["field"+fieldNumber]))
+                y.append(float(feed["field"+str(fieldNumber)]))
                 x.append(datetime.datetime.strptime(feed["created_at"],"%Y-%m-%dT%H:%M:%SZ"))
             plt.clf()
             plt.gca().yaxis.set_major_locator(ticker.LinearLocator(7))
