@@ -94,14 +94,14 @@ class ControlStrategy(threading.Thread):
                                 logging.debug("Sent alert to Telegram bot")
                                 if r.status_code != 200:
                                     logging.error("Unable to send alert via Telegram: " + r.json())
+                                else:
+                                    self._lastSentAlert[to_ret['groupId']] = time.time()
 
                             except Exception as e:
                                 logging.error("Unable to send alert via Telegram : " + str(e))
 
             except Exception as e:
                 logging.error(f"GET request exception Error: {e}")
-
-            self._lastSentAlert[to_ret['groupId']] = time.time()
         else:
             logging.warning("Skipped to avoid flooding")
 

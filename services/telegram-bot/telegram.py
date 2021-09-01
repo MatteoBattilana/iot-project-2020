@@ -63,17 +63,17 @@ class TelegramBot():
     def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         if len(uri) == 0:
-            return json.dumps({"message": "External weather API endpoint"}, indent=4)
+            return json.dumps({"message": "Telegram bot API endpoint"}, indent=4)
         else:
-            cherrypy.response.status = 503
-            return json.dumps({"error":{"status": 503, "message": "OPENWETHERMAPAPIKEY not set"}}, indent=4)
+            cherrypy.response.status = 404
+            return json.dumps({"error":{"status": 404, "message": "API not available"}}, indent=4)
 
     def POST(self, *uri):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         body = json.loads(cherrypy.request.body.read())
 
         if len(uri) == 0:
-            return json.dumps({"message": "External weather API endpoint"}, indent=4)
+            return json.dumps({"message": "Telegram bot API endpoint"}, indent=4)
         elif len(uri) == 1:
             logging.info("Requested POST with uri " + str(uri))
             if uri[0] == 'sendAlert':
