@@ -53,12 +53,32 @@ class TelegramBot():
         logging.debug("Started")
         self._ping.start()
 
+        # Telegram keepAlive to avoid issue https://github.com/nickoala/telepot/issues/225
+        self._runKeepAlive = True
+        self._keepAliveThread = threading.Thread(target=self.__keepAliveThread)
+        self._keepAliveThread.daemon = True
+        self._keepAliveThread.start()
+
+    def __keepAliveThread(self):
+        lastTime = 0
+        while self._runKeepAlive:
+            if time.time() - lastTime >= 60:
+                logging.debug("Sending keep alive to Telegram")
+                try:
+                    self.bot.getMe()
+                except:
+                    logging.error("Unable to send keep alive to Telegram")
+                lastTime = time.time()
+            time.sleep(1)
+
         # Catalog new id callback
     def onNewCatalogId(self, newId):
         self._settings.updateField('serviceId', newId)
 
     def stop(self):
         self._ping.stop()
+        self._runKeepAlive = False
+        self._keepAliveThread.join()
 
     def GET(self, *uri, **params):
         cherrypy.response.headers['Content-Type'] = 'application/json'

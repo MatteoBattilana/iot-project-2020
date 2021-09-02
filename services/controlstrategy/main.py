@@ -93,7 +93,7 @@ class ControlStrategy(threading.Thread):
                                 r = requests.post("http://" + ip + ":" + str(port) + "/sendAlert", json = to_ret)
                                 logging.debug("Sent alert to Telegram bot")
                                 if r.status_code != 200:
-                                    logging.error("Unable to send alert via Telegram: " + r.content + " " + str(r.status_code))
+                                    logging.error("Unable to send alert via Telegram: " + str(r.content) + " " + str(r.status_code))
                                 else:
                                     self._lastSentAlert[to_ret['groupId']] = time.time()
 
