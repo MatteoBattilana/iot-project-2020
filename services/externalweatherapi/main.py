@@ -235,6 +235,7 @@ class ExternalWeatherApi():
             "pollution_values":[]
         }
         uri = "http://api.openweathermap.org/data/2.5/air_pollution/forecast?lat="+lat+"&lon="+lon+"&appid="+self._openweatherapikey
+        
         try:
             r = requests.get(uri)
             if r.status_code == 200:
@@ -284,6 +285,7 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
         logging.error("Unable to contact openweathermap")
 
     return retInformation
+
     
 
 if __name__=="__main__":

@@ -54,6 +54,19 @@ class ControlStrategy(threading.Thread):
         self._run=False
         self.join()
 
+    #this function check if the value toCheck is inside a certain range of values
+    #measureType is passed to get from the settings.json the upper and lower bounds
+    #if the parameter noMin is set True
+    def checkMeasureType(self,toCheck, measureType, noMin=False):
+        isInRange = False
+        upBound = self._settings.getField(measureType+'Max')
+        lwBound = 0
+        if noMin == False:
+            self._settings.getField(measureType+'Min')
+        if toCheck < upBound and toCheck > lwBound:
+            isInRange = True
+        return isInRange
+
     def polyFitting(self, dataset, timeset, degree, time_horizon = 1):
         floatlist = []
         timelist = []
@@ -212,16 +225,47 @@ class ControlStrategy(threading.Thread):
                                     _ext_temp = r.json()["temperature"]
                                     _ext_hum = r.json()["humidity"]
                                     _safe_to_open = r.json()["safeOpenWindow"]
+                                    _co = r.json()["co"]
+                                    _no = r.json()["no"]
+                                    _no2 = r.json()["no2"]
+                                    _o3 = r.json()["o3"]
+                                    _so2 =r.json()["so2"]
+                                    _pm2_5 = r.json()["pm2_5"]
+                                    _pm10 = r.json()["pm10"]
                             except Exception as e:
                                 logging.error(f"GET request exception Error: {e}")
                             api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/forecastWeatherStatus?lat="+str(lat)+"&lon="+str(lon)
+                            start_timestamp = 0
                             try:
                                 r = requests.get(api_uri)
                                 if r.status_code == 200:
-                                    #here i get the forecast informations about the weather and pollution
-                                    pass
+                                    weatherHours = [-1 for i in range(0,len(r.json()["hours"]))]
+                                    start_timestamp = r.json()["hours"][0]["timestamp"]
+                                    #here i get the forecast informations about the weather 
+                                    for i,hour in enumerate(r.json()["hours"]):
+                                        if self.checkMeasureType(hour["temperature"], 'externalTemperature') and self.checkMeasureType(hour['humidity'],'externalHumidity') and self.checkMeasureType(hour["wind_speed"], 'windSpeed'):
+                                            weatherHours[i] = 1
+                                        else:
+                                            weatherHours[i] = 0 
                             except Exception as e:
                                 logging.error(f"GET request exception error: {e}")
+                            api_uri = "http://"+str(ext_weather_api_ip)+":"+str(ext_weather_api_port)+"/forecastPollution?lat="+str(lat)+"&lon="+str(lon)
+                            try:
+                                r = requests.get(api_uri)
+                                if r.status_code == 200:
+                                    pollHours = [ -1 for i in range(0,len(r.json()["pollution_values"])) ]
+                                    #here i get the forecast infos about the pollution
+                                    for i, hour in enumerate(r.json()["pollution_values"]):
+                                        if self.checkMeasureType(hour["co"], "co", noMin=True) and self.checkMeasureType(hour["no"], "no", noMin=True) and self.checkMeasureType(hour["no2"], "no2", noMin=True) \
+                                            and self.checkMeasureType(hour["o3"], "o3", noMin=True) and self.checkMeasureType(hour["pm10"],"pm10", noMin=True) \
+                                            and self.checkMeasureType(hour["so2"], "so2", noMin=True) and self.checkMeasureType(hour["pm2_5"], "pm2_5", noMin=True):
+                                            pollHours[i] = 1
+                                        else:
+                                            pollHours[i] = 0
+
+                            except Exception as e:
+                                logging.error(f"GET request exception Error: {e}")
+
 
                         #case in which there is the external device -> rather than contacting externalweatherapi demand temp/hum of the external device
                         if externalFlag == True:
@@ -231,30 +275,47 @@ class ControlStrategy(threading.Thread):
                             last_ext_temp = float(last_ext_temps.pop()['value'])
                             last_ext_hum = float(last_ext_hums.pop()['value'])
                             #check if external conditions from external device are good enough to open the window
-                            if last_ext_temp < self._settings.getField('externalTemperatureMax') and last_ext_temp > self._settings.getField('externalTemperatureMax') and last_ext_hum > self._settings.getField('externalHumidityMin') and last_ext_hum < self._settings.getField('externalHumidityMax'):
+                            if self.checkMeasureType(last_ext_temp, 'externalTemperature') and self.checkMeasureType(last_ext_hum, 'externalHumidity'):
                                 #tell the user to open the window ONLY if the parameter _safeOpenWindow is OK
-                                if _safe_to_open:
-                                    #external conditions are good AND it's safeToOpen the window -> tell the user to open the window
+                                if _safe_to_open and self.checkMeasureType(_co, "co", noMin=True) and self.checkMeasureType(_no, "no", noMin=True) and self.checkMeasureType(_no2, "no2", noMin=True) \
+                                            and self.checkMeasureType(_o3, "o3", noMin=True) and self.checkMeasureType(_pm10,"pm10", noMin=True) \
+                                            and self.checkMeasureType(_so2, "so2", noMin=True) and self.checkMeasureType(_pm2_5, "pm2_5", noMin=True):
+                                    #external conditions are good, it's safeToOpen the window (wind is good) AND pollution is OK-> tell the user to open the window
                                     to_ret["action"] = "open the window"
-                                else:
-                                    #external conditions are good BUT it's not safe to open the windows (pollution/wind)
+                                elif _safe_to_open:
+                                    #external conditions are good BUT it's not safe to open the windows due to pollution
                                     to_ret["action"] = "open the internal door/turn on the dehumidifier"
-                                    to_ret["furtherInfo"] = ""
+                                    to_ret["furtherInfo"] = "pollution high level"
+                                else:
+                                    to_ret["action"] = "open the internal door/turn on the dehumidifier"
+                                    to_ret["furtherInfo"] = "too high wind speed"
 
                             #the external conditions obtained from the external device are NOT GOOD -> contact the externalweatherapi to know if in the near future it will change
                             else:
                                 #from the externalweatherapi infos we can discover when it will be possible to open the window
                                 to_ret["action"] = "open the internal door/turn on the dehumidifier"
-                                #TO IMPLEMENT
-                                to_ret["furtherInfo"] = "it will be possible to open the window at {}"
+                                final_len = min(len(pollHours), len(weatherHours))
+                                hours = [(pollHours[i]+weatherHours[i]) for i in range(0,final_len)]
+                                for i,hour in enumerate(hours):
+                                    if hour == 2:
+                                        found = i
+                                hourToOpen = datetime.fromtimestamp(start_timestamp).hour+found
+                                to_ret["furtherInfo"] = "bad weather conditions; it will be possible to open the window at {hourToOpen}"
 
                         #case in which there is NO external device -> USE directly the externalweatherapi infos
-                        elif _ext_temp and _ext_hum and _safe_to_open:
-                            #here we control if it's safetopen and if the external temperature and humidity are good
-                            if _safe_to_open == True and _ext_temp < self._settings.getField('externalTemperatureMax') and _ext_temp > self._settings.getField('externalTemperatureMax') and _ext_hum > self._settings.getField('externalHumidityMin') and _ext_hum < self._settings.getField('externalHumidityMax'):
+                        else:
+                            #here we control if it's safetopen AND if the external temperature and humidity are good AND if the pollution levels are OK
+                            if _safe_to_open and self.checkMeasureType(_ext_temp,"externalTemperature") and self.checkMeasureType(_ext_hum,"externalHumidity") and \
+                                self.checkMeasureType(_co, "co", noMin=True) and self.checkMeasureType(_no, "no", noMin=True) and self.checkMeasureType(_no2, "no2", noMin=True) \
+                                and self.checkMeasureType(_o3, "o3", noMin=True) and self.checkMeasureType(_pm10,"pm10", noMin=True) \
+                                and self.checkMeasureType(_so2, "so2", noMin=True) and self.checkMeasureType(_pm2_5, "pm2_5", noMin=True):
                                 to_ret["action"] = "open the window"
+                            elif _safe_to_open and self.checkMeasureType(_ext_temp,"externalTemperature") and self.checkMeasureType(_ext_hum,"externalHumidity"):
+                                to_ret["action"] = "open the internal door/turn on the dehumidifier"
+                                to_ret["furtherInfo"] = "pollution high levels"
                             else:
                                 to_ret["action"] = "open the internal door/turn on the dehumidifier"
+                                to_ret["furtherInfo"] = "bad weather conditions"
 
                         #Send NOTIFICATION to Telegram service
                         self.sendTelegramMessage(to_ret)
