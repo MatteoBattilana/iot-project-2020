@@ -52,6 +52,10 @@ class Ping(threading.Thread):
         json["groupId"] = groupId
         self.sendPing()
 
+    def setPosition(self, position):
+        logging.debug("Position set to " + position)
+        json["devicePosition"] = position
+        self.sendPing()
 
     def sendPing(self):
         postBody = copy.copy(json)

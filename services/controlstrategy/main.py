@@ -106,15 +106,15 @@ class ControlStrategy(threading.Thread):
                                 r = requests.post("http://" + ip + ":" + str(port) + "/sendAlert", json = to_ret)
                                 logging.debug("Sent alert to Telegram bot")
                                 if r.status_code != 200:
-                                    logging.error("Unable to send alert via Telegram: " + r.json())
+                                    logging.error("Unable to send alert via Telegram: " + str(r.content) + " " + str(r.status_code))
+                                else:
+                                    self._lastSentAlert[to_ret['groupId']] = time.time()
 
                             except Exception as e:
                                 logging.error("Unable to send alert via Telegram : " + str(e))
 
             except Exception as e:
                 logging.error(f"GET request exception Error: {e}")
-
-            self._lastSentAlert[to_ret['groupId']] = time.time()
         else:
             logging.warning("Skipped to avoid flooding")
 
@@ -164,7 +164,8 @@ class ControlStrategy(threading.Thread):
 
                 if _type == "internal":
                 #in case the actual value is > threshold and even the last two values had passed it -> NOTIFICATION
-                    if actual_value > threshold and all(float(val) > threshold for val in past_values[-2:]) and len(past_values[-2:]) > 2:
+                    if actual_value > threshold and all(float(val) > threshold for val in past_values[-2:]) and len(past_values[-2:]) > 1:
+                        logging.info(str(actual_value) + " list previous " + str(past_values[-2:]) + " threshold: " + str(threshold))
                         self._raisedFlag = True
 
                     else:
@@ -189,7 +190,7 @@ class ControlStrategy(threading.Thread):
                             "alert":str(measure_type)+" is critical (critical value crossed three consecutive times)",
                             "action":"",
                             "furtherInfo":"",
-                            "groupId":""
+                            "groupId": groupId
                         }
                         if self._predictFlag:
                             to_ret["alert"] = str(measure_type) + " is going to be critical"
