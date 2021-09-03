@@ -6,7 +6,7 @@
     "catalogAddress": "http://catalog:8080/catalog",
     "logVerbosity": "ERROR",
     "serviceId": "SIMULATED-DEVICE-A2",
-    "devicePosition": "internal",
+    "devicePosition": "external",
     "pin": "1234",
-    "groupId": "MatteoHome"
+    "groupId": ""
 }

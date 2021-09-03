@@ -428,6 +428,7 @@ class ThinkSpeakAdaptor(threading.Thread):
             uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
         else:
             uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
+        logging.debug(uri)
         try:
             r = requests.get(uri)
             logging.debug(f"GET request with the following uri: {uri}")
@@ -500,7 +501,7 @@ class ThinkSpeakAdaptor(threading.Thread):
         parameters="api_key="+read_api_key+"&sum="+str(sum)+"&average="+str(average)+"&median="+str(median)
         if field_id != -1:
             uri = self._baseUri+"channels/"+str(channelID)+"/fields/"+str(field_id)+".json?"+parameters
-        #read data from all fields
+            #read data from all fields
         else:
             uri=self._baseUri+"channels/"+str(channelID)+"/feeds.json?"+parameters
 
@@ -621,8 +622,10 @@ class ThinkSpeakAdaptor(threading.Thread):
             y = []
             x = []
             for feed in results['feeds']:
-                y.append(float(feed["field"+fieldNumber]))
-                x.append(datetime.datetime.strptime(feed["created_at"],"%Y-%m-%dT%H:%M:%SZ"))
+                value = feed["field"+str(fieldNumber)]
+                if value: #it could be that it is set to None
+                    y.append(float(value))
+                    x.append(datetime.datetime.strptime(feed["created_at"],"%Y-%m-%dT%H:%M:%SZ"))
             plt.clf()
             plt.gca().yaxis.set_major_locator(ticker.LinearLocator(7))
             plt.gca().xaxis.set_major_formatter(dates.DateFormatter('%H:%M:%S'))

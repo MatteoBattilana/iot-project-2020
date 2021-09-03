@@ -43,6 +43,8 @@ class ControlCache():
         self.lock.acquire()
 
         uri = str(self._catalogAddress)+"/searchByServiceSubType?serviceSubType=THINGSPEAK"
+        thingspeak_adaptor_ip = ""
+        thingspeak_adaptor_port = ""
         try:
             r = requests.get(uri)
             if r.status_code == 200:
