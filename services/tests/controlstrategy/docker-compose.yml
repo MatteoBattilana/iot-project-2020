@@ -1,0 +1,44 @@
+version: "3.9"
+services:
+  catalog:
+    hostname: "catalog"
+    image: "services_catalog"
+    networks:
+      net1:
+    healthcheck:
+        test: ["CMD-SHELL", "curl -f http://catalog:8080/catalog/getBroker | grep uri"]
+        interval: 15s
+        timeout: 7s
+        retries: 5
+    volumes:
+      - ../../:/code
+
+  controlstrategy:
+    image: "services_controlstrategy"
+    networks:
+      net1:
+    depends_on:
+      catalog:
+        condition: service_healthy
+    links:
+        - catalog
+    volumes:
+      - ../../:/code
+
+  tester:
+    networks:
+      net1:
+    depends_on:
+      catalog:
+        condition: service_healthy
+    links:
+        - catalog
+    build:
+        context: ./
+        dockerfile: ./tester/Dockerfile
+    volumes:
+      - .:/code
+
+networks:
+  net1:
+    driver: bridge

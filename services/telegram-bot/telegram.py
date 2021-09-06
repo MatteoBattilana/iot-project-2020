@@ -100,7 +100,12 @@ class TelegramBot():
                 # send message via telegram
                 chatId = self.t_m.getChatId(body["groupId"])
                 if chatId:
-                    self.bot.sendMessage(chatId, text= "ALERT\nMessage: "+ body["alert"] + "\nSuggested action: " + body["action"])
+                    alertMessage = "ALERT\nMessage: "+ body["alert"] + "\nSuggested action: " + body["action"]
+                    if "furtherInfo" in body and body["furtherInfo"]:
+                         alertMessage = alertMessage + " due to " + body["furtherInfo"]
+                    if "hourSuggestion" in body and body["hourSuggestion"]:
+                        alertMessage = alertMessage + "\n" + body["hourSuggestion"]
+                    self.bot.sendMessage(chatId, text=alertMessage)
                     ret = body
                 else:
                     cherrypy.response.status = 503

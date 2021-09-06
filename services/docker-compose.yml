@@ -2,6 +2,7 @@ version: "3.9"
 services:
   catalog:
     container_name: catalog
+    hostname: "catalog"
     networks:
       net1:
     build:

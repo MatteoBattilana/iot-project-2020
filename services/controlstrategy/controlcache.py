@@ -99,31 +99,28 @@ class ControlCache():
 
         #check if the cache has to be emptied
         for group_id in self._cache:
-            for cache in group_id["serviceIds"]:
+            for i,cache in enumerate(group_id["serviceIds"][:]):
                 if len(cache["temperature"]) > 1:
                     first_temp = cache["temperature"][0]["timestamp"]
                     last_temp = cache["temperature"][-1]["timestamp"]
                     if (last_temp-first_temp)/60 > self._time_interval:
-                        self.popCache(group_id["groupId"], cache["serviceId"], "temperature")
+                        #logging.debug("Popped: " + str((last_temp-first_temp)/60) + " -> " + str(cache["temperature"][0]))
+                        group_id["serviceIds"][i]["temperature"].remove(cache["temperature"][0])
                 if len(cache["humidity"]) > 1:
                     first_hum = cache["humidity"][0]["timestamp"]
                     last_hum = cache["humidity"][-1]["timestamp"]
                     if (last_hum-first_hum)/60 > self._time_interval:
-                        self.popCache(group_id["groupId"], cache["serviceId"], "humidity")
+                        #logging.debug("Popped: " + str((last_temp-first_temp)/60) + " -> " + str(cache["humidity"][0]))
+                        group_id["serviceIds"][i]["humidity"].remove(cache["humidity"][0])
                 if len(cache["co2"]) > 1:
                     first_co2 = cache["co2"][0]["timestamp"]
                     last_co2 = cache["co2"][-1]["timestamp"]
                     if (last_co2-first_co2)/60 > self._time_interval:
-                        self.popCache(group_id["groupId"], cache["serviceId"], "co2")
+                        #logging.debug("Popped: " + str((last_temp-first_temp)/60) + " -> " + str(cache["co2"][0]))
+                        group_id["serviceIds"][i]["co2"].remove(cache["co2"][0])
 
         self.lock.release()
 
-    def popCache(self, groupId, serviceId, measuretype):
-
-        for group_id in self._cache:
-            for cache in group_id["serviceIds"]:
-                if cache["serviceId"] == serviceId:
-                    cache[str(measuretype)].pop(0)
 
     def findGroupServiceIdCache(self, groupId, serviceId):
         for group_id in self._cache:
@@ -132,6 +129,7 @@ class ControlCache():
                     if cache["serviceId"] == serviceId:
                         return True
         return False
+
     def getLastResults(self, groupId, serviceId, devPos, measuretype):
         to_return = []
         _timestamp = datetime.timestamp(datetime.now())
@@ -141,8 +139,8 @@ class ControlCache():
                     for data in cache[measuretype]:
                         value = data
                         to_return.append(value)
-
         return to_return
+
     def getServiceCache(self, groupId, serviceId, devPos):
         for group_id in self._cache:
             for cache in group_id["serviceIds"]:

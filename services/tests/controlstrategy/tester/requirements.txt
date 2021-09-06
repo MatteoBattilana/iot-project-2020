@@ -1,0 +1,4 @@
+requests==2.18.4
+CherryPy==18.6.0
+psutil==5.8.0
+paho_mqtt==1.5.1

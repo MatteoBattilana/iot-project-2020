@@ -2,15 +2,15 @@
   "retantionTimeout": 130,
   "brokerList": [
         {
+          "uri": "test.mosquitto.org",
+          "port": 1883
+        },
+        {
           "uri": "wrongurl.org",
           "port": 1883
         },
         {
           "uri": "broker.emqx.io",
-          "port": 1883
-        },
-        {
-          "uri": "test.mosquitto.org",
           "port": 1883
         }
       ],
