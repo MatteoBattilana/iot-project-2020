@@ -17,7 +17,7 @@
     "so2Max":125,
     "pm2_5Max":25,
     "pm10Max":50,
-    "polyFittingPredict": 30,
+    "polyFittingPredict": 900,
     "serviceName": "CONTROL-STRATEGY",
     "subscribeTopics": [
         "/iot-programming-2343/#"

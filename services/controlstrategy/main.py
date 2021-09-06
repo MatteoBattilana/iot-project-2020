@@ -80,11 +80,10 @@ class ControlStrategy(threading.Thread):
             _time_data = int(timedata - timeset[0])
             timelist.append(_time_data)
         #logging.debug(f"{timelist}")
-        time_horizon = timelist[len(timelist) - 1] - timelist[len(timelist) - 2]
 
         coefs = np.polyfit(timelist, floatlist, degree)
         poly = np.poly1d(coefs)
-        next_value = poly(timelist.pop() + time_horizon)
+        next_value = poly(timelist[-1] + time_horizon)
         return next_value
 
     #in this function all the control algorithm has to be developed so that
@@ -178,8 +177,9 @@ class ControlStrategy(threading.Thread):
                             time_values.append(data['timestamp'])
 
                         #in case the last values (included the actual one) are under threshold, but the polynomial interpolation tells us it is going to pass the threshold -> NOTIFICATION
-                        if len(time_values) > 1 and all(float(x) < threshold for x in past_values):
+                        if len(time_values) > 5 and all(float(x) < threshold for x in past_values):
                             predicted = self.polyFitting(to_interp, time_values, 2, int(self._settings.getField("polyFittingPredict")) )
+                            logging.debug("Predicted " + measure_type + " " + str(float(predicted)))
                             if (float(predicted) > threshold):
                                 self._raisedFlag = True
                                 self._predictFlag = True
@@ -275,8 +275,7 @@ class ControlStrategy(threading.Thread):
                             except Exception as e:
                                 logging.error(f"GET request exception Error: {e}")
 
-                            print("ETERNAL: " + str(externalFlag))
-                        #case in which there is the external device -> rather than contacting externalweatherapi demand temp/hum of the external device
+                            #case in which there is the external device -> rather than contacting externalweatherapi demand temp/hum of the external device
                             isOpenWindow = False
                             if externalFlag == True:
                                 #here i want to ask to the cache the last value of temperature and humidity of the corresponding external device

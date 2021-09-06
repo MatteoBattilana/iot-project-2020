@@ -112,6 +112,196 @@ def waitForPost(method, timeout = 10):
 def addRestMap(uri, returnedJson):
     restMapper[uri] = returnedJson
 
+## WITH EXTERNAL DEVICE
+def ext_test_three_consecutive_value_alert_bad_external_weather():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 900.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 45}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 44}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 33.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 44}], "sensor_position": "external"})
+    time.sleep(3)
+
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 53}], "sensor_position": "internal"})
+
+    # now /sendAlert should be called
+    waitForPost("sendAlert")
+    deleteGroupId("groupId-Test")
+
+def ext_test_three_consecutive_value_alert_good_external_weather():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 89,
+        "safeOpenWindow": True,
+        "co": 900.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 33.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 45}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 33.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 44}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 44}], "sensor_position": "external"})
+    time.sleep(3)
+
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 53}], "sensor_position": "internal"})
+
+    # now /sendAlert should be called
+    waitForPost("sendAlert")
+    deleteGroupId("groupId-Test")
+
+def ext_test_three_consecutive_value_alert_bad_external_weather_open_at():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 900.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {
+    "hours": [
+        {
+            "timestamp": 1630746000,
+            "temperature": 23.180000000000007,
+            "pressure": 1016,
+            "humidity": 55,
+            "wind_speed": 0.93
+        },
+        {
+            "timestamp": 1630749600,
+            "temperature": 23.28000000000003,
+            "pressure": 1016,
+            "humidity": 53,
+            "wind_speed": 0.87
+        },
+        {
+            "timestamp": 1630753200,
+            "temperature": 24.129999999999995,
+            "pressure": 1016,
+            "humidity": 49,
+            "wind_speed": 1.07
+        },
+        {
+            "timestamp": 1630756800,
+            "temperature": 25.260000000000048,
+            "pressure": 1015,
+            "humidity": 44,
+            "wind_speed": 1.56
+        },
+        {
+            "timestamp": 1630760400,
+            "temperature": 26.480000000000018,
+            "pressure": 1014,
+            "humidity": 38,
+            "wind_speed": 1.66
+        }]
+    })
+    addRestMap("forecastPollution", {"pollution_values": [
+            {
+                "timestamp": 1630746000,
+                "co": 687.6,
+                "no": 13.86,
+                "no2": 17.99,
+                "o3": 13.41,
+                "so2": 1.03,
+                "pm2_5": 13.59,
+                "pm10": 17.31,
+                "nh3": 15.07
+            },
+            {
+                "timestamp": 1630749600,
+                "co": 333.79,
+                "no": 0.49,
+                "no2": 4.67,
+                "o3": 101.57,
+                "so2": 0.61,
+                "pm2_5": 6.36,
+                "pm10": 8.28,
+                "nh3": 4.94
+            },
+            {
+                "timestamp": 1630753200,
+                "co": 323.77,
+                "no": 0.31,
+                "no2": 3.43,
+                "o3": 114.44,
+                "so2": 0.95,
+                "pm2_5": 7.73,
+                "pm10": 9.33,
+                "nh3": 4.94
+            },
+            {
+                "timestamp": 1630756800,
+                "co": 327.11,
+                "no": 0.29,
+                "no2": 3.3,
+                "o3": 125.89,
+                "so2": 1.28,
+                "pm2_5": 9.07,
+                "pm10": 10.59,
+                "nh3": 5.07
+            },
+            {
+                "timestamp": 1630760400,
+                "co": 327.11,
+                "no": 0.21,
+                "no2": 2.87,
+                "o3": 134.47,
+                "so2": 1.43,
+                "pm2_5": 9.77,
+                "pm10": 11.07,
+                "nh3": 4.5
+            }
+        ]
+    })
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 45}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 44}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 33.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 44}], "sensor_position": "external"})
+    time.sleep(3)
+
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 53}], "sensor_position": "internal"})
+
+    # now /sendAlert should be called
+    waitForPost("sendAlert")
+    deleteGroupId("groupId-Test")
 
 
 ## NO EXTERNAL DEVICE, BASED ONLY ON EXTERNALWEATHERAPI RESULTS
@@ -317,6 +507,191 @@ def test_three_consecutive_value_alert_bad_external_weather_open_window_at():
     waitForPost("sendAlert")
     deleteGroupId("groupId-Test")
 
+
+## PREDICT
+def predict_temperature():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 400.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 22.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 25.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506600.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506600.7055953, "v": 28.5}, {"n": "humidity", "u": "celsius", "t": 1630506600.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506700.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506700.7055953, "v": 30.5}, {"n": "humidity", "u": "celsius", "t": 1630506700.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506800.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506800.7055953, "v": 31.5}, {"n": "humidity", "u": "celsius", "t": 1630506800.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506900.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506900.7055953, "v": 31.7}, {"n": "humidity", "u": "celsius", "t": 1630506900.7056038, "v": 53}], "sensor_position": "internal"})
+
+    # now /sendAlert should be called
+    waitForPost("sendAlert")
+    deleteGroupId("groupId-Test")
+
+def predict_no_temperature():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 400.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 22.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 25.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506600.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506600.7055953, "v": 28.5}, {"n": "humidity", "u": "celsius", "t": 1630506600.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506700.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506700.7055953, "v": 28.6}, {"n": "humidity", "u": "celsius", "t": 1630506700.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506800.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506800.7055953, "v": 27.5}, {"n": "humidity", "u": "celsius", "t": 1630506800.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506900.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506900.7055953, "v": 27.2}, {"n": "humidity", "u": "celsius", "t": 1630506900.7056038, "v": 53}], "sensor_position": "internal"})
+
+    # now /sendAlert should be called
+    deleteGroupId("groupId-Test")
+
+
+def predict_humidity():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 400.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 22.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 54}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 25.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 56}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506600.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506600.7055953, "v": 28.5}, {"n": "humidity", "u": "celsius", "t": 1630506600.7056038, "v": 64}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506700.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506700.7055953, "v": 26.5}, {"n": "humidity", "u": "celsius", "t": 1630506700.7056038, "v": 70}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506800.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506800.7055953, "v": 25.5}, {"n": "humidity", "u": "celsius", "t": 1630506800.7056038, "v": 72}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506900.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506900.7055953, "v": 25.7}, {"n": "humidity", "u": "celsius", "t": 1630506900.7056038, "v": 73}], "sensor_position": "internal"})
+
+    # now /sendAlert should be called
+    waitForPost("sendAlert")
+    deleteGroupId("groupId-Test")
+
+def predict_no_humidity():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 400.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 22.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 57}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 25.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 63}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506600.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506600.7055953, "v": 28.5}, {"n": "humidity", "u": "celsius", "t": 1630506600.7056038, "v": 67}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506700.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506700.7055953, "v": 27.5}, {"n": "humidity", "u": "celsius", "t": 1630506700.7056038, "v": 68}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506800.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506800.7055953, "v": 26.5}, {"n": "humidity", "u": "celsius", "t": 1630506800.7056038, "v": 68}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506900.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506900.7055953, "v": 26.7}, {"n": "humidity", "u": "celsius", "t": 1630506900.7056038, "v": 73}], "sensor_position": "internal"})
+
+    deleteGroupId("groupId-Test")
+
+def predict_co2():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 400.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 22.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 520.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 57}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 530.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 25.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 63}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506600.7055776, "v": 550.83}, {"n": "temperature", "u": "celsius", "t": 1630506600.7055953, "v": 28.5}, {"n": "humidity", "u": "celsius", "t": 1630506600.7056038, "v": 67}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506700.7055776, "v": 575.83}, {"n": "temperature", "u": "celsius", "t": 1630506700.7055953, "v": 27.5}, {"n": "humidity", "u": "celsius", "t": 1630506700.7056038, "v": 68}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506800.7055776, "v": 600.83}, {"n": "temperature", "u": "celsius", "t": 1630506800.7055953, "v": 26.5}, {"n": "humidity", "u": "celsius", "t": 1630506800.7056038, "v": 68}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506900.7055776, "v": 650.83}, {"n": "temperature", "u": "celsius", "t": 1630506900.7055953, "v": 26.7}, {"n": "humidity", "u": "celsius", "t": 1630506900.7056038, "v": 73}], "sensor_position": "internal"})
+
+    # now /sendAlert should be called
+    waitForPost("sendAlert")
+    deleteGroupId("groupId-Test")
+
+
+def predict_no_co2():
+    addRestMap("currentWeatherStatus", {
+        "temperature": 22.91,
+        "humidity": 44,
+        "safeOpenWindow": True,
+        "co": 400.6,
+        "no": 13.86,
+        "no2": 17.99,
+        "o3": 13.41,
+        "so2": 1.03,
+        "pm2_5": 13.59,
+        "pm10": 17.31,
+        "nh3": 15.07
+    })
+    addRestMap("forecastWeatherStatus", {"hours": []})
+    addRestMap("forecastPollution", {"pollution_values": []})
+    # create groupId
+    createGroupId("groupId-Test")
+    # temperature is outside
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 22.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 520.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 57}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 530.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 25.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 63}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506600.7055776, "v": 550.83}, {"n": "temperature", "u": "celsius", "t": 1630506600.7055953, "v": 28.5}, {"n": "humidity", "u": "celsius", "t": 1630506600.7056038, "v": 67}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506700.7055776, "v": 575.83}, {"n": "temperature", "u": "celsius", "t": 1630506700.7055953, "v": 27.5}, {"n": "humidity", "u": "celsius", "t": 1630506700.7056038, "v": 68}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506800.7055776, "v": 550.83}, {"n": "temperature", "u": "celsius", "t": 1630506800.7055953, "v": 26.5}, {"n": "humidity", "u": "celsius", "t": 1630506800.7056038, "v": 68}], "sensor_position": "internal"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506900.7055776, "v": 525.83}, {"n": "temperature", "u": "celsius", "t": 1630506900.7055953, "v": 26.7}, {"n": "humidity", "u": "celsius", "t": 1630506900.7056038, "v": 73}], "sensor_position": "internal"})
+
+    deleteGroupId("groupId-Test")
+
 def exitTest():
     cherrypy.engine.stop()
     c.stop()
@@ -346,6 +721,18 @@ if __name__ == '__main__':
     #test_three_consecutive_value_alert_bad_external_weather()
     #test_three_consecutive_value_alert_safeOpenWindow_false()
     #test_three_consecutive_value_alert_good_external_weather()
-    test_three_consecutive_value_alert_bad_external_weather_open_window_at()
+    #test_three_consecutive_value_alert_bad_external_weather_open_window_at()
+
+    #ext_test_three_consecutive_value_alert_good_external_weather()
+    #ext_test_three_consecutive_value_alert_bad_external_weather()
+    #ext_test_three_consecutive_value_alert_bad_external_weather_open_at()
+
+    #predict_temperature()
+    #predict_no_temperature()
+    #predict_humidity()
+    #predict_no_humidity()
+    #predict_co2()
+    predict_no_co2()
+
     print("###### All tests successfull! Now the service is stopping. ######")
     exitTest()
