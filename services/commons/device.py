@@ -11,6 +11,8 @@ import json
 import time
 import logging
 
+# This is a common class to both the simulated and the RASPBERRY device
+# used to perform the ping and read the sensors
 class Device(threading.Thread):
     exposed=True
 
@@ -18,6 +20,7 @@ class Device(threading.Thread):
         threading.Thread.__init__(self)
         self._sensorReader = sensorReader
         self._settingsManager = settingsManager
+        # setting the list of service that the device is able to give
         serviceList = [
             {
                 "serviceType": "MQTT",
@@ -97,6 +100,9 @@ class Device(threading.Thread):
         self._devicePosition = self._settingsManager.getField('devicePosition')
         self._run = True
 
+    # method use to stop the ping, the mqtt service
+    # it is basically used from the cherrypy engine that allows to restart the
+    # service after a code change without lunching again the docker service
     def stop(self):
         if self._mqtt is not None:
             self._mqtt.stop()
@@ -104,6 +110,10 @@ class Device(threading.Thread):
         self._run = False
         self.join()
 
+    # method used to read and publish the sensor values following this
+    # structure: {"bn": "MatteoHome_119923952/RASPBERRY-A1", "e": [{"n": "co2", "u": "ppm",
+    # "t": 1631890231.7521343, "v": 406.7}, {"n": "temperature", "u": "celsius", "t": 1631890231.7521546,
+    # "v": 28.5}, {"n": "humidity", "u": "celsius", "t": 1631890231.7521625, "v": 51}], "sensor_position": "internal"}
     def _publishSampledSensor(self):
         simulatedValues = self._sensorReader.readSensors()
         groupId = self._settingsManager.getFieldOrDefault('groupId', '')
@@ -116,13 +126,14 @@ class Device(threading.Thread):
 
             logging.info("Publishing sensor values")
             publishTopic = self._settingsManager.getField('MQTTTopic') + groupId + "/"
+            # publish the json to the MQTT broker
             self._mqtt.publish(publishTopic + self._deviceId, readValues)
             return readValues
         else:
             logging.info("Sensors not available")
             return {}
 
-
+    # method use to start the thread
     def run(self):
         logging.debug("Started")
         self._ping.start()
@@ -153,17 +164,22 @@ class Device(threading.Thread):
     def GET(self, *uri, **parameter):
         cherrypy.response.headers['Content-Type'] = 'application/json'
         if len(uri) == 0:
+            # Base GET rest endpoint
             return json.dumps({"message": self._deviceName + " API endpoint"}, indent=4)
         if uri[0] == "setPingTime":
+            # configure the ping time
             pingTime = int(parameter['pingTime'])
             self._ping.setPingTime(pingTime)
             self._settingsManager.updateField("pingTime", pingTime)
             return json.dumps({"pingTime": pingTime}, indent=4)
             return json.dumps({"groupId": parameter['groupId']}, indent=4)
         if uri[0] == "forceSensorSampling":
+            # force a sensor read
             sent = self._publishSampledSensor()
             return json.dumps({"status": 'ok', 'mqtt-payload': sent}, indent=4)
         if uri[0] == "setGroupId":
+            # set and change the groupId of the device
+            # in this case it must be restarted the ping and updated the settings file
             if self._settingsManager.getFieldOrDefault('pin', '') == parameter['pin']:
                 groupId = parameter['groupId']
                 self._ping.setGroupId(groupId)
@@ -173,11 +189,13 @@ class Device(threading.Thread):
                 cherrypy.response.status = 401
                 return json.dumps({"status": 'error'}, indent=4)
         if uri[0] == "deleteGroupId":
+            # set to empty the groupId
             groupId = ''
             self._ping.setGroupId(groupId)
             self._settingsManager.updateField("groupId", groupId)
             return json.dumps({"groupId": groupId}, indent=4)
         if uri[0] == "setPosition":
+            # configure the device position, such as internal or external
             position = parameter['position']
             if "internal" in position or "external" in position:
                 self._ping.setPosition(position)
@@ -188,6 +206,7 @@ class Device(threading.Thread):
                 cherrypy.response.status = 401
                 return json.dumps({"status": 'error', 'message': 'Wrong position'}, indent=4)
         if uri[0] == "getSensorValues":
+            # used to only read the sensor and not trigger a MQTT publish
             return json.dumps(self._sensorReader.readSensors(), indent=4)
 
         cherrypy.response.status = 404

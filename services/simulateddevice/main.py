@@ -15,6 +15,9 @@ import logging
 from commons.logger import *
 import requests
 
+# Simulated sensor read by using a specific thingspeak channel that contains real time data
+# This is only for testing due to missing hardware availability, but still works great because it
+# give real data and not random ones
 class SensorReader():
     def readSensors(self):
         simulatedValues = []
@@ -38,7 +41,7 @@ class SensorReader():
         })
         except Exception as e:
             logging.error(f"ThingSpeak GET request to read data went wrong")
-        
+
         try:
             r = requests.get("https://api.thingspeak.com/channels/1207176/field/7.json?results=1")
             if r.status_code == 200:

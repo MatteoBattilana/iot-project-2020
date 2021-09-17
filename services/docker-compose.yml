@@ -119,24 +119,6 @@ services:
       context: ./
       dockerfile: ./controlstrategy/Dockerfile
 
-
-  webinterface:
-    container_name: webinterface
-    networks:
-      net1:
-    depends_on:
-      catalog:
-        condition: service_healthy
-    links:
-        - catalog
-    volumes:
-      - .:/code
-    build:
-        context: ./
-        dockerfile: ./webinterface/Dockerfile
-    ports:
-      - "8088:8080"             # accessible using the 8080 port
-
   node-red:
     container_name: node-red
     image: nodered/node-red:latest
@@ -160,7 +142,6 @@ volumes:
   simulateddevice2:
   externalweatherapi:
   catalog:
-  webinterface:
   thinkspeakadaptor:
   controlstrategy:
 

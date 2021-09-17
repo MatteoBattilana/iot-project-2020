@@ -16,6 +16,8 @@ class MyMQTTNotifier:
 
 # Class for MQTT service, it automatically manages the retry to the MQTT broker
 # in case of disconnection every 30s
+# the mqtt broker url is automatically fetched from the catalog with the
+# correct REST API
 class MQTTRetry(threading.Thread):
     def __init__(self, serviceId, notifier, catalogAddress):
         threading.Thread.__init__(self)
@@ -99,6 +101,8 @@ class MQTTRetry(threading.Thread):
         if self._notifier != None:
             self._notifier.onMQTTConnectionError(PahoMQTT.connack_string(rc))
 
+    # method used to manage the callback from the connection method of paho
+    # in order to detect when the mqtt is connected or some errors occured
     def _onConnect (self, paho_mqtt, userdata, flags, rc):
         if rc == 0:
             if self._notifier != None:

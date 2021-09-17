@@ -1,6 +1,8 @@
 import socket
 from requests import get
 
+# Used to the get the natted or internal IP, if the isExternal parameter is true
+# the external IP will be returned
 class NetworkUtils:
     def getIp(isExternal = False):
         if isExternal:

@@ -13,11 +13,13 @@ class MyLogHandler(logging.StreamHandler):
         self.format(record)
 
 class IgnoreRequests(logging.Filter):
-    # simple example of log message filtering
+    # REST Log filtering for cherry py
 
     def filter(self, record):
         return 'GET /' not in record.getMessage() and 'POST /' not in record.getMessage() and 'DELETE /' not in record.getMessage() and 'PUT /' not in record.getMessage()
 
+# Logger class used to better manage the logs from all the docker services
+# it uses the following structure: [2021-09-17 16:52:37,433] DEBUG       - <MESSAGE>
 class Logger:
     def getLoggerLevel(mode):
         level=logging.DEBUG
@@ -32,6 +34,7 @@ class Logger:
                 level=logging.CRITICAL
         return level
 
+    # configure the log format as [2021-09-17 16:52:37,433] DEBUG       - <MESSAGE>
     def setup(mode, filename):
         headers = [logging.StreamHandler()]
         if filename:

@@ -17,6 +17,8 @@ import logging
 from commons.logger import *
 import serial
 
+# Class used to interface with the DHT11 module in order to read the humidity
+# and interfaces also with the arduino in order to read the temperature and the co2
 class SensorReader():
     def __init__(self):
         self.sensor=Adafruit_DHT.DHT11
@@ -47,6 +49,8 @@ class SensorReader():
             except:
                 return (None, None)
 
+    # this method is a wrapped that is used to get the correct values from the
+    # sensor by reading them multiple times and the performing an average
     def readSensors(self):
         humidity, temperature, co2 = (None, None, None)
         arduinoTemp, arduinoCo2 = self.getArduinoThermistorTemperature()

@@ -13,7 +13,7 @@ import json
 import logging
 from commons.logger import *
 
-#this function takes as first parameter a list of dictionaries <_dict_list> and compare them 
+#this function takes as first parameter a list of dictionaries <_dict_list> and compare them
 #on the basis of its values corresponding to their keys excluding the first <param> ones
 #finally it returns the position <pos> in the list where those values are minimum
 def getMinPos(_dict_list, param):
@@ -30,11 +30,13 @@ def getMinPos(_dict_list, param):
         if tmp < min_val:
             min_val = tmp
             pos = i
-            
+
     logging.debug(f"min_val = {min_val}")
     logging.debug(f"the pos = {pos}")
     return pos
 
+# This class is used to interface with OpenWheatherApi in order to obtain the
+# information about the pollution and the wather, both for now and forecasted
 class ExternalWeatherApi():
     exposed=True
 
@@ -90,13 +92,13 @@ class ExternalWeatherApi():
         #for the next 60 minutes we can discover possible precipitations (volume in mm)
         #for the next 48 hours we can also obtain the temperatures, humidities and pressure
         #for the next 7 days we can obtain useful info to elaborate when it is going to be the best moment to open the windows
-        
+
         retInformation = {
             "minutes":[],
             "hours":[],
             "days":[]
         }
-    
+
         uri = "https://api.openweathermap.org/data/2.5/onecall?lat="+str(lat)+"&lon="+str(lon)+"&appid="+openweatherapikey
         r = requests.get(uri)
         logging.debug(f"my uri is {uri}")
@@ -112,7 +114,7 @@ class ExternalWeatherApi():
                             {
                             "timestamp":r.json()["minutely"][i]["dt"],
                             "precipitations":r.json()["minutely"][i]["precipitation"]
-                        }) 
+                        })
                 for j in range(0, hours):
                     if "hourly" in r.json():
                         retInformation["hours"].append(
@@ -135,7 +137,7 @@ class ExternalWeatherApi():
                                 "nightTemp":float(r.json()["daily"][i]["temp"]["night"])-273.15,
                                 "minDailyTemp":float(r.json()["daily"][i]["temp"]["min"])-273.15,
                                 "maxDailyTemp":float(r.json()["daily"][i]["temp"]["max"])-273.15
-                            } 
+                            }
                         )
             else:
                 logging.error(f"Specified parameters cannot accepted by the openweatherapi")
@@ -145,36 +147,36 @@ class ExternalWeatherApi():
 
     def whenToOpen(self, lat, lon, temp_lb, temp_ub):
         #we know the temperature and pressure for the next 48 hours
-        #then we have the measures of the next 7 days of 
+        #then we have the measures of the next 7 days of
         #min and max temperatures
         #and also morning, day, evening and night temperatures
         #--> i want to know tomorrow when it will be the best moment to open the windows
         #based on the forecasted value of temperature,humidity and pollution
-        
+
         tomorrow_pollution = []
         today = datetime.datetime(datetime.date.today().year,datetime.date.today().month,datetime.date.today().day)
         tomorrow_start = today + timedelta(days=1)
         tomorrow_end = tomorrow_start + timedelta(hours=23, minutes=59, seconds=59)
         tomorrow_start_timestamp = datetime.datetime.timestamp(tomorrow_start)
         tomorrow_end_timestamp = datetime.datetime.timestamp(tomorrow_end)
-        
+
         #these two structures contain the complete information (we do not need all of them)
         _weather_data = self._getForecastWeather(lat, lon, self._openweatherapikey, minutes=0, hours=24, days=1)
         _pollution_data = self._getForecastAirPollution(lat, lon)
-        
+
         #tomorrow_pollution and tomorrow_weather_data contain only the useful data
         for data in _pollution_data["pollution_values"]:
             if data["timestamp"] >= tomorrow_start_timestamp and data["timestamp"] <= tomorrow_end_timestamp:
                 tomorrow_pollution.append(data)
-        
+
         cnt = 0
         pollution = []
         new_values = [1000 for i in range(0,len(tomorrow_pollution[0]))]
         for i,data in enumerate(tomorrow_pollution):
             pollution.append(len(tomorrow_pollution))
 
-        #here i create a list (pollution) in which the value corresponding to a certain 
-        #index represents a "quality" measure 
+        #here i create a list (pollution) in which the value corresponding to a certain
+        #index represents a "quality" measure
         for i,data in enumerate(tomorrow_pollution):
             min_pos = getMinPos(tomorrow_pollution,1)
             pollution[min_pos] = cnt
@@ -182,13 +184,13 @@ class ExternalWeatherApi():
             tomorrow_pollution[min_pos] = dict(zip(list(tomorrow_pollution[min_pos].keys()), new_values))
 
         tomorrow_weather_data = []
-        
+
         #here i do the same thing but with pressure,humidity and wind data (weathers)
         weathers = [0 for i in range(0,len(_weather_data["hours"]))]
         for i,hour in enumerate(_weather_data["hours"]):
             tomorrow_weather_data.append(hour)
 
-        #here i want to obtain a list in which the index representing a 
+        #here i want to obtain a list in which the index representing a
         #certain tomorrow hour has a corresponding value of 0 if in that
         #hour the temperature values are inside the "good" range while
         #the value is 1 if the temperature is outside that range
@@ -212,13 +214,13 @@ class ExternalWeatherApi():
         #day has the best value regarding pollution and weather conditions
 
         #i want to create a list in which the index is the position/hour of tomorrow
-        #and the corresponding value is a number expressing the distance from the 
-        #minimum values 
+        #and the corresponding value is a number expressing the distance from the
+        #minimum values
         #doing this for the pollution and for the weather the perfect time slot will
         #be found easily choosing the smallest sum between the vectors elements summed
-        
+
         poll_weather = [(pollution[i] + weathers[i]) for i in range(len(weathers))]
-        
+
         for i in range(0,len(poll_weather)):
             optimal_pos = poll_weather.index(min(poll_weather))
             if temperatures[optimal_pos] == 0:
@@ -226,16 +228,16 @@ class ExternalWeatherApi():
                 return optimal_hour
             else:
                 poll_weather[optimal_pos] = 1000
-        
+
     def _getForecastAirPollution(self, lat, lon):
         #with this function we can obtain past and future air pollution data
-        #the returned data are the pollution values of the last five days and the 
-        #future 5 ones with 1-hour steps 
+        #the returned data are the pollution values of the last five days and the
+        #future 5 ones with 1-hour steps
         retInformation = {
             "pollution_values":[]
         }
         uri = "http://api.openweathermap.org/data/2.5/air_pollution/forecast?lat="+lat+"&lon="+lon+"&appid="+self._openweatherapikey
-        
+
         try:
             r = requests.get(uri)
             if r.status_code == 200:
@@ -250,9 +252,9 @@ class ExternalWeatherApi():
                 logging.error("Unable to get temperature from openweathermap: " + json.dumps(r.json()))
         except Exception as e:
             logging.error(f"GET request went wrong ")
-        
+
         return retInformation
-        
+
 def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
     # http://api.openweathermap.org/data/2.5/air_pollution?lat=45.672383&lon=11.5411214&units=metric&appid=9ee2ff4386066f12e552d13a4bd53e8e
     # http://api.openweathermap.org/data/2.5/weather?lat=45.672383&lon=11.5411214&appid=9ee2ff4386066f12e552d13a4bd53e8e
@@ -286,7 +288,7 @@ def _getCurrentWeatherStatus(lat, lon, safeWindSpeed, openweatherapikey):
 
     return retInformation
 
-    
+
 
 if __name__=="__main__":
     settings = SettingsManager("settings.json")
