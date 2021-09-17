@@ -48,12 +48,13 @@ class ControlCache():
         try:
             r = requests.get(uri)
             if r.status_code == 200:
-                for service in r.json()[0]["serviceServiceList"]:
+                print("AAAAAAAAAA OK " + str(r.json()))
+                for service in r.json()[-1]["serviceServiceList"]:
                     if service["serviceType"]  == "REST":
                         thingspeak_adaptor_ip = service["serviceIP"]
                         thingspeak_adaptor_port = service["servicePort"]
         except Exception as e:
-            logging.debug(f"Exception Error: {e}")
+            logging.warning(f"Unable to get the ThingSpeak service, skipping cache initialization! Exception Error: {e}")
 
         if thingspeak_adaptor_ip:
             baseUri = "http://"+str(thingspeak_adaptor_ip)+":"+str(thingspeak_adaptor_port)

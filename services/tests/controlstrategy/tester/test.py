@@ -91,7 +91,7 @@ def createGroupId(name):
 def deleteGroupId(name):
     r = requests.get("http://catalog:8080/catalog/deleteGroupId?groupId="+name)
 
-def waitForPost(method, timeout = 10):
+def waitForPost(method, timeout = 20):
     startTime = time.time()
     popped = None
     while True:
@@ -117,7 +117,7 @@ def ext_test_three_consecutive_value_alert_bad_external_weather():
     addRestMap("currentWeatherStatus", {
         "temperature": 22.91,
         "humidity": 44,
-        "safeOpenWindow": True,
+        "safeOpenWindow": False,
         "co": 900.6,
         "no": 13.86,
         "no2": 17.99,
@@ -148,7 +148,7 @@ def ext_test_three_consecutive_value_alert_bad_external_weather():
 def ext_test_three_consecutive_value_alert_good_external_weather():
     addRestMap("currentWeatherStatus", {
         "temperature": 22.91,
-        "humidity": 89,
+        "humidity": 65,
         "safeOpenWindow": True,
         "co": 900.6,
         "no": 13.86,
@@ -180,11 +180,11 @@ def ext_test_three_consecutive_value_alert_good_external_weather():
 def ext_test_three_consecutive_value_alert_bad_external_weather_open_at():
     addRestMap("currentWeatherStatus", {
         "temperature": 22.91,
-        "humidity": 44,
+        "humidity": 22,
         "safeOpenWindow": True,
         "co": 900.6,
         "no": 13.86,
-        "no2": 17.99,
+        "no2": 1117.99,
         "o3": 13.41,
         "so2": 1.03,
         "pm2_5": 13.59,
@@ -290,9 +290,9 @@ def ext_test_three_consecutive_value_alert_bad_external_weather_open_at():
     # create groupId
     createGroupId("groupId-Test")
     # temperature is outside
-    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 45}], "sensor_position": "external"})
-    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 44}], "sensor_position": "external"})
-    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 33.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 44}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 33.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 45}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506400.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506400.7055953, "v": 33.5}, {"n": "humidity", "u": "celsius", "t": 1630506400.7056038, "v": 44}], "sensor_position": "external"})
+    c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE-EXT', {"bn": "groupId-Test/RANDOM-DEVICE-EXT", "e": [{"n": "co2", "u": "ppm", "t": 1630506500.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506500.7055953, "v": 23.5}, {"n": "humidity", "u": "celsius", "t": 1630506500.7056038, "v": 44}], "sensor_position": "external"})
     time.sleep(3)
 
     c.myPublish('/iot-programming-2343/groupId-Test/RANDOM-DEVICE', {"bn": "groupId-Test/RANDOM-DEVICE", "e": [{"n": "co2", "u": "ppm", "t": 1630506300.7055776, "v": 510.83}, {"n": "temperature", "u": "celsius", "t": 1630506300.7055953, "v": 75.5}, {"n": "humidity", "u": "celsius", "t": 1630506300.7056038, "v": 53}], "sensor_position": "internal"})
@@ -725,14 +725,14 @@ if __name__ == '__main__':
 
     #ext_test_three_consecutive_value_alert_good_external_weather()
     #ext_test_three_consecutive_value_alert_bad_external_weather()
-    #ext_test_three_consecutive_value_alert_bad_external_weather_open_at()
+    ext_test_three_consecutive_value_alert_bad_external_weather_open_at()
 
     #predict_temperature()
     #predict_no_temperature()
     #predict_humidity()
     #predict_no_humidity()
     #predict_co2()
-    predict_no_co2()
+    #predict_no_co2()
 
     print("###### All tests successfull! Now the service is stopping. ######")
     exitTest()

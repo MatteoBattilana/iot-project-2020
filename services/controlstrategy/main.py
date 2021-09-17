@@ -65,7 +65,10 @@ class ControlStrategy(threading.Thread):
         if noMin == False:
             lwBound = self._settings.getField(measureType+'Min')
         if toCheck <= upBound and toCheck >= lwBound:
+            print(str("TRUE " + str(lwBound) + " <= " + str(toCheck) + " <= " + str(upBound)))
             isInRange = True
+        else:
+            print(str("FALSE " + str(lwBound) + " <= " + str(toCheck) + " <= " + str(upBound)))
         return isInRange
 
     def polyFitting(self, dataset, timeset, degree, time_horizon = 1):
