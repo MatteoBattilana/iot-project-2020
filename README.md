@@ -1,4 +1,3 @@
-# iot-project-2020
 # Description of the infrastructure
 The entire infrastructure is based on a central service that is called Broker. It keeps a list of available services with their corresponding REST and MQTT endopoints in order to allows the other services to know which services are available. Within a time, that is called retationTime, each service must perform a ping operation that is nothing else than a notification to the catalog to say "I'm still alive". In this way, the record for that service will not be removed from the catalog.
 This is done by saving an additional information in the json of each service called lastUpdate that contains the time in which the last ping has been performed.
@@ -88,7 +87,45 @@ For example, if the sensor needs to perform a query about the externa weather co
 
 At this point, one the catalog has been loaded, the new services will perform a ping to it in order to be registered in the catalog list of the active services. This is both for SERVICE and DEVICE. In order to simplify this, a class shared among all the services has been created and named `ping.py`. 
 
+# Services description
 
+More specifically the infrastructure is made up of 7 different services: the most important, on which all the system relies, is the Catalog; then the Device Adaptor, the External Api Adaptor, the Telegram Manager, the ThingSpeak Adaptor, NodeRed and finally the Control Strategy. 
+
+## Catalog
+
+It performs the dual function of Service Catalog and Device Catalog and it is the starting point for every service inside the infrastructure: in fact its purpose is to list all the services and devices endpoints and the resources they expose in order to be able to comunicate with them.
+Every service must perform regularly a ping operation to inform the catalog that it is up and running: in fact the catalog checks periodically if time from the last ping operation has expired and, if so, it removes the service from the list.
+
+## Telegram Manager
+The Telegram Manager exposes RESTFUL APIs which are going to be used by other services: in particular the Control Strategy used in order to notificate the end-user.
+
+## Nodered
+The Telegram Manager exposes RESTFUL APIs which are going to be used by other services: in particular the Control Strategy used in order to notificate the end-user.
+
+## Control strategy
+
+It’s the infrastructure core service:  
+* It receives and analyses data coming from the devices
+* It does not merely check that the data for the various measured quantities are above the threshold limit, but it performs a multiple control in order to avoid spurious data problems.
+* It alerts the user even if the devices measurements have not reached a critical value yet, but are going to do so: implementing a function which predicts the future measurements’ value based on the past ones, this service is able to understand if some kind of measure is going to be critical in the next future.
+* Through Telegram Manager REST end-points, it sends to the user the notification in case one of the measured quantities is critical. At this point, analysing whether the user has or not an external device linked to the platform, and especially based on the actual external conditions plus the air pollution levels, it suggests to the user what is the best action to do in order to restore an healthy environment.
+* If the external conditions are good and so is the air quality outside the user is told to open its window. Otherwise, in case one of these two conditions is not fulfilled, the control strategy tells the user not to open the window, but to open an internal door instead or eventually to switch on the dehumidifier; furthermore, based on the forecasted value provided by the external weather API, this service is able to inform the end-user if the external weather and the air pollution levels are going to return within normal ranges and when so that the user knows in advance when to open the window.
+
+## ThingSpeak adaptor
+
+ThingSpeak is used in order to store, visualize, and analyze live data streams in the cloud. It provides instant visualizations of data posted by our devices.
+The Thingspeak Adaptor is our link between Thingspeak itsself and the infrastructure: it is subscribed to sensors topic in order to be able to receive their live messages and then it upload them to ThingSpeak via REST. It also performs daily, weekly and monthly statistics for all the measured quantities.
+
+## ExternalWeatherApi
+
+The ExternalWeatherApi service contact OpenWeather API in order to get: 
+* Current weather data
+* Air pollution data
+* Forecasted weather data
+* Forecasted air pollution values
+* These informations are exposed via RESTful APIs to other services and then processed by the Control Strategy.
+
+# Setup
 
 ## Windows 10 setup
 * Download git: [Git install tutorial](https://phoenixnap.com/kb/how-to-install-git-windows)
