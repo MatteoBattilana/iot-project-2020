@@ -1,4 +1,9 @@
-# Description of the infrastructure
+# Description of the infrastructure CleanAir
+
+**Promo video:** [CleanAir Promo](https://youtu.be/gI1Yn_LoHGE)
+
+**Demo video:** [CleanAir Promo](https://youtu.be/gI1Yn_LoHGE)
+
 The entire infrastructure is based on a central service that is called Broker. It keeps a list of available services with their corresponding REST and MQTT endopoints in order to allows the other services to know which services are available. Within a time, that is called retationTime, each service must perform a ping operation that is nothing else than a notification to the catalog to say "I'm still alive". In this way, the record for that service will not be removed from the catalog.
 This is done by saving an additional information in the json of each service called lastUpdate that contains the time in which the last ping has been performed.
 
