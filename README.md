@@ -1,4 +1,7 @@
-# Description of the infrastructure CleanAir
+# CleanAir
+Politecnico di Torino - Final Project for the course 'Programming for IoT', AY 2020/2021 
+
+## Description of the infrastructure CleanAir
 
 **Promo video:** [CleanAir Promo](https://youtu.be/gI1Yn_LoHGE)
 
@@ -92,22 +95,22 @@ For example, if the sensor needs to perform a query about the externa weather co
 
 At this point, one the catalog has been loaded, the new services will perform a ping to it in order to be registered in the catalog list of the active services. This is both for SERVICE and DEVICE. In order to simplify this, a class shared among all the services has been created and named `ping.py`. 
 
-# Services description
+## Services description
 
 More specifically the infrastructure is made up of 7 different services: the most important, on which all the system relies, is the Catalog; then the Device Adaptor, the External Api Adaptor, the Telegram Manager, the ThingSpeak Adaptor, NodeRed and finally the Control Strategy. 
 
-## Catalog
+### Catalog
 
 It performs the dual function of Service Catalog and Device Catalog and it is the starting point for every service inside the infrastructure: in fact its purpose is to list all the services and devices endpoints and the resources they expose in order to be able to comunicate with them.
 Every service must perform regularly a ping operation to inform the catalog that it is up and running: in fact the catalog checks periodically if time from the last ping operation has expired and, if so, it removes the service from the list.
 
-## Telegram Manager
+### Telegram Manager
 The Telegram Manager exposes RESTFUL APIs which are going to be used by other services: in particular the Control Strategy used in order to notificate the end-user.
 
-## Nodered
+### Nodered
 The Telegram Manager exposes RESTFUL APIs which are going to be used by other services: in particular the Control Strategy used in order to notificate the end-user.
 
-## Control strategy
+### Control strategy
 
 It’s the infrastructure core service:  
 * It receives and analyses data coming from the devices
@@ -116,12 +119,12 @@ It’s the infrastructure core service:
 * Through Telegram Manager REST end-points, it sends to the user the notification in case one of the measured quantities is critical. At this point, analysing whether the user has or not an external device linked to the platform, and especially based on the actual external conditions plus the air pollution levels, it suggests to the user what is the best action to do in order to restore an healthy environment.
 * If the external conditions are good and so is the air quality outside the user is told to open its window. Otherwise, in case one of these two conditions is not fulfilled, the control strategy tells the user not to open the window, but to open an internal door instead or eventually to switch on the dehumidifier; furthermore, based on the forecasted value provided by the external weather API, this service is able to inform the end-user if the external weather and the air pollution levels are going to return within normal ranges and when so that the user knows in advance when to open the window.
 
-## ThingSpeak adaptor
+### ThingSpeak adaptor
 
 ThingSpeak is used in order to store, visualize, and analyze live data streams in the cloud. It provides instant visualizations of data posted by our devices.
 The Thingspeak Adaptor is our link between Thingspeak itsself and the infrastructure: it is subscribed to sensors topic in order to be able to receive their live messages and then it upload them to ThingSpeak via REST. It also performs daily, weekly and monthly statistics for all the measured quantities.
 
-## ExternalWeatherApi
+### ExternalWeatherApi
 
 The ExternalWeatherApi service contact OpenWeather API in order to get: 
 * Current weather data
@@ -130,9 +133,9 @@ The ExternalWeatherApi service contact OpenWeather API in order to get:
 * Forecasted air pollution values
 * These informations are exposed via RESTful APIs to other services and then processed by the Control Strategy.
 
-# Setup
+## Setup
 
-## Windows 10 setup
+### Windows 10 setup
 * Download git: [Git install tutorial](https://phoenixnap.com/kb/how-to-install-git-windows)
 * Download and install docker: [Docker installer](https://hub.docker.com/editions/community/docker-ce-desktop-windows/)
 * Download and install WSL: [Stack Overflow guide](https://stackoverflow.com/a/65898115)
